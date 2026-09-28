@@ -1,0 +1,179 @@
+
+Use this prompt to recreate the current application:
+Build a complete, working native desktop application named “ChaosBox Desktop” for Ubuntu 24.04.
+
+The application manages images, videos, and inventory records using file-based storage. Implement the application, installation scripts, documentation, and tests—not just a mockup or implementation plan.
+
+1. Technology and architecture
+
+Use Python 3, Tkinter/ttk, Pillow, ExifTool, FFmpeg, Paramiko, and xclip.
+
+Separate the GUI from storage and metadata operations:
+- app.py: windows, dialogs, thumbnail selection, editing, and previews.
+- core.py: configuration, metadata, file operations, indexing, search, and upload.
+- setup.ini: default profiles and settings.
+- tests/: automated tests and a graphical smoke test.
+
+Use background workers for expensive operations. All Tk operations must run on the main thread. Keep the interface responsive and cancel pending callbacks safely when windows close.
+
+Use an English interface. Preserve the configured language of custom labels, categories, and text snippets.
+
+2. Profiles and configuration
+
+Support multiple profiles configured through setup.ini.
+
+Provide these defaults:
+- Chaosbox: ~/ChaosBox/JPG for media and ~/ChaosBox/boxes for records.
+- Bilderbox: ~/Bilderbox/JPG for media and ~/Bilderbox/boxes for records.
+
+Store the user configuration at ~/ChaosBox/Setup/setup.ini and desktop state under ~/.config/chaosbox.
+
+Support:
+- [App] with Standard specifying the default profile.
+- [App.PROFILE] with Titel, JPG, Daten, Felder, and Kategorie.
+- [ImageSize] with LIMIT=3000.
+- [TextSnippets] with named, multiline text snippets.
+- [SSH] with connection settings and local credential paths.
+
+Relative profile paths resolve against the user’s home directory. Empty custom field labels hide those fields.
+
+Provide a Setup editor. Remember the selected profile and the last selected media folder separately for each profile across application restarts.
+
+Support --data-root, --state-dir, and --check command-line options.
+
+3. Main editor
+
+Provide:
+- Profile selector.
+- Open JPG / MP4.
+- Open JSON.
+- Save.
+- Clear.
+- Search, Cancel search, and Repeat search.
+- TXT.
+- Setup.
+- Upload saved files.
+- Image preview, status messages, and progress indication.
+
+Use these metadata keys:
+box, anzahl, device, alias, category, comment, package, created, modified.
+
+Display the default labels:
+Box, Quantity, Device, Alias, Category, Comment, Package.
+
+Use a multiline Comment editor and an editable Category selector. Quantity must be a nonnegative integer. Preserve creation timestamps and update modification timestamps.
+
+Support Ctrl+O, Ctrl+S, and Ctrl+F.
+
+4. Media selection
+
+“Open JPG / MP4” opens a resizable window that supports maximizing and restoring through the title bar.
+
+Show only media files directly inside the current folder. Do not recursively include files from subfolders.
+
+Start in the last selected folder for the active profile. Fall back to the profile’s media folder if that folder is unavailable.
+
+Provide:
+- A scrollable thumbnail grid.
+- A column selector from 1 to 10.
+- Click to toggle individual selections.
+- Shift-click for range selection.
+- Select all, Clear, Open, and Cancel.
+- Choose folder …
+- Other files … for importing JPG, JPEG, PNG, and MP4.
+
+Keep selections when changing the number of columns. Resize thumbnails proportionally to their available width. Load visible previews in the background with bounded image caching. Damaged previews must not prevent file selection.
+
+In the folder picker:
+- A double-click selects the clicked folder, closes the picker, and opens that folder’s images immediately.
+- Provide an Up button and an editable path field.
+- Pressing Enter in the path field navigates to that directory.
+- Do not include Go or Browse buttons.
+
+5. Show UserComment
+
+Place a checkbox labeled “Show UserComment” beside the column selector.
+
+When enabled, display the parsed metadata values below each thumbnail in this exact order:
+
+box | category | comment
+
+Limit the entire combined caption, including separators, to 60 characters. Normalize line breaks and repeated whitespace for display. Keep empty field positions; show no caption when all three fields are empty.
+
+Read metadata asynchronously. Do not change the stored metadata when formatting captions. Adjust tile heights so captions remain visible at different column counts.
+
+6. Saving media
+
+Use the first selected file to populate the editor. Saving applies the form values to all selected files.
+
+Save media inside the active profile’s media root:
+- With a category: use the category folder.
+- Without a category: use unassigned.
+
+For category-folder naming, use the first category, trim whitespace, convert to lowercase, and sanitize path separators and control characters. Reject unsafe destination paths.
+
+Move existing profile media into the appropriate folder when its category changes. Update media already in the correct folder in place.
+
+For external imports, preserve the source and create a separate file with an _cb suffix. Resolve filename collisions using numbered suffixes without overwriting unrelated files.
+
+Convert PNG to JPEG with a white background. Resize images only when they exceed the configured limit. Preserve the encoded image data of smaller JPEGs and do not re-encode MP4 audio or video.
+
+Store JSON metadata in:
+- JPEG EXIF UserComment.
+- MP4 ItemList Comment, synchronizing existing Keys Comment metadata.
+
+Write to a temporary file, verify the metadata, and install the result atomically. Remove a moved source only after successful verification and installation. Preserve recoverable state after partial batch failures.
+
+7. JSON records and search
+
+Support creating and editing JSON inventory records. Allow selecting individual records through Device or a separate record chooser when that field is hidden.
+
+Preserve unknown JSON fields and creation timestamps. Read legacy aliases such as count, pack, and kommentar.
+
+Maintain a separate search index per profile. After saving, update only affected entries, including removal of old paths for moved files. Rebuild the index at startup, before searches, or when the cache is missing or invalid.
+
+Use case-insensitive regular-expression search:
+- Combine nonempty query fields with AND.
+- Category and Device also search Comment.
+- Comment and Alias search Device, Alias, and Comment.
+
+Cancel search restores the previous editor state. Repeat search reruns the last query.
+
+8. Preview and clipboard
+
+Double-click the main preview to open a full-screen viewer.
+
+Support mouse-wheel and +/- zoom, drag-to-pan, double-click to toggle 2.5× zoom/reset, a maximum zoom of 8×, and Escape to close.
+
+Provide COPY to place actual PNG image data on the clipboard using xclip.
+
+Show a still preview for MP4 files; an embedded video player is unnecessary.
+
+TXT displays configured snippets and copies the selected snippet to the clipboard.
+
+9. Manual upload
+
+Upload must run only when explicitly requested.
+
+Use SFTP with public-key authentication and known-host verification. Keep credentials outside source packages.
+
+Upload only eligible profile data beneath ~/ChaosBox. Preserve relative subdirectories. Send files that are missing remotely or newer locally, using temporary remote files and atomic rename.
+
+Do not delete remote extra files. Support cancellation and report failures without deleting local data.
+
+10. Delivery and verification
+
+Provide:
+- Launch and dependency-check scripts.
+- A per-user installer with an application-menu entry.
+- An architecture-independent Debian package builder.
+- Application icons.
+- A README covering installation, configuration, operation, and testing.
+
+Installation and upgrades must preserve user data and configuration. Never package private keys.
+
+Test metadata round-trips, caption formatting and the 60-character limit, folder persistence, nonrecursive selection, double-click folder acceptance, category moves, collision handling, failed-save recovery, JSON preservation, indexing, search, and simulated SFTP.
+
+Include a Tk smoke test for GUI workflows. Use temporary test data and never contact a live server during tests.
+
+Implement the complete application, run the available checks, and report the resulting files, launch commands, test results, and any verification limitations.
