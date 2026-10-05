@@ -66,17 +66,29 @@ def logical_lines(text):
         raise ValueError("A text snippet is missing its closing quote.")
 
 
-def sections(text):
-    result, current, section_name = {}, None, ""
-    for raw in logical_lines(text):
+def section_blocks(text):
+    """Preserve repeated sections and their line positions for targeted edits."""
+    blocks = []
+    lines = list(logical_lines(text))
+    for i, raw in enumerate(lines):
         line = raw.strip()
         if line.startswith("[") and line.endswith("]"):
-            section_name = line[1:-1].strip()
-            current = result.setdefault(section_name, {})
-        elif current is not None and line and not line.startswith(("#", ";")):
-            if "=" in line:
-                key, value = line.split("=", 1)
-                current[key.strip() if section_name.casefold() == "textsnippets" else key.strip().casefold()] = value.strip()
+            if blocks:
+                blocks[-1][3] = i
+            blocks.append([line[1:-1].strip(), {}, i, len(lines)])
+        elif blocks and line and not line.startswith(("#", ";")) and "=" in line:
+            key, value = line.split("=", 1)
+            key = key.strip() if blocks[-1][0].casefold() == "textsnippets" else key.strip().casefold()
+            blocks[-1][1][key] = value.strip()
+    return blocks
+
+
+def sections(text):
+    """Return singleton settings; repeated Box sections use section_blocks."""
+    result = {}
+    for name, values, _, _ in section_blocks(text):
+        if name.casefold() != "box":
+            result.setdefault(name, {}).update(values)
     return result
 
 
@@ -125,13 +137,20 @@ class Profile:
     index: Path
     labels: list[str]
     categories: list[str]
+    setup_path: Path | None = None
+    section_name: str = ""
+    options: tuple | None = None
 
 
 class Settings:
-    def __init__(self, root, state_dir, setup=None):
+    def __init__(self, root, state_dir=None, setup=None):
         self.root = Path(root).expanduser().resolve()
-        self.state_dir = Path(state_dir).expanduser().resolve()
-        self.path = Path(setup).expanduser().resolve() if setup else self.root / "ChaosBox/Setup/setup.ini"
+        self.state_dir = Path(state_dir).expanduser().resolve() if state_dir else self.root / ".state"
+        self.path = Path(setup).expanduser().resolve() if setup else self.root / "setup.ini"
+        self.index = self.root / ".indices"
+        self.title = f"Chaosbox-{self.root.name}"
+        self.app_id = "chaosbox-" + hashlib.sha256(str(self.root).encode()).hexdigest()[:16]
+        self.window_class = "Chaosbox-" + self.app_id.removeprefix("chaosbox-")
         self.profiles = []
         self.limit = 3000
         self.snippets = {}
@@ -147,92 +166,130 @@ class Settings:
             atomic_write(self.path, text)
         self.reload()
 
-    def parse(self, text):
-        groups = sections(text)
-        lookup = {key.casefold(): value for key, value in groups.items()}
-        limit = int(lookup.get("imagesize", {}).get("limit", "3000"))
-        if not 1 <= limit <= 20000:
-            raise ValueError("ImageSize LIMIT must be between 1 and 20000.")
-        poster_settings(text)  # Validate before persisting setup.
-        profiles = []
-        legacy_categories = []
-        active = False
-        for raw in logical_lines(text):
-            line = raw.strip()
-            if line.startswith("[") and line.endswith("]"):
-                active = line.casefold() == "[kategorie]"
-            elif active and line and not line.startswith(("#", ";")):
-                legacy_categories.extend(unique_categories(line.split("=", 1)[-1]))
-        def resolve(value):
-            path = Path(value).expanduser()
-            return (path if path.is_absolute() else self.root / path).resolve()
-        profile_groups = [(name[4:].strip(), values) for name, values in groups.items()
-                          if name.lower().startswith("app.")]
-        if not profile_groups:
-            old = lookup.get("pfade", {})
-            profile_groups = [("Chaosbox", {"jpg": old.get("bilder", "ChaosBox/JPG"),
-                                            "daten": old.get("daten", "ChaosBox/boxes")})]
-        roots, ids = [], set()
-        for name, values in profile_groups:
-            if not name or name.casefold() in ids:
-                raise ValueError("Profile names must be nonempty and unique.")
-            ids.add(name.casefold())
-            image_path = values.get("bilder", values.get("jpg", ""))
-            data_path = values.get("daten", "")
-            if not image_path or not data_path:
-                raise ValueError(f"{name}: JPG and Daten are required.")
-            images, data = resolve(image_path), resolve(data_path)
-            legacy_data = data
-            base = "ChaosBox" if name.casefold() in ("chaosbox", "chaobox") else "Bilderbox" if name.casefold() == "bilderbox" else None
-            if base and images == self.root / base / "JPG" and data in (self.root / base / "daten", self.root / base / "boxes"):
-                data = self.root / base / "boxes"
-                legacy_data = self.root / base / "daten"
+    @staticmethod
+    def _text(groups):
+        return "\n\n".join("[" + name + "]\n" + "\n".join(
+            f"{key}={value}" for key, value in values.items()) for name, values in groups.items())
+
+    def _load(self, text, overrides=None):
+        overrides = overrides or {}
+        profiles, ids, directories = [], set(), set()
+
+        def read_config(content):
+            blocks = section_blocks(content)
+            globals_, boxes, app = {}, [], {}
+            for name, values, _, _ in blocks:
+                section = name.casefold()
+                if section.startswith("app.") or section == "pfade":
+                    raise ValueError("Old setup format: replace [App.NAME] with [Box] and Titel=NAME; use JPG and TXT folders.")
+                if section in ("app", "box"):
+                    if any(key in values for key in ("standard", "jpg", "bilder", "daten")):
+                        raise ValueError("Standard, JPG and Daten are no longer supported; folders are fixed to JPG and TXT.")
+                    if section == "box":
+                        title = values.get("titel", "").strip()
+                        if (not title or title in (".", "..") or "/" in title or "\\" in title
+                                or title.casefold() in ("jpg", "txt", ".indices", ".state", "setup.ini")):
+                            raise ValueError("Each Box needs a Titel that is a single non-reserved folder name.")
+                        boxes.append((title, values))
+                    else:
+                        app.update(values)
+                else:
+                    globals_.setdefault(section, {}).update(values)
+            if len({title.casefold() for title, _ in boxes}) != len(boxes):
+                raise ValueError("Box titles must be unique within their parent folder.")
+            return app, boxes, globals_
+
+        def visit(directory, identifier, values, inherited, owner, selector, config=None):
+            if directory.is_symlink():
+                raise ValueError(f"Cyclic or symbolic project folder: {directory}")
+            resolved = directory.resolve()
+            if not within(resolved, self.root) or resolved in directories:
+                raise ValueError(f"Cyclic or escaping project folder: {directory}")
+            directories.add(resolved)
+            if identifier.casefold() in ids:
+                raise ValueError("Profile names must be unique.")
+            ids.add(identifier.casefold())
+            effective = {key: dict(value) for key, value in inherited.items()}
+            values = dict(values)
+            children = []
+            local = directory / "setup.ini"
+            if config is None and (local.is_file() or local in overrides):
+                config = overrides[local] if local in overrides else local.read_text(encoding="utf-8-sig")
+                owner, selector = local, ""
+            if config is not None:
+                app, children, globals_ = read_config(config)
+                values.update(app)
+                for key, entries in globals_.items():
+                    effective.setdefault(key, {}).update(entries)
+            limit = int(effective.get("imagesize", {}).get("limit", "3000"))
+            if not 1 <= limit <= 20000:
+                raise ValueError("ImageSize LIMIT must be between 1 and 20000.")
+            poster = poster_settings(self._text(effective))
             labels = values.get("felder", ",".join(LABELS)).split(",")
             if len(labels) > 7:
-                raise ValueError(f"{name}: Felder has more than seven positions.")
+                raise ValueError(f"{identifier}: Felder has more than seven positions.")
             translated = {"anzahl": "Quantity", "kategorie": "Category", "kommentar": "Comment"}
             labels = [translated.get(label.strip().casefold(), label.strip()) for label in labels]
             labels += [""] * (7 - len(labels))
-            key = str(uuid.UUID(bytes=hashlib.md5(name.encode()).digest(), version=3))
-            index = self.root / "ChaosBox" / ("data" if base == "ChaosBox" else f".indices/{key}")
-            reserved = [self.root / "ChaosBox/Setup", self.root / "ChaosBox/data", self.root / "ChaosBox/.indices"]
-            for path in dict.fromkeys([images, data, legacy_data]):
-                if any(within(path, other) or within(other, path) for other in roots + reserved):
-                    raise ValueError(f"Overlapping profile or internal folders: {path}")
-                roots.append(path)
-            profiles.append(Profile(name, values.get("titel", name), images, data, legacy_data, index,
-                                    labels, unique_categories(values.get("kategorie", ",".join(legacy_categories)))))
-        default = lookup.get("app", {}).get("standard", profiles[0].id)
-        if default.casefold() not in ids:
-            raise ValueError(f"Unknown default profile: {default}")
-        snippets = {}
-        for name, value in lookup.get("textsnippets", {}).items():
-            snippets[name] = value[1:-1] if value.startswith('"') and value.endswith('"') else value
-        ssh = dict(lookup.get("ssh", {}))
-        ssh.setdefault("host", "access983197478.webspace-data.io")
-        ssh.setdefault("port", "22")
-        ssh.setdefault("user", "u114229695")
-        ssh.setdefault("imagedestination", "l1/storage/app/exif/jpg")
-        ssh.setdefault("datadestination", "l1/storage/app/exif/data")
-        ssh.setdefault("keyfile", str(self.state_dir / "credentials/android_copy"))
-        ssh.setdefault("knownhosts", str(self.state_dir / "credentials/known_hosts"))
-        if not 1 <= int(ssh["port"]) <= 65535:
-            raise ValueError("SSH port must be between 1 and 65535.")
-        return profiles, default, limit, snippets, ssh
+            snippets = {name: value[1:-1] if value.startswith('"') and value.endswith('"') else value
+                        for name, value in effective.get("textsnippets", {}).items()}
+            ssh = dict(effective.get("ssh", {}))
+            for key, value in dict(host="access983197478.webspace-data.io", port="22", user="u114229695",
+                                   imagedestination="l1/storage/app/exif/jpg", datadestination="l1/storage/app/exif/data",
+                                   keyfile=str(self.state_dir / "credentials/android_copy"),
+                                   knownhosts=str(self.state_dir / "credentials/known_hosts")).items():
+                ssh.setdefault(key, value)
+            if not 1 <= int(ssh["port"]) <= 65535:
+                raise ValueError("SSH port must be between 1 and 65535.")
+            images, data = directory / "JPG", directory / "TXT"
+            for folder in (images, data):
+                if folder.is_symlink() or not within(folder.resolve(), self.root):
+                    raise ValueError(f"Project folder must remain inside the installation: {folder}")
+            profile = Profile(identifier, directory.name, images, data, data, self.index,
+                              labels, unique_categories(values.get("kategorie", "")), owner, selector,
+                              (limit, snippets, ssh, poster))
+            profiles.append(profile)
+            for title, entries in children:
+                child_values = {key: value for key, value in values.items() if key != "titel"}
+                child_values.update(entries)
+                child_id = f"{identifier}/{title}"
+                visit(directory / title, child_id, child_values, effective, owner, title)
+
+        defaults, boxes, globals_ = read_config(text)
+        if not boxes:
+            raise ValueError("Setup must contain at least one [Box] section with Titel=.")
+        for title, entries in boxes:
+            visit(self.root / title, title, dict(defaults, **entries), globals_, self.path, title)
+        first = profiles[0]
+        return profiles, first.id, *first.options[:3]
+
+    def parse(self, text):
+        return self._load(text)
 
     def reload(self):
         text = self.path.read_text(encoding="utf-8-sig")
-        self.profiles, self.default, self.limit, self.snippets, self.ssh = self.parse(text)
+        loaded = self._load(text)
+        self.profiles, self.default, self.limit, self.snippets, self.ssh = loaded
         self.poster = poster_settings(text)
+        self.profile(getattr(self, "active", self.default))
 
-    def save_text(self, text):
-        self.parse(text)
-        atomic_write(self.path, text)
+    def save_text(self, text, path=None):
+        path = Path(path) if path else self.path
+        root_text = text if path == self.path else self.path.read_text(encoding="utf-8-sig")
+        self._load(root_text, {path: text})
+        atomic_write(path, text)
         self.reload()
 
     def profile(self, name):
-        return next((p for p in self.profiles if p.id.casefold() == name.casefold()),
-                    next(p for p in self.profiles if p.id.casefold() == self.default.casefold()))
+        profile = next((p for p in self.profiles if p.id.casefold() == name.casefold()),
+                       next(p for p in self.profiles if p.id.casefold() == self.default.casefold()))
+        self.active = profile.id
+        self.limit, self.snippets, self.ssh, self.poster = profile.options
+        return profile
+
+    @property
+    def active_path(self):
+        return self.profile(self.active).setup_path
 
     def remember_category(self, profile, entered):
         if "\n" in entered or "\r" in entered:
@@ -243,30 +300,24 @@ class Settings:
         additions = [item for item in unique_categories(entered) if item.casefold() not in known]
         if not additions:
             return
-        text = self.path.read_text(encoding="utf-8")
+        text = current.setup_path.read_text(encoding="utf-8")
         lines = list(logical_lines(text))
-        active, found, key, end = False, False, None, len(lines)
-        for i, raw in enumerate(lines):
-            line = raw.strip()
-            if line.startswith("[") and line.endswith("]"):
-                if active:
-                    end = i
-                active = line[1:-1].casefold() == f"app.{current.id}".casefold()
-                if active:
-                    found, end = True, len(lines)
-            elif active and "=" in line and line.split("=", 1)[0].strip().casefold() == "kategorie":
-                key = i
-        if key is not None:
-            prefix, value = lines[key].split("=", 1)
-            lines[key] = prefix + "=" + ", ".join([value.strip()] if value.strip() else [] ) + (", " if value.strip() else "") + ", ".join(additions)
-        elif found:
-            lines.insert(end, "Kategorie=" + ", ".join(current.categories + additions))
+        selected = next((block for block in section_blocks(text)
+                         if (not current.section_name and block[0].casefold() == "app")
+                         or (current.section_name and block[0].casefold() == "box"
+                             and block[1].get("titel", "").casefold() == current.section_name.casefold())), None)
+        value = "Kategorie=" + ", ".join(current.categories + additions)
+        if selected:
+            _, _, start, end = selected
+            key = next((i for i in range(start + 1, end)
+                        if lines[i].split("=", 1)[0].strip().casefold() == "kategorie"), None)
+            if key is None:
+                lines.insert(end, value)
+            else:
+                lines[key] = value
         else:
-            # Materialize the legacy profile without altering unrelated sections.
-            lines.extend([f"\n[App.{current.id}]", f"Titel={current.title}", f"JPG={current.images}",
-                          f"Daten={current.data}", "Felder=" + ",".join(current.labels),
-                          "Kategorie=" + ", ".join(current.categories + additions)])
-        self.save_text("\n".join(lines).rstrip() + "\n")
+            lines.extend(["", "[App]", value])
+        self.save_text("\n".join(lines).rstrip() + "\n", current.setup_path)
 
 
 @dataclass(frozen=True)
@@ -555,6 +606,7 @@ def category_folder(value):
 
 def normalized(record):
     data = dict(record)
+    data.pop("modified", None)
     data["anzahl"] = max(0, int(data.get("count", data.get("anzahl", data.get("Anzahl", 0))) or 0))
     data["package"] = data.get("pack", data.get("package", ""))
     data["comment"] = data.get("comment", data.get("kommentar", data.get("Kommentar", "")))
@@ -608,7 +660,39 @@ def read_user_comment(path):
 
 
 def read_metadata(path):
-    return parse_metadata(read_user_comment(path))
+    data = parse_metadata(read_user_comment(path))
+    data["created"] = media_created(path, data.get("created"))
+    return data
+
+
+def media_created(path, existing=None):
+    """Prefer capture metadata, then filename, saved creation date, and source mtime."""
+    path = Path(path)
+    tags = json.loads(run_tool("exiftool", "-j", "-DateTimeOriginal", "-CreateDate",
+                               "-OffsetTimeOriginal", "-OffsetTimeDigitized", str(path)))[0]
+    for key, offset in (("DateTimeOriginal", "OffsetTimeOriginal"),
+                        ("CreateDate", "OffsetTimeDigitized")):
+        value = str(tags.get(key, ""))
+        value = re.sub(r"^(\d{4}):(\d{2}):(\d{2})", r"\1-\2-\3", value)
+        try:
+            date = datetime.fromisoformat(value)
+            if date.tzinfo is None and tags.get(offset):
+                date = datetime.fromisoformat(value + str(tags[offset]))
+            return date.isoformat(timespec="seconds")
+        except ValueError:
+            continue
+    # Camera/phone names, including IMG_20240102_030405 and 2024-01-02_03-04-05.
+    pattern = (r"(?<!\d)(\d{4})[-_]?(\d{2})[-_]?(\d{2})"
+               r"(?:[T _-]?(\d{2})[.:-]?(\d{2})[.:-]?(\d{2}))?(?!\d)")
+    for match in re.finditer(pattern, path.stem):
+        try:
+            parts = match.groups()
+            date = datetime(*(int(part) if part else 0 for part in parts))
+            # Keep date-only names date-only instead of claiming a known capture time.
+            return date.isoformat(timespec="seconds") if parts[3] else date.date().isoformat()
+        except ValueError:
+            continue
+    return existing or datetime.fromtimestamp(path.stat().st_mtime).astimezone().isoformat(timespec="seconds")
 
 
 def validate_record(values):
@@ -622,7 +706,7 @@ def validate_record(values):
         raise ValueError("Quantity must be an integer between 0 and 2147483647.")
     now = datetime.now().astimezone().isoformat(timespec="seconds")
     data["created"] = data.get("created") or now
-    data["modified"] = now
+    data.pop("modified", None)
     return data
 
 
@@ -646,6 +730,9 @@ def save_media(source, profile, metadata, limit):
         raise ValueError(f"Unsupported or unavailable media file: {source}")
     video = source.suffix.lower() == ".mp4"
     original = source.resolve()
+    metadata = dict(metadata)
+    metadata.pop("modified", None)
+    metadata["created"] = read_metadata(original)["created"]
     editing = within(original, profile.images) and source.suffix.lower() in MEDIA
     destination = profile.images / category_folder(metadata.get("category", ""))
     if destination.is_symlink() or destination.resolve().parent != profile.images.resolve():
@@ -775,6 +862,8 @@ def save_box(path, record, selected=None):
             item["count"] = record["anzahl"]
         if "pack" in item:
             item["pack"] = record.get("package", "")
+    for item in records:
+        item.pop("modified", None)
     atomic_write(path, json.dumps(records, ensure_ascii=False, indent=2) + "\n", newer=True)
     return records, selected
 
@@ -803,6 +892,8 @@ def index_entries(path, media):
 
 
 def write_index(profile, entries):
+    for entry in entries:
+        entry.data.pop("modified", None)
     (profile.index / "desktop-index.json").unlink(missing_ok=True)
     serialized = [dict(entry.data, path=entry.source.name) for entry in entries]
     atomic_write(profile.index / "records.json", json.dumps(serialized, ensure_ascii=False, indent=2) + "\n")
@@ -813,48 +904,69 @@ def write_index(profile, entries):
     atomic_write(profile.index / "desktop-index.json", json.dumps(cache, ensure_ascii=False) + "\n")
 
 
-def build_index(profile, progress=lambda _: None):
+def build_index(target, progress=lambda _: None):
+    """Build one index over all configured profiles (or a standalone profile)."""
     entries = []
-    for path in files(profile.images, MEDIA):
-        progress(f"Reading {path.name}")
-        try:
-            entries.extend(index_entries(path, True))
-        except Exception as error:
-            raise ValueError(f"{path}: {error}") from error
-    for path in json_files(profile):
-        try:
-            entries.extend(index_entries(path, False))
-        except Exception as error:
-            raise ValueError(f"{path}: {error}") from error
-    write_index(profile, entries)
+    profiles = target.profiles if isinstance(target, Settings) else [target]
+    seen = set()
+    for profile in profiles:
+        for media, paths in ((True, files(profile.images, MEDIA)), (False, json_files(profile))):
+            for path in paths:
+                if path in seen:
+                    continue
+                seen.add(path)
+                progress(f"Reading {path.name}")
+                try:
+                    entries.extend(index_entries(path, media))
+                except Exception as error:
+                    raise ValueError(f"{path}: {error}") from error
+    write_index(target, entries)
     return entries
 
 
-def update_index(profile, changed, progress=lambda _: None):
-    """Replace only changed sources; rebuild if no usable baseline exists."""
+def load_index(target):
+    cache = json.loads((target.index / "desktop-index.json").read_text(encoding="utf-8"))
+    if cache["version"] != 1 or not isinstance(cache["entries"], list):
+        raise ValueError("Unsupported index cache; restart with --newindex")
+    entries = []
+    for item in cache["entries"]:
+        if (not isinstance(item["source"], str) or not Path(item["source"]).is_absolute()
+                or not isinstance(item["data"], dict) or not isinstance(item["media"], bool)
+                or (item["index"] is not None and type(item["index"]) is not int)):
+            raise ValueError("Invalid index entry; restart with --newindex")
+        entries.append(Entry(Path(item["source"]), item["data"], item["media"], item["index"]))
+    if isinstance(target, Settings):
+        folders = [folder for profile in target.profiles for folder in (profile.images, profile.data)]
+        entries = [entry for entry in entries if any(within(entry.source, folder) for folder in folders)]
+    return entries
+
+
+def ensure_index(settings, progress=lambda _: None, newindex=False):
+    for profile in settings.profiles:
+        for directory in (profile.images, profile.data):
+            directory.mkdir(parents=True, exist_ok=True)
+    if not newindex and (settings.index / "desktop-index.json").exists():
+        return load_index(settings)
+    for profile in settings.profiles:
+        for warning in migrate_media(profile, progress):
+            progress(warning)
+    return build_index(settings, progress)
+
+
+def update_index(target, changed, progress=lambda _: None):
+    """Replace changed sources while retaining entries from every other profile."""
     try:
-        cache = json.loads((profile.index / "desktop-index.json").read_text(encoding="utf-8"))
-        if cache["version"] != 1 or not isinstance(cache["entries"], list):
-            raise ValueError("Unsupported index cache")
-        entries = []
-        for item in cache["entries"]:
-            if (not isinstance(item["source"], str) or not Path(item["source"]).is_absolute()
-                    or not isinstance(item["data"], dict) or not isinstance(item["media"], bool)
-                    or (item["index"] is not None and type(item["index"]) is not int)):
-                raise ValueError("Invalid index entry")
-            entries.append(Entry(Path(item["source"]), item["data"], item["media"], item["index"]))
-    except (OSError, ValueError, KeyError, TypeError):
-        return build_index(profile, progress)
+        entries = load_index(target)
+    except FileNotFoundError:
+        return build_index(target, progress)
     paths = set(map(Path, changed))
-    # A failed refresh must not leave a stale baseline for the next save.
-    (profile.index / "desktop-index.json").unlink(missing_ok=True)
     entries = [entry for entry in entries if entry.source not in paths]
     for path in sorted(paths):
         progress(f"Updating index: {path.name}")
         if path.exists():
             entries.extend(index_entries(path, path.suffix.lower() in MEDIA))
     entries.sort(key=lambda entry: (not entry.media, entry.source, entry.index or 0))
-    write_index(profile, entries)
+    write_index(target, entries)
     return entries
 
 
@@ -931,7 +1043,7 @@ def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
     key, hosts = Path(ssh["keyfile"]).expanduser(), Path(ssh["knownhosts"]).expanduser()
     if not key.is_file() or not hosts.is_file():
         raise ValueError("SSH key or known_hosts is missing. Configure KeyFile and KnownHosts in Setup → [SSH].")
-    upload_root = settings.root / "ChaosBox"
+    upload_root = settings.root
     pending, destinations = [], set()
     for root, candidates, remote_root in (
             (profile.images, files(profile.images, MEDIA), ssh["imagedestination"]),
@@ -946,7 +1058,7 @@ def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
             destinations.add(remote)
             pending.append((file, remote))
     if not pending:
-        progress("No eligible files to upload. Only files below ~/ChaosBox are uploaded.")
+        progress("No eligible files to upload. Only files below the installation directory are uploaded.")
         return
     client = paramiko.SSHClient()
     client.load_host_keys(str(hosts))

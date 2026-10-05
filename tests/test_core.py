@@ -1,5 +1,6 @@
 import errno
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -21,6 +22,12 @@ class DesktopTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="chaosbox-desktop-test-")
         self.root = Path(self.temp.name)
         self.settings = core.Settings(self.root, self.root / ".config/chaosbox")
+        template = core.DEFAULT_SETUP.read_text()
+        template = ('[App]\nFelder=Box,Quantity,Device,Alias,Category,Comment,Package\n'
+                    '[Box]\nTitel=Chaosbox\nKategorie=Heizung\n'
+                    '[Box]\nTitel=Bilderbox\nFelder=Box,,,Tags,Category,Comment\nKategorie=Familie\n\n'
+                    + template[template.index('[ImageSize]'):])
+        core.atomic_write(self.settings.path, template)
         self.settings.ensure()
         self.profile = self.settings.profile("Chaosbox")
         self.profile.images.mkdir(parents=True)
@@ -31,7 +38,7 @@ class DesktopTests(unittest.TestCase):
         self.temp.cleanup()
 
     def picture(self, name="source.jpg", size=(120, 80)):
-        path = self.root / name
+        path = self.profile.images / name[4:] if name.startswith("JPG/") else self.root / name
         path.parent.mkdir(parents=True, exist_ok=True)
         Image.new("RGB", size, (32, 140, 180)).save(path)
         return path
@@ -50,8 +57,91 @@ class DesktopTests(unittest.TestCase):
             self.settings.remember_category(self.profile, "evil\n[App.Bad]")
         self.assertIn("[TextSnippets]", unchanged)
         with self.assertRaises(ValueError):
-            self.settings.save_text(before.replace("Bilderbox/JPG", "ChaosBox/JPG"))
+            self.settings.save_text(before + "\n[Box]\nTitel=Bilderbox\n")
         self.assertEqual(self.settings.path.read_text(), unchanged)
+
+    def test_recursive_project_setup_inheritance_and_sibling_isolation(self):
+        local = self.root / "Bilderbox/setup.ini"
+        local.parent.mkdir()
+        local.write_text('[ImageSize]\nLIMIT=1200\n[Poster]\nPOSTER-COLS=2\n'
+                         '[TextSnippets]\nLocal="parent"\n'
+                         '[App]\nKategorie=Local\n'
+                         '[Box]\nTitel=Urlaub\n'
+                         '[Box]\nTitel=Familie\n')
+        nested = local.parent / "Urlaub/setup.ini"
+        nested.parent.mkdir()
+        nested.write_text('[imagesize]\nlimit=800\n[TextSnippets]\nLocal="child"\n'
+                          '[App]\nKategorie=\n'
+                          '[Box]\nTitel=Berge\n')
+        self.settings.reload()
+        child = self.settings.profile("Bilderbox/Urlaub")
+        self.assertEqual(child.images, nested.parent / "JPG")
+        self.assertEqual(child.categories, [])
+        self.assertEqual(self.settings.limit, 800)
+        self.assertEqual(self.settings.poster.cols, 2)
+        self.assertEqual(self.settings.poster.rows, 3)
+        self.assertEqual(self.settings.snippets["Local"], "child")
+        self.assertIn("chatgpt", self.settings.snippets)
+        grandchild = self.settings.profile("Bilderbox/Urlaub/Berge")
+        self.assertEqual(grandchild.images, nested.parent / "Berge/JPG")
+        self.assertEqual(grandchild.labels, child.labels)
+        self.assertEqual(self.settings.limit, 800)
+        sibling = self.settings.profile("Bilderbox/Familie")
+        self.assertEqual(sibling.categories, ["Local"])
+        self.assertEqual(self.settings.limit, 1200)
+        self.assertEqual(self.settings.snippets["Local"], "parent")
+        self.settings.profile("Chaosbox")
+        self.assertEqual(self.settings.limit, 3000)
+        self.assertNotIn("Local", self.settings.snippets)
+        self.assertEqual(self.settings.active_path, self.settings.path)
+
+    def test_local_setup_save_validation_and_category_destination(self):
+        local = self.root / "Bilderbox/setup.ini"
+        local.parent.mkdir()
+        local.write_text('[ImageSize]\nLIMIT=1000\n'
+                         '[Box]\nTitel=Child\n')
+        original = self.settings.path.read_bytes()
+        self.settings.reload()
+        profile = self.settings.profile("Bilderbox")
+        self.settings.remember_category(profile, "New local")
+        self.assertEqual(self.settings.path.read_bytes(), original)
+        self.assertEqual(set(core.sections(local.read_text())["App"]), {"kategorie"})
+        self.assertIn("New local", self.settings.profile("Bilderbox/Child").categories)
+        self.settings.remember_category(self.settings.profile("Bilderbox/Child"), "Child only")
+        self.assertNotIn("Child only", self.settings.profile("Bilderbox").categories)
+        self.assertIn("Child only", self.settings.profile("Bilderbox/Child").categories)
+        before = local.read_bytes()
+        with self.assertRaises(ValueError):
+            self.settings.save_text('[Poster]\nPOSTER-COLS=0\n', local)
+        self.assertEqual(local.read_bytes(), before)
+        self.settings.save_text(local.read_text().replace('LIMIT=1000', 'LIMIT=900'), local)
+        self.assertEqual(self.settings.active, "Bilderbox/Child")
+        self.assertEqual(self.settings.limit, 900)
+
+    def test_recursive_setup_rejects_escaping_and_duplicate_folders(self):
+        local = self.root / "Bilderbox/setup.ini"
+        local.parent.mkdir()
+        for title in ("..", "../outside", "/tmp/outside", "JPG", "TXT", ".indices", ""):
+            local.write_text(f"[Box]\nTitel={title}\n")
+            with self.subTest(title=title), self.assertRaises(ValueError):
+                self.settings.reload()
+        local.write_text('[Box]\nTitel=One\n[Box]\nTitel=one\n')
+        with self.assertRaisesRegex(ValueError, "unique"):
+            self.settings.reload()
+        local.write_text('[Box]\nTitel=Loop\n')
+        (local.parent / "Loop").symlink_to(local.parent, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "Cyclic"):
+            self.settings.reload()
+
+    def test_repeated_box_categories_are_edited_independently(self):
+        self.settings.save_text('[App]\nKategorie=Root\n[Box]\nTitel=One\nKategorie=A\n'
+                                '[Box]\nTitel=Two\nKategorie=B\n')
+        self.settings.remember_category(self.settings.profile("Two"), "C")
+        self.assertEqual(self.settings.profile("One").categories, ["A"])
+        self.assertEqual(self.settings.profile("Two").categories, ["B", "C"])
+        self.assertEqual([profile.id for profile in self.settings.profiles], ["One", "Two"])
+        self.assertEqual(self.settings.profile("Two").data, self.root / "Two/TXT")
+        self.assertEqual(self.settings.path.read_text().count('[Box]'), 2)
 
     def test_jpeg_and_png_metadata(self):
         source = self.picture()
@@ -82,6 +172,52 @@ class DesktopTests(unittest.TestCase):
             self.assertEqual(image.getpixel((10, 10)), (255, 255, 255))
         self.assertEqual(png.read_bytes(), png_before)
 
+    def test_capture_date_overrides_filename_and_legacy_created(self):
+        source = self.picture("IMG_20240102_030405.jpg")
+        core.run_tool("exiftool", "-overwrite_original", "-DateTimeOriginal=2020:05:06 07:08:09",
+                      "-OffsetTimeOriginal=+02:00", str(source))
+        saved = core.save_media(source, self.profile, dict(self.record, created="wrong", modified="old"), 60)
+        raw = json.loads(core.read_user_comment(saved))
+        self.assertEqual(raw["created"], "2020-05-06T07:08:09+02:00")
+        self.assertNotIn("modified", raw)
+        self.assertEqual(core.read_metadata(saved)["created"], raw["created"])
+
+    def test_filename_dates_and_invalid_exif(self):
+        for name, expected in (("IMG_20240102_030405_cb_2.jpg", "2024-01-02T03:04:05"),
+                               ("2024-01-02_03-04-05.png", "2024-01-02T03:04:05"),
+                               ("IMG-20240102-WA0001.jpg", "2024-01-02"),
+                               ("IMG_20240230_030405.jpg", "existing"),
+                               ("photo.jpg", "existing")):
+            with self.subTest(name=name), patch("core.run_tool", return_value=b'[{"DateTimeOriginal":"0000:00:00 00:00:00"}]'):
+                self.assertEqual(core.media_created(Path(name), "existing"), expected)
+
+    def test_source_mtime_fallback_survives_repeated_saves(self):
+        source = self.picture()
+        os.utime(source, (946684800, 946684800))
+        expected = core.datetime.fromtimestamp(946684800).astimezone().isoformat(timespec="seconds")
+        saved = core.save_media(source, self.profile, self.record, 3000)
+        self.assertEqual(json.loads(core.read_user_comment(saved))["created"], expected)
+        saved = core.save_media(saved, self.profile, self.record, 3000)
+        self.assertEqual(json.loads(core.read_user_comment(saved))["created"], expected)
+
+    def test_batch_dates_and_index_remove_modified(self):
+        sources = [self.picture("IMG_20240102_030405.jpg"), self.picture("IMG_20240203_040506.png")]
+        saved = core.save_batch(sources, self.profile, dict(self.record, modified="old"), 60)
+        self.assertEqual([json.loads(core.read_user_comment(path))["created"] for path in saved],
+                         ["2024-01-02T03:04:05", "2024-02-03T04:05:06"])
+        core.write_index(self.profile, [core.Entry(saved[0], {"modified": "old", "created": "kept"}, True)])
+        self.assertNotIn("modified", (self.profile.index / "records.json").read_text())
+        self.assertNotIn("modified", (self.profile.index / "desktop-index.json").read_text())
+
+    def test_box_save_removes_legacy_modified_from_all_records(self):
+        path = self.profile.data / "old.json"
+        path.write_text('[{"device":"A","modified":"old"},{"device":"B","modified":"old","extra":42}]')
+        core.save_box(path, dict(self.record, modified="new"), 0)
+        records = json.loads(path.read_text())
+        self.assertTrue(all("modified" not in record for record in records))
+        self.assertEqual(records[1]["extra"], 42)
+        self.assertNotIn("modified", core.validate_record(dict(self.record, modified="old")))
+
     def test_boxes_preserve_selected_record_and_unknown_fields(self):
         path = self.profile.data / "nested/a11.json"
         path.parent.mkdir()
@@ -101,7 +237,7 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(path.read_bytes(), before)
 
     def test_saved_media_moves_with_category_and_cleared_category(self):
-        source = self.picture("ChaosBox/JPG/old/photo.jpg")
+        source = self.picture("JPG/old/photo.jpg")
         core.build_index(self.profile)
         moved = core.save_media(source, self.profile, self.record, 3000)
         self.assertEqual(moved, self.profile.images / "elektronik" / source.name)
@@ -116,8 +252,8 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(core.save_media(cleared, self.profile, dict(self.record, category=""), 3000), cleared)
 
     def test_category_move_preserves_colliding_file(self):
-        source = self.picture("ChaosBox/JPG/old/photo.jpg")
-        existing = self.picture("ChaosBox/JPG/elektronik/photo.jpg")
+        source = self.picture("JPG/old/photo.jpg")
+        existing = self.picture("JPG/elektronik/photo.jpg")
         before = existing.read_bytes()
         moved = core.save_media(source, self.profile, self.record, 3000)
         self.assertEqual(moved.name, "photo_1.jpg")
@@ -125,7 +261,7 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(existing.read_bytes(), before)
 
     def test_category_move_rolls_back_if_source_cannot_be_removed(self):
-        source = self.picture("ChaosBox/JPG/old/photo.jpg")
+        source = self.picture("JPG/old/photo.jpg")
         before = source.read_bytes()
         unlink = Path.unlink
         def fail_source(path, *args, **kwargs):
@@ -164,13 +300,13 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(index.read_bytes(), before)
 
     def test_incremental_index_only_reads_changed_sources(self):
-        first = self.picture("ChaosBox/JPG/one/same.jpg")
-        second = self.picture("ChaosBox/JPG/two/same.jpg")
+        first = self.picture("JPG/one/same.jpg")
+        second = self.picture("JPG/two/same.jpg")
         box = self.profile.data / "a11.json"
         box.write_text('[{"device":"first"},{"device":"second"}]')
         with patch("core.read_metadata", return_value=core.normalized(self.record)):
             core.build_index(self.profile)
-        imported = self.picture("ChaosBox/JPG/new/import_cb.jpg")
+        imported = self.picture("JPG/new/import_cb.jpg")
         with patch("core.files", side_effect=AssertionError("Unexpected directory scan")), \
              patch("core.load_box", side_effect=AssertionError("Unchanged JSON read")), \
              patch("core.read_metadata", return_value=core.normalized(dict(self.record, comment="changed"))) as read:
@@ -194,28 +330,59 @@ class DesktopTests(unittest.TestCase):
         self.assertNotIn(first, [entry.source for entry in entries])
         self.assertEqual(len(json.loads((self.profile.index / "records.json").read_text())), len(entries))
 
-    def test_incremental_index_recovers_missing_or_broken_cache(self):
-        path = self.picture("ChaosBox/JPG/sample.jpg")
-        for content in (None, "invalid", '{"version":99,"entries":[]}', '{"version":1,"entries":[{}]}'):
-            cache = self.profile.index / "desktop-index.json"
-            if content is not None:
-                core.atomic_write(cache, content)
-            with patch("core.read_metadata", return_value=core.normalized(self.record)) as read:
-                entries = core.update_index(self.profile, [path])
-                read.assert_called_once_with(path)
-                self.assertEqual(len(entries), 1)
+    def test_incremental_index_recovers_missing_cache(self):
+        path = self.picture("JPG/sample.jpg")
+        with patch("core.read_metadata", return_value=core.normalized(self.record)) as read:
+            entries = core.update_index(self.settings, [path])
+        read.assert_called_once_with(path)
+        self.assertEqual(len(entries), 1)
 
-    def test_failed_incremental_read_preserves_index_and_invalidates_cache(self):
-        path = self.picture("ChaosBox/JPG/sample.jpg")
+    def test_broken_cache_requires_explicit_rebuild(self):
+        core.atomic_write(self.settings.index / "desktop-index.json", "invalid")
+        with patch("core.build_index") as build:
+            with self.assertRaises(ValueError):
+                core.ensure_index(self.settings)
+            build.assert_not_called()
+
+    def test_failed_incremental_read_preserves_cache(self):
+        path = self.picture("JPG/sample.jpg")
         with patch("core.read_metadata", return_value=core.normalized(self.record)):
-            core.build_index(self.profile)
-        index = self.profile.index / "records.json"
-        before = index.read_bytes()
+            core.build_index(self.settings)
+        cache = self.settings.index / "desktop-index.json"
+        before = cache.read_bytes()
         with patch("core.read_metadata", side_effect=ValueError("unreadable")):
             with self.assertRaises(ValueError):
-                core.update_index(self.profile, [path])
-        self.assertEqual(index.read_bytes(), before)
-        self.assertFalse((self.profile.index / "desktop-index.json").exists())
+                core.update_index(self.settings, [path])
+        self.assertEqual(cache.read_bytes(), before)
+
+    def test_shared_index_reuses_cache_and_explicitly_rebuilds(self):
+        for profile in self.settings.profiles:
+            core.atomic_write(profile.data / "box.json", '[{"box":"' + profile.id + '"}]')
+            self.assertEqual(profile.index, self.settings.index)
+        entries = core.ensure_index(self.settings)
+        self.assertEqual({entry.data["box"] for entry in entries}, {p.id for p in self.settings.profiles})
+        added = self.profile.data / "new.json"
+        core.atomic_write(added, '[{"box":"new"}]')
+        with patch("core.build_index", side_effect=AssertionError("Unexpected rebuild")), \
+             patch("core.migrate_media", side_effect=AssertionError("Unexpected migration")):
+            self.assertEqual(len(core.ensure_index(self.settings)), len(entries))
+        self.assertEqual(len(core.ensure_index(self.settings, newindex=True)), len(entries) + 1)
+        core.atomic_write(added, '[{"box":"edited"}]')
+        updated = core.update_index(self.settings, [added])
+        self.assertEqual({entry.data["box"] for entry in updated},
+                         {p.id for p in self.settings.profiles} | {"edited"})
+
+    def test_installations_have_separate_setup_state_and_index(self):
+        settings = core.Settings(self.root / "cb2")
+        settings.ensure()
+        self.assertEqual(settings.index, self.root / "cb2/.indices")
+        self.assertEqual(settings.path, self.root / "cb2/setup.ini")
+        self.assertEqual(settings.state_dir, self.root / "cb2/.state")
+        self.assertEqual(settings.default, settings.profiles[0].id)
+        self.assertTrue(all(profile.images.parent != settings.root for profile in settings.profiles))
+        self.assertEqual(settings.title, "Chaosbox-cb2")
+        self.assertTrue(all(profile.index == settings.index for profile in settings.profiles))
+        self.assertNotEqual(settings.index, self.settings.index)
 
     def test_mp4_metadata_preserves_streams(self):
         video = self.root / "source.mp4"
@@ -236,16 +403,75 @@ class DesktopTests(unittest.TestCase):
     def test_install_preserves_data_and_excludes_credentials(self):
         home = self.root / "home"
         target, setup, launcher = install.install(home, credentials=False)
-        self.assertTrue((target / "desktop/app.py").is_file())
+        self.assertTrue((home / ".local/share/chaosbox/desktop/app.py").is_file())
         self.assertTrue(launcher.is_file())
-        settings = core.Settings(home, home / ".config/chaosbox")
+        settings = core.Settings(home / "ChaosBox")
         settings.reload()
         settings.remember_category(settings.profile("Chaosbox"), "Keep this")
         install.install(home, credentials=False)
         settings.reload()
-        self.assertIn("Keep this", settings.profile("Chaosbox").categories)
+        self.assertIn("Keep this", settings.profile(settings.default).categories)
         self.assertFalse((home / ".config/chaosbox/credentials/android_copy").exists())
         self.assertIn("Exec=\"", launcher.read_text())
+
+    def test_installer_creates_independent_apps_and_no_root_media_folders(self):
+        home = self.root / "desktop-home"
+        first_dir, second_dir = home / "one/cb2", home / "two space/cb2"
+        first = install.install(home, credentials=False, installdir=first_dir)
+        first_setup = first[1].read_bytes()
+        second = install.install(home, credentials=False, installdir=second_dir)
+        self.assertNotEqual(first[0], second[0])
+        self.assertNotEqual(first[2], second[2])
+        for target, setup, desktop in (first, second):
+            settings = core.Settings(setup.parent)
+            settings.reload()
+            self.assertIn("Name=Chaosbox-cb2\n", desktop.read_text())
+            self.assertIn(f"StartupWMClass={settings.window_class}", desktop.read_text())
+            import shlex
+            command = shlex.split((target / "run-desktop.sh").read_text().splitlines()[-1])
+            self.assertEqual(command[2], str(home / ".local/share/chaosbox/desktop/app.py"))
+            self.assertEqual(command[command.index("--installdir") + 1], str(setup.parent))
+            self.assertFalse((setup.parent / "JPG").exists())
+            self.assertFalse((setup.parent / "TXT").exists())
+            self.assertTrue(all(profile.images.is_dir() and profile.data.is_dir() for profile in settings.profiles))
+        self.assertEqual(install.install(home, credentials=False, installdir=first_dir), first)
+        self.assertEqual(first[1].read_bytes(), first_setup)
+        self.assertTrue(second[2].is_file())
+
+    def test_shared_update_migrates_old_launchers_and_preserves_box_arguments(self):
+        import shlex
+        home = self.root / "home with spaces"
+        first = install.install(home, credentials=False, installdir=home / "first ' box")
+        shared = home / ".local/share/chaosbox/desktop/app.py"
+        launcher = first[0] / "run-desktop.sh"
+        old_app = first[0] / "desktop/app.py"
+        core.atomic_write(old_app, 'raise RuntimeError("Obsolete runtime")\n')
+        launcher.write_text(launcher.read_text().replace(shlex.quote(str(shared)), shlex.quote(str(old_app))))
+        original_setup = first[1].read_bytes()
+        original_menu = first[2].read_bytes()
+        source_app = Path(install.__file__).resolve().with_name("app.py")
+        read_bytes = Path.read_bytes
+        for version in ("new version", "next version"):
+            runtime = f'import json, sys\nprint(json.dumps([{version!r}, sys.argv[1:]]))\n'.encode()
+            with patch.object(Path, "read_bytes", lambda path: runtime if path == source_app else read_bytes(path)):
+                second = install.install(home, credentials=False, installdir=home / "second box")
+            for target, setup, _ in (first, second):
+                output = subprocess.check_output([str(target / "run-desktop.sh"), "--extra", "argument with spaces"], text=True)
+                self.assertEqual(json.loads(output), [version, ["--installdir", str(setup.parent),
+                                                               "--extra", "argument with spaces"]])
+            self.assertEqual(first[1].read_bytes(), original_setup)
+            self.assertEqual(first[2].read_bytes(), original_menu)
+
+    def test_installation_is_not_a_box_or_indexed(self):
+        core.atomic_write(self.root / "TXT/ignored.json", '[{"box":"ignored"}]')
+        entries = core.ensure_index(self.settings)
+        self.assertEqual(entries, [])
+        self.assertEqual([p.id for p in self.settings.profiles], ["Chaosbox", "Bilderbox"])
+        self.assertFalse((self.root / "JPG").exists())
+        core.write_index(self.settings, [core.Entry(self.root / "TXT/ignored.json", {"box": "old"}, False, 0)])
+        self.assertEqual(core.ensure_index(self.settings), [])
+        with self.assertRaisesRegex(ValueError, "at least one"):
+            self.settings.parse('[App]\nKategorie=Empty\n')
 
     def test_sftp_upload_is_manual_one_way_and_atomic(self):
         import paramiko

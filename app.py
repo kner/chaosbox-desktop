@@ -38,7 +38,7 @@ USER_COMMENT_PREVIEW_LIMIT = 60
 
 def user_comment_preview(path):
     # Keep captions on a predictable number of lines without changing metadata.
-    metadata = core.read_metadata(path)
+    metadata = core.parse_metadata(core.read_user_comment(path))
     fields = [" ".join(str(metadata.get(key) or "").split())
               for key in ("box", "category", "comment")]
     return " | ".join(fields)[:USER_COMMENT_PREVIEW_LIMIT] if any(fields) else ""
@@ -421,11 +421,12 @@ class MediaGrid(ttk.Frame):
 
 
 class App:
-    def __init__(self, root, settings):
+    def __init__(self, root, settings, newindex=False):
         self.root, self.settings = root, settings
+        self.newindex = newindex
         self.window_icon = tk.PhotoImage(file=str(Path(__file__).with_name("chaosbox.png")))
         root.iconphoto(True, self.window_icon)
-        root.title("ChaosBox — Desktop")
+        root.title(settings.title)
         root.geometry("1240x850")
         root.minsize(850, 620)
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="chaosbox")
@@ -447,7 +448,7 @@ class App:
         except (OSError, ValueError):
             state = {}
         self.media_folders = state.get("media_folders", {})
-        self.profile = settings.profile(state.get("profile", settings.default))
+        self.profile = settings.profile(settings.default)
         style = ttk.Style(root)
         style.theme_use("clam")
         style.configure("TButton", padding=(10, 7))
@@ -473,7 +474,7 @@ class App:
     def build_ui(self):
         header = ttk.Frame(self.root, padding=(18, 14))
         header.pack(fill="x")
-        ttk.Label(header, text="ChaosBox", style="Title.TLabel").pack(side="left")
+        ttk.Label(header, text=self.settings.title, style="Title.TLabel").pack(side="left")
         self.profile_var = tk.StringVar(value=self.profile.id)
         self.profile_picker = ttk.Combobox(header, textvariable=self.profile_var, state="readonly", width=22)
         self.profile_picker.pack(side="left", padx=20)
@@ -533,7 +534,18 @@ class App:
         right = ttk.Frame(pane)
         pane.add(right, weight=1)
         self.selected = tk.StringVar(value="No media or record selected")
-        ttk.Label(right, textvariable=self.selected, wraplength=720).pack(anchor="w", pady=(3, 8))
+        selection = ttk.Frame(right)
+        selection.pack(fill="x", pady=(3, 8))
+        ttk.Label(selection, textvariable=self.selected, wraplength=540).pack(side="left", fill="x", expand=True)
+        copy_path = ttk.Button(selection, text="Copy path", command=self.copy_selected_path, state="disabled")
+        copy_path.pack(side="right", padx=(8, 0))
+        self.selected.trace_add("write", lambda *_: copy_path.configure(
+            state="normal" if self.media or self.box_path else "disabled"))
+        self.preview_link = ttk.Label(right, foreground="#2563eb", cursor="hand2",
+                                      font=("Sans", 11, "underline"), wraplength=720, takefocus=True)
+        self.preview_link.bind("<Button-1>", self.open_preview)
+        self.preview_link.bind("<Return>", self.open_preview)
+        self.preview_link.bind("<space>", self.open_preview)
         self.preview = ImageCanvas(right)
         self.preview.pack(fill="both", expand=True)
         self.preview.bind("<Double-Button-1>", self.fullscreen)
@@ -548,7 +560,7 @@ class App:
     def refresh_profile(self):
         self.profile_picker.configure(values=[p.id for p in self.settings.profiles])
         self.profile_var.set(self.profile.id)
-        self.root.title(f"{self.profile.title} — ChaosBox Desktop")
+        self.root.title(self.settings.title)
         for i, (row, label) in enumerate(self.rows):
             label.configure(text=self.profile.labels[i])
             row.pack_forget()
@@ -625,19 +637,19 @@ class App:
         messagebox.showerror("ChaosBox", str(error), parent=self.root)
 
     def initialize(self):
-        profile = self.profile
         def work():
-            for directory in (profile.images, profile.data, profile.index):
-                directory.mkdir(parents=True, exist_ok=True)
-            warnings = core.migrate_media(profile, self.log)
-            entries = core.build_index(profile, self.log)
-            return warnings, len(entries)
-        def done(result):
-            warnings, count = result
-            self.status.set(f"{count} records · {self.settings.path}")
-            if warnings:
-                messagebox.showwarning("Some files were not organized", "\n".join(warnings), parent=self.root)
+            return core.ensure_index(self.settings, self.log, self.newindex)
+        def done(entries):
+            self.newindex = False
+            self.status.set(f"{len(entries)} records · {self.settings.index}")
         self.task(work, done)
+
+    def copy_selected_path(self):
+        path = self.media[0] if self.media else self.box_path
+        if path is not None:
+            self.root.clipboard_clear()
+            self.root.clipboard_append(str(path))
+            self.status.set("File path copied to clipboard.")
 
     def values(self):
         data = {key: variable.get() for key, variable in self.variables.items()}
@@ -659,7 +671,7 @@ class App:
         self.media, self.box_path, self.records, self.record_index = [], None, [], None
         self.fill({"anzahl": 0})
         self.field_widgets["device"].configure(values=[])
-        self.preview_path = None
+        self.set_preview_path(None)
         self.preview.set_image(None)
         self.selected.set("No media or record selected")
         self.refresh_profile()
@@ -680,7 +692,7 @@ class App:
         self.last_search = None
         self.clear()
         self.save_state()
-        self.initialize()
+        self.status.set(f"Search index: {self.settings.index}")
 
     def save_state(self):
         try:
@@ -777,6 +789,33 @@ class App:
         dialog.bind("<Escape>", lambda e: dialog.destroy())
         grid.canvas.focus_set()
 
+    def set_preview_path(self, path):
+        self.preview_path = path
+        if path is None:
+            self.preview_link.pack_forget()
+        else:
+            self.preview_link.configure(text=f"preview: {path.resolve()}")
+            self.preview_link.pack(before=self.preview, anchor="w", pady=(0, 8))
+
+    def open_preview(self, event=None):
+        if self.preview_path is None or self.busy:
+            return
+        path = self.preview_path.resolve()
+        try:
+            if not path.is_file():
+                raise FileNotFoundError(f"File not found: {path}")
+            process = subprocess.Popen(["xdg-open", str(path)])
+        except OSError as error:
+            self.error(error)
+            return
+        def wait_for_open():
+            result = process.poll()
+            if result is None:
+                self.root.after(250, wait_for_open)
+            elif result != 0:
+                self.error(f"Could not open: {path}")
+        self.root.after(250, wait_for_open)
+
     def preview_result(self, path):
         if path is None:
             return None, ""
@@ -800,9 +839,9 @@ class App:
             self.media, self.box_path, self.records, self.record_index = list(dict.fromkeys(paths)), None, [], None
             self.field_widgets["device"].configure(values=[])
             self.fill(values)
-            self.preview_path = paths[0]
+            self.set_preview_path(paths[0])
             self.preview.set_image(image)
-            self.selected.set(f"{len(self.media)} file(s) selected — preview: {paths[0].name}")
+            self.selected.set(f"{len(self.media)} file(s) selected")
             if warning:
                 self.status.set(warning)
         self.task(work, done)
@@ -822,7 +861,7 @@ class App:
                                             title=values.get("category", ""),
                                             box_addition=additions["box"],
                                             comment_addition=additions["comment"],
-                                            setup_dir=self.settings.path.parent), done)
+                                            setup_dir=getattr(self.settings, "active_path", self.settings.path).parent), done)
 
     def choose_json(self):
         if self.busy or self.search_mode:
@@ -895,12 +934,13 @@ class App:
         self.selected.set(f"{self.box_path} — record {index + 1}/{len(self.records)}")
         path, record = self.box_path, values
         def work():
-            entries = core.build_index(self.profile, self.log)
+            entries = core.load_index(self.settings)
+            entries = [entry for entry in entries if core.within(entry.source, self.profile.images)]
             preview = core.related_media(core.Entry(path, record, False, index), entries)
             return preview, self.preview_result(preview)
         def done(result):
             preview, (image, warning) = result
-            self.preview_path = preview
+            self.set_preview_path(preview)
             self.preview.set_image(image)
             if warning:
                 self.status.set(warning)
@@ -946,18 +986,19 @@ class App:
                         try:
                             previous = [p for p in media[:error.completed]
                                         if core.within(p, profile.images) and p.suffix.lower() in core.MEDIA]
-                            core.update_index(profile, previous + error.selection[:error.completed], self.log)
+                            core.update_index(self.settings, previous + error.selection[:error.completed], self.log)
                         except Exception as index_error:
                             self.log(f"Search index update failed: {index_error}")
                     raise
-                result = ("media", saved, self.preview_result(saved[0]))
+                result = ("media", saved, self.preview_result(saved[0]),
+                          [core.read_metadata(path) for path in saved])
             else:
                 records, index = core.save_box(path, record, selected)
                 result = ("json", records, index)
             warning = ""
             try:
                 previous = [p for p in media if core.within(p, profile.images) and p.suffix.lower() in core.MEDIA]
-                core.update_index(profile, previous + saved if media else [path], self.log)
+                core.update_index(self.settings, previous + saved if media else [path], self.log)
             except Exception as error:
                 warning = f"Saved locally, but the search index could not be updated: {error}"
             return result, warning
@@ -968,11 +1009,11 @@ class App:
             self.refresh_profile()
             if data[0] == "media":
                 self.media = data[1]
-                self.media_records = batch_records or [record]
+                self.media_records = data[3]
                 self.media_baseline = (core.common_metadata(self.media_records) if len(self.media_records) > 1
                                        else dict(self.media_records[0]))
                 self.fill(self.media_baseline)
-                self.preview_path = self.media[0]
+                self.set_preview_path(self.media[0])
                 self.preview.set_image(data[2][0])
                 self.selected.set(f"Saved {len(self.media)} file(s) locally — {self.media[0]}")
             else:
@@ -985,7 +1026,7 @@ class App:
         def failed(error):
             if isinstance(error, core.BatchError):
                 self.media = error.selection
-                self.preview_path = self.media[0]
+                self.set_preview_path(self.media[0])
             self.profile = self.settings.profile(profile.id)
             self.refresh_profile()
             self.error(error)
@@ -1035,7 +1076,7 @@ class App:
             return
         self.last_search = dict(values)
         def work():
-            entries = core.build_index(self.profile, self.log)
+            entries = core.load_index(self.settings)
             return core.search(entries, patterns)
         def done(hits):
             if not hits:
@@ -1048,6 +1089,14 @@ class App:
 
     def open_hit(self, hit):
         self.search_mode, self.before_search = False, None
+        owner = next((profile for profile in self.settings.profiles
+                      if any(core.within(hit.source, folder) for folder in
+                             (profile.images, profile.data, profile.legacy_data))), None)
+        if owner is None:
+            self.error(ValueError("The source profile is no longer configured. Restart with --newindex."))
+            return
+        self.profile = self.settings.profile(owner.id)
+        self.save_state()
         self.refresh_profile()
         if hit.media:
             self.open_media([hit.source])
@@ -1060,14 +1109,16 @@ class App:
         dialog.geometry("1050x500")
         dialog.transient(self.root)
         dialog.grab_set()
-        table = ttk.Treeview(dialog, columns=("box", "device", "alias", "path"), show="headings", selectmode="browse")
-        for key in ("box", "device", "alias", "path"):
-            table.heading(key, text=key.title())
+        fields = [(key, label) for key, label in zip(core.FIELDS, self.profile.labels) if label][:3]
+        columns = [key for key, _ in fields] + ["path"]
+        table = ttk.Treeview(dialog, columns=columns, show="headings", selectmode="browse")
+        for key, label in fields + [("path", "Path")]:
+            table.heading(key, text=label)
             table.column(key, width=440 if key == "path" else 150)
         table.pack(fill="both", expand=True, padx=12, pady=12)
         for i, hit in enumerate(hits):
-            table.insert("", "end", iid=str(i), values=(hit.data.get("box", ""), hit.data.get("device", ""),
-                                                        hit.data.get("alias", ""), str(hit.source)))
+            table.insert("", "end", iid=str(i),
+                         values=tuple(hit.data.get(key, "") for key, _ in fields) + (str(hit.source),))
         def select(event=None):
             if table.selection():
                 hit = hits[int(table.selection()[0])]
@@ -1086,31 +1137,33 @@ class App:
         dialog.geometry("900x680")
         dialog.transient(self.root)
         dialog.grab_set()
-        ttk.Label(dialog, text=str(self.settings.path), padding=10).pack(anchor="w")
+        setup_path = self.settings.active_path
+        ttk.Label(dialog, text=str(setup_path), padding=10).pack(anchor="w")
         text = tk.Text(dialog, wrap="none", undo=True, font=("Monospace", 11))
         text.pack(fill="both", expand=True, padx=10)
-        setup_text = self.settings.path.read_text(encoding="utf-8")
-        if not any(name.casefold() == "poster" for name in core.sections(setup_text)):
-            poster = self.settings.poster
-            setup_text += (f"\n[Poster]\nPOSTER-LIMIT={poster.limit}\n"
-                           f"POSTER-SIZE={poster.height:g}x{poster.width:g}\n"
-                           f"POSTER-COLS={poster.cols}\nPOSTER-ROWS={poster.rows}\n"
-                           f"POSTER-FIX={str(poster.fixed).lower()}\n")
-        groups = core.sections(setup_text)
-        poster_section = next(name for name in groups if name.casefold() == "poster")
-        additions = []
-        for key in ("margin_left", "margin_right", "margin_top", "margin_bottom",
-                    "frames", "background_color", "image_background_color", "image_padding"):
-            option = "POSTER-" + key.upper().replace("_", "-")
-            if option.lower() not in groups[poster_section]:
-                additions.append(f"{option}={getattr(self.settings.poster, key)}")
-        if additions:
-            heading = f"[{poster_section}]"
-            setup_text = setup_text.replace(heading, heading + "\n" + "\n".join(additions), 1)
+        setup_text = setup_path.read_text(encoding="utf-8")
+        if setup_path == self.settings.path:
+            if not any(name.casefold() == "poster" for name in core.sections(setup_text)):
+                poster = self.settings.poster
+                setup_text += (f"\n[Poster]\nPOSTER-LIMIT={poster.limit}\n"
+                               f"POSTER-SIZE={poster.height:g}x{poster.width:g}\n"
+                               f"POSTER-COLS={poster.cols}\nPOSTER-ROWS={poster.rows}\n"
+                               f"POSTER-FIX={str(poster.fixed).lower()}\n")
+            groups = core.sections(setup_text)
+            poster_section = next(name for name in groups if name.casefold() == "poster")
+            additions = []
+            for key in ("margin_left", "margin_right", "margin_top", "margin_bottom",
+                        "frames", "background_color", "image_background_color", "image_padding"):
+                option = "POSTER-" + key.upper().replace("_", "-")
+                if option.lower() not in groups[poster_section]:
+                    additions.append(f"{option}={getattr(self.settings.poster, key)}")
+            if additions:
+                heading = f"[{poster_section}]"
+                setup_text = setup_text.replace(heading, heading + "\n" + "\n".join(additions), 1)
         text.insert("1.0", setup_text)
         def save():
             try:
-                self.settings.save_text(text.get("1.0", "end-1c") + "\n")
+                self.settings.save_text(text.get("1.0", "end-1c") + "\n", setup_path)
                 self.profile = self.settings.profile(self.profile.id)
                 self.last_search = None
                 self.clear()
@@ -1231,11 +1284,6 @@ class App:
             text.see("end")
         def work():
             self.settings.reload()
-            def indexing(message):
-                if self.cancel_upload.is_set():
-                    raise core.Cancelled("Upload cancelled. Local files are retained.")
-                self.log(message)
-            core.build_index(self.profile, indexing)
             core.upload(self.settings, self.profile, self.cancel_upload, self.log)
         self.task(work, lambda _: finish(), finish)
 
@@ -1254,11 +1302,17 @@ class App:
 
 def main():
     parser = argparse.ArgumentParser(description="ChaosBox desktop editor")
-    parser.add_argument("--data-root", type=Path, default=Path.home(), help="Base folder for relative setup paths (default: home)")
-    parser.add_argument("--state-dir", type=Path, default=Path.home() / ".config/chaosbox")
+    parser.add_argument("directory", nargs="?", type=Path, help="Installation directory (default: ~/ChaosBox)")
+    parser.add_argument("--installdir", type=Path,
+                        help="Installation directory containing setup.ini, projects and index (default: ~/ChaosBox)")
+    parser.add_argument("--state-dir", type=Path, help="Override installation-local .state directory")
     parser.add_argument("--setup", type=Path)
+    parser.add_argument("--newindex", action="store_true", help="Rebuild the shared search index for all profiles")
     parser.add_argument("--check", action="store_true", help="Check dependencies without opening a window or changing data")
     args = parser.parse_args()
+    if args.directory is not None and args.installdir is not None:
+        parser.error("Use either a directory argument or --installdir, not both.")
+    installdir = args.directory or args.installdir or Path.home() / "ChaosBox"
     if args.check:
         import shutil
         import paramiko
@@ -1267,12 +1321,12 @@ def main():
                 raise SystemExit(f"Missing program: {tool}")
         print(f"Dependencies ready: Tk {tk.TkVersion}, Pillow {Image.__version__}, Paramiko {paramiko.__version__}")
         return
-    root = tk.Tk(className="Chaosbox")
+    settings = core.Settings(installdir, args.state_dir, args.setup)
+    root = tk.Tk(className=settings.window_class)
     root.withdraw()
     try:
-        settings = core.Settings(args.data_root, args.state_dir, args.setup)
         settings.ensure()
-        app = App(root, settings)
+        app = App(root, settings, newindex=args.newindex)
     except Exception as error:
         messagebox.showerror("ChaosBox startup", str(error), parent=root)
         root.destroy()

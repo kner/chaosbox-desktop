@@ -26,11 +26,24 @@ To install for the current user, run:
 ./install-desktop.sh
 ```
 
-Launch **ChaosBox Desktop** from the Ubuntu application menu. The installer copies
-the runtime to `~/.local/share/chaosbox` and creates
-`~/.local/share/applications/chaosbox.desktop`. Run the installer again after
-updating the source; existing setup and data are retained. No administrator
-privileges are needed for this installation when dependencies are already present.
+Each installation gets its own application menu entry; all boxes use one shared application:
+
+```bash
+./install-desktop.sh --installdir=~/cb1
+./install-desktop.sh --installdir=~/cb2
+```
+
+Launch **Chaosbox-cb1** or **Chaosbox-cb2** from the Ubuntu application menu.
+Each launcher is permanently bound to its installation directory. Shared application files
+are stored under `~/.local/share/chaosbox/desktop`; box launchers are stored under
+`~/.local/share/chaosbox/installations/<installation-id>`;
+menu entries are `~/.local/share/applications/<installation-id>.desktop`.
+The ID and window class depend on the full installation path, so directories
+with the same final name still have distinct launchers. Run the installer once
+with any box path to update the application for **all installed boxes**, preserving
+each box's setup and data. Existing per-box launchers are migrated automatically.
+All boxes use the new version on their next launch; reopen any running windows.
+No administrator privileges are needed when dependencies are already present.
 
 ## Debian package (Ubuntu 24.04)
 
@@ -58,31 +71,73 @@ contains the `.deb` and a SHA-256 checksum file.
 
 ## Data and settings
 
-Default locations:
+`--installdir` selects an independent installation, defaulting to `~/ChaosBox`.
+The installation directory manages setup, shared index and UI state. It is not
+a selectable box and has no JPG or TXT folders. Only configured boxes appear in
+the selector; the first box is selected at startup. The title is `Chaosbox-cb2`
+for an installation at `/x/y/cb2`:
 
-| Content | Location |
-| --- | --- |
-| Chaosbox images and videos | `~/ChaosBox/JPG` |
-| Chaosbox JSON records | `~/ChaosBox/boxes` |
-| Bilderbox images and records | `~/Bilderbox/JPG` and `~/Bilderbox/boxes` |
-| Setup | `~/ChaosBox/Setup/setup.ini` |
-| Local SSH credentials | `~/.config/chaosbox/credentials` |
-
-The **Setup** button edits the configuration. Profile paths are relative to the
-user's home directory unless absolute. Each profile has its own categories and
-search index. New comma-separated Category values are appended to the active
-profile when saving. Existing categories are compared without regard to case.
-Loose media in the profile's image directory is organized into category folders
-on initialization; duplicate names are retained without overwriting other files.
-
-For an independent test data directory:
-
-```bash
-./run-desktop.sh --data-root /tmp/chaosbox-demo --state-dir /tmp/chaosbox-demo/config
+```text
+~/ChaosBox/
+  setup.ini
+  .indices/             # common search index for all projects
+  .state/               # UI state and SSH credentials
+  Bilderbox/
+    JPG/
+    TXT/
+    setup.ini           # optional local overrides and child projects
 ```
 
-`--data-root` replaces the home-directory base; for example the default Chaosbox
-profile then uses `/tmp/chaosbox-demo/ChaosBox/JPG`.
+```bash
+./run-desktop.sh ~/cb2
+./run-desktop.sh ~/cb2 --newindex
+```
+
+The installation directory can be passed directly, or with `--installdir=~/cb2`.
+`--data-root` is replaced by `--installdir`. The index is always in `.indices`
+inside the installation. `--state-dir` and `--setup` remain optional overrides.
+JSON records retain their `.json` extension inside the `TXT` folder.
+
+The **Setup** button edits the active project's configuration. `[App]` configures
+inherited defaults at installation level and box overrides in local setup files.
+`Standard=` is no longer used. Repeated
+`[Box]` sections declare projects; `Titel` is the folder name. `JPG=` and `Daten=`
+are removed because the subfolders are always `JPG` and `TXT`.
+
+```ini
+[App]
+Felder=Box,Quantity,Device,Alias,Category,Comment,Package
+Kategorie=Werkzeug,Elektronik
+
+[Box]
+Titel=Bilderbox
+Felder=Box,,,Tags,Category,Comment
+Kategorie=Familie,Berg,Urlaub
+
+[Box]
+Titel=Chaosbox1
+Kategorie=Haushalt,Garten
+```
+
+Each project inherits its parent's fields and settings, with independent
+categories when specified. An optional `Bilderbox/setup.ini` can override
+`[App]`, `[ImageSize]`, `[Poster]`, `[TextSnippets]` and `[SSH]`, and declare more
+`[Box]` sections such as `Titel=Urlaub` for `Bilderbox/Urlaub`. New categories are
+saved to the matching Box section or local App section. Repeated Box sections
+are preserved independently. Titles must be unique within their parent and
+must be single folder names; reserved names and symbolic project folders are
+rejected.
+
+Existing configurations must be converted from `[App.NAME]` to `[Box]` with
+`Titel=NAME`, removing `Standard=`, `JPG=` and `Daten=`. Place the main settings
+in `<installdir>/setup.ini`, media in each project's `JPG` folder and records
+in its `TXT` folder. Existing files are not moved automatically. Rebuild with
+`--newindex` after migrating data or changing the configured projects.
+
+All projects share one search index. Local saves update only affected entries.
+External changes become searchable after starting with `--newindex`. Loose
+media is organized into category folders when rebuilding the index; duplicate
+names are retained without overwriting files.
 
 ## Editing
 
@@ -111,8 +166,9 @@ profile then uses `/tmp/chaosbox-demo/ChaosBox/JPG`.
   for Comment); Quantity adds the entered number. Editing a shared nonempty field
   replaces that field. Other metadata and each file's creation date are retained.
   Local saves refresh only the search index entries of the saved files.
-  Startup and searches still rebuild the full index to discover external changes;
-  a missing or damaged desktop index cache also triggers a full rebuild.
+  Startup loads the shared index, building it only when absent or with `--newindex`.
+  Searches and profile switches reuse it. Run with `--newindex` after external
+  changes or profile configuration changes, or to replace a damaged cache.
 - Saved media goes into the category folder, or **unassigned** when no category
   is specified. Existing profile media moves there when its category changes;
   media already in the correct folder is updated in place. Imports receive a separate `_cb`
@@ -122,6 +178,14 @@ profile then uses `/tmp/chaosbox-demo/ChaosBox/JPG`.
 - JPG metadata uses EXIF `UserComment`. MP4 metadata uses ItemList `Comment`;
   existing Keys comments are synchronized. JSON strings use the Android field
   names, including `anzahl` and `package`.
+- JSON records omit `modified`. Media `created` uses EXIF DateTimeOriginal,
+  then CreateDate (also for MP4), then a date in the filename (for example
+  `IMG_20240102_030405.jpg` or `2024-01-02_03-04-05.png`). Invalid dates are
+  ignored. Date-only names remain date-only; unknown timezones are not invented.
+  Otherwise, an existing `created` is preserved, or the original file's modification
+  time is used as an approximation. Each image in a batch keeps its own date.
+  Saving removes old `modified` fields; rebuilding the index refreshes image dates
+  in its JSON entries without rewriting the source images.
 - **Open JSON** uses the Box field if supplied, or opens a file chooser. Select a
   record through Device; profiles with hidden Device use a record chooser.
   Saving a selected record preserves unknown fields and its creation date.

@@ -23,23 +23,23 @@ Use an English interface. Preserve the configured language of custom labels, cat
 Support multiple profiles configured through setup.ini.
 
 Provide these defaults:
-- Chaosbox: ~/ChaosBox/JPG for media and ~/ChaosBox/boxes for records.
-- Bilderbox: ~/Bilderbox/JPG for media and ~/Bilderbox/boxes for records.
+- The installation itself has no media folders and is not a selectable profile.
+- Child projects: <installdir>/<Titel>/JPG and <installdir>/<Titel>/TXT.
 
-Store the user configuration at ~/ChaosBox/Setup/setup.ini and desktop state under ~/.config/chaosbox.
+Default --installdir to ~/ChaosBox. Store setup.ini, .indices and .state inside it.
 
 Support:
-- [App] with Standard specifying the default profile.
-- [App.PROFILE] with Titel, JPG, Daten, Felder, and Kategorie.
+- [App] configures inherited defaults; only Box sections are selectable, starting with the first.
+- Repeated [Box] sections with Titel, Felder and Kategorie; Titel determines the child folder.
 - [ImageSize] with LIMIT=3000.
 - [TextSnippets] with named, multiline text snippets.
 - [SSH] with connection settings and local credential paths.
 
-Relative profile paths resolve against the user’s home directory. Empty custom field labels hide those fields.
+Box titles determine subfolders beneath the installation directory. Empty custom field labels hide those fields.
 
 Provide a Setup editor. Remember the selected profile and the last selected media folder separately for each profile across application restarts.
 
-Support --data-root, --state-dir, and --check command-line options.
+Support --installdir, --newindex, --state-dir, --setup and --check command-line options.
 
 3. Main editor
 
@@ -56,12 +56,12 @@ Provide:
 - Image preview, status messages, and progress indication.
 
 Use these metadata keys:
-box, anzahl, device, alias, category, comment, package, created, modified.
+box, anzahl, device, alias, category, comment, package, created.
 
 Display the default labels:
 Box, Quantity, Device, Alias, Category, Comment, Package.
 
-Use a multiline Comment editor and an editable Category selector. Quantity must be a nonnegative integer. Preserve creation timestamps and update modification timestamps.
+Use a multiline Comment editor and an editable Category selector. Quantity must be a nonnegative integer. Omit modified from JSON records. For media, created uses the capture timestamp from EXIF, then the filename, then an existing created value, finally the original file modification time as an approximation. Preserve creation timestamps for non-media records.
 
 Support Ctrl+O, Ctrl+S, and Ctrl+F.
 
@@ -157,7 +157,7 @@ Upload must run only when explicitly requested.
 
 Use SFTP with public-key authentication and known-host verification. Keep credentials outside source packages.
 
-Upload only eligible profile data beneath ~/ChaosBox. Preserve relative subdirectories. Send files that are missing remotely or newer locally, using temporary remote files and atomic rename.
+Upload only eligible profile data beneath the selected installation directory. Preserve relative subdirectories. Send files that are missing remotely or newer locally, using temporary remote files and atomic rename.
 
 Do not delete remote extra files. Support cancellation and report failures without deleting local data.
 
@@ -177,3 +177,6 @@ Test metadata round-trips, caption formatting and the 60-character limit, folder
 Include a Tk smoke test for GUI workflows. Use temporary test data and never contact a live server during tests.
 
 Implement the complete application, run the available checks, and report the resulting files, launch commands, test results, and any verification limitations.
+
+Window and desktop app title: Chaosbox-<installation directory name>.
+install-desktop.sh --installdir creates a separate app and launcher bound to that full path.

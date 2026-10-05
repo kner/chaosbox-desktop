@@ -14,6 +14,59 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app import App, MediaGrid, MediaFolderDialog, copy_image_clipboard, user_comment_preview
 import core
+import app as desktop_app
+
+
+class InstallationCliTests(unittest.TestCase):
+    def test_default_and_explicit_installations(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            for arguments, expected in (([], home / "ChaosBox"),
+                                        (["--installdir", str(home / "cb1"), "--newindex"], home / "cb1"),
+                                        ([str(home / "cb2")], home / "cb2"),
+                                        ([str(home / "cb2"), "--newindex"], home / "cb2")):
+                with self.subTest(arguments=arguments), patch("sys.argv", ["app.py", *arguments]), \
+                     patch("app.Path.home", return_value=home), patch("app.tk.Tk"), patch("app.App") as application:
+                    desktop_app.main()
+                    settings = application.call_args.args[1]
+                    self.assertEqual(settings.root, expected)
+                    self.assertEqual(settings.path, expected / "setup.ini")
+                    self.assertEqual(settings.index, expected / ".indices")
+                    self.assertEqual(settings.state_dir, expected / ".state")
+                    self.assertEqual(settings.default, settings.profiles[0].id)
+                    self.assertTrue(all(profile.images.parent != expected for profile in settings.profiles))
+                    self.assertEqual(settings.title, f"Chaosbox-{expected.name}")
+                    self.assertEqual(application.call_args.kwargs["newindex"], "--newindex" in arguments)
+
+
+class SharedIndexTests(unittest.TestCase):
+    def test_switch_does_not_initialize_or_rebuild(self):
+        app = App.__new__(App)
+        app.busy = False
+        app.settings = Mock(index=Path("/tmp/shared-index"))
+        app.profile_var = Mock()
+        app.profile_var.get.return_value = "Bilderbox"
+        app.clear = Mock()
+        app.save_state = Mock()
+        app.initialize = Mock()
+        app.status = Mock()
+        app.select_profile()
+        app.settings.profile.assert_called_once_with("Bilderbox")
+        app.initialize.assert_not_called()
+
+    def test_hit_selects_owning_profile(self):
+        app = App.__new__(App)
+        other = SimpleNamespace(id="Other", images=Path("/other/images"),
+                                data=Path("/other/data"), legacy_data=Path("/other/data"))
+        app.settings = Mock(profiles=[other])
+        app.settings.profile.return_value = other
+        app.save_state = Mock()
+        app.refresh_profile = Mock()
+        app.open_media = Mock()
+        hit = core.Entry(Path("/other/images/test.jpg"), {}, True)
+        app.open_hit(hit)
+        self.assertIs(app.profile, other)
+        app.open_media.assert_called_once_with([hit.source])
 
 
 class BatchSaveConfirmationTests(unittest.TestCase):
@@ -51,6 +104,7 @@ class BatchSaveConfirmationTests(unittest.TestCase):
         self.app.task.side_effect = lambda work, done, failed: work()
         with patch("app.messagebox.askokcancel", return_value=True), \
              patch("core.save_batch", return_value=self.app.media) as save, \
+             patch("core.read_metadata", return_value=core.normalized({})), \
              patch("core.update_index"):
             self.app.save()
         records = save.call_args.kwargs["records"]

@@ -183,10 +183,10 @@ def main():
             settle()
             app.fullscreen_window.destroy()
             settle()
-            app.profile_var.set("Bilderbox")
+            app.profile_var.set(settings.profiles[1].id)
             app.select_profile()
             settle()
-            assert app.profile.id == "Bilderbox" and not app.profile.labels[1]
+            assert app.profile.id == settings.profiles[1].id and not app.profile.labels[1]
             hidden_records = app.profile.data / "hidden.json"
             core.atomic_write(hidden_records, '[{"device":"first"},{"device":"second"}]')
             app.load_json(hidden_records)
