@@ -114,6 +114,21 @@ class BatchSaveConfirmationTests(unittest.TestCase):
         self.app.task.assert_called_once()
         self.app.error.assert_not_called()
 
+    def test_successful_save_clears_form_for_media_and_json(self):
+        self.app.profile.id = "Test"
+        self.app.settings.profile = Mock(return_value=self.app.profile)
+        self.app.clear = Mock()
+        self.app.status = Mock()
+        for kind in ("media", "json"):
+            with self.subTest(kind=kind), patch("app.messagebox.askokcancel", return_value=True):
+                self.app.clear.reset_mock()
+                self.app.save()
+                done = self.app.task.call_args.args[1]
+                done(((kind,), ""))
+                self.app.clear.assert_called_once_with()
+                self.app.status.set.assert_called_with(
+                    "Saved locally. Use Upload to synchronize manually.")
+
     def test_single_image_does_not_ask_for_batch_confirmation(self):
         self.app.media = self.app.media[:1]
         with patch("app.messagebox.askokcancel") as confirm:

@@ -165,6 +165,8 @@ names are retained without overwriting files.
   in an initially blank field appends it to each file (comma separator, newline
   for Comment); Quantity adds the entered number. Editing a shared nonempty field
   replaces that field. Other metadata and each file's creation date are retained.
+  After a successful **Save**, all form fields and the selection reset just as
+  with **Clear all**. Cancelled or failed saves keep the inputs.
   Local saves refresh only the search index entries of the saved files.
   Startup loads the shared index, building it only when absent or with `--newindex`.
   Searches and profile switches reuse it. Run with `--newindex` after external

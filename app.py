@@ -1003,25 +1003,9 @@ class App:
                 warning = f"Saved locally, but the search index could not be updated: {error}"
             return result, warning
         def done(result):
-            data, warning = result
-            self.created = record["created"]
+            _, warning = result
             self.profile = self.settings.profile(profile.id)
-            self.refresh_profile()
-            if data[0] == "media":
-                self.media = data[1]
-                self.media_records = data[3]
-                self.media_baseline = (core.common_metadata(self.media_records) if len(self.media_records) > 1
-                                       else dict(self.media_records[0]))
-                self.fill(self.media_baseline)
-                self.set_preview_path(self.media[0])
-                self.preview.set_image(data[2][0])
-                self.selected.set(f"Saved {len(self.media)} file(s) locally — {self.media[0]}")
-            else:
-                self.box_path, self.records, self.record_index = path, data[1], data[2]
-                self.fill(core.normalized(self.records[self.record_index]))
-                self.device_order = sorted(range(len(self.records)), key=lambda i: str(self.records[i].get("device", "")).casefold())
-                self.field_widgets["device"].configure(values=[str(self.records[i].get("device", "")) or "(no device)" for i in self.device_order])
-                self.selected.set(f"Saved locally: {path}")
+            self.clear()
             self.status.set(warning or "Saved locally. Use Upload to synchronize manually.")
         def failed(error):
             if isinstance(error, core.BatchError):
