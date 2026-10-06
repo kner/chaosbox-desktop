@@ -1,0 +1,65 @@
+[
+  {
+    "box": "a82c",
+    "count": 1,
+    "device": "R333 R334",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a82c",
+    "count": 2,
+    "device": "74ACT161",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": ""
+  },
+  {
+    "box": "a82c",
+    "count": 4,
+    "device": "R150-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a82c",
+    "count": 25,
+    "device": "4k7-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a82c",
+    "count": 1,
+    "device": "b772p",
+    "alias": null,
+    "comment": "MEDIUM POWER LOW VOLTAGE TRANSISTOR",
+    "category": "power transistor",
+    "pack": ""
+  },
+  {
+    "box": "a82c",
+    "count": 1,
+    "device": "bc558c",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "to92"
+  },
+  {
+    "box": "a82c",
+    "count": 20,
+    "device": "C6,8pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

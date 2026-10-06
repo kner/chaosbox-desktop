@@ -1,0 +1,20 @@
+[
+  {
+    "box": "s9c",
+    "count": 10,
+    "device": "schraubklemme",
+    "alias": "",
+    "comment": "schraubklemme",
+    "category": "klemme",
+    "pack": ""
+  },
+  {
+    "box": "s9c",
+    "count": 30,
+    "device": "R330",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

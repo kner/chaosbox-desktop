@@ -1,0 +1,29 @@
+[
+  {
+    "box": "a54",
+    "count": 3,
+    "device": "MB8464",
+    "alias": null,
+    "comment": "SRAM",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a54",
+    "count": 2,
+    "device": "HM6264",
+    "alias": null,
+    "comment": "Sram",
+    "category": "SRAM",
+    "pack": ""
+  },
+  {
+    "box": "a54",
+    "count": 1,
+    "device": "MC146818",
+    "alias": "",
+    "comment": "REAL-TIME CLOCK PLUS RAM(RT",
+    "category": "RTC, RAM",
+    "pack": "DIP24"
+  }
+]

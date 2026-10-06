@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s14",
+    "count": 2,
+    "device": "mechanisc",
+    "alias": "",
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "s14",
+    "count": 30,
+    "device": "R47",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s14",
+    "count": 1,
+    "device": "BTS621L1",
+    "alias": "",
+    "comment": "Smart Two Channel High-Side Power Switch ",
+    "category": "Power MOS",
+    "pack": "SMD 7 PIN"
+  }
+]

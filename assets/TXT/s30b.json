@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s30b",
+    "count": 8,
+    "device": "R680",
+    "alias": null,
+    "comment": "68 OHM",
+    "category": "r smd",
+    "pack": "smd"
+  },
+  {
+    "box": "s30b",
+    "count": 6,
+    "device": "r203",
+    "alias": null,
+    "comment": "20kOHM",
+    "category": "r",
+    "pack": "dra"
+  },
+  {
+    "box": "s30b",
+    "count": 6,
+    "device": "r361",
+    "alias": "",
+    "comment": "360OHM",
+    "category": "r",
+    "pack": "dra"
+  }
+]

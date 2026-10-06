@@ -1,0 +1,20 @@
+[
+  {
+    "box": "a61",
+    "count": 0,
+    "device": "DS34C86",
+    "alias": null,
+    "comment": "  Quad CMOS Differential Line Receiver",
+    "category": "",
+    "pack": "SOIC s"
+  },
+  {
+    "box": "a61",
+    "count": 1,
+    "device": "N82S123",
+    "alias": null,
+    "comment": "256-bit TTL bipolar PROM 32 x 8",
+    "category": "",
+    "pack": "DIP"
+  }
+]

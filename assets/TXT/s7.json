@@ -1,0 +1,101 @@
+[
+  {
+    "box": "s7",
+    "count": 100,
+    "device": "spulen und trafos",
+    "alias": null,
+    "comment": "spulen und trafos",
+    "category": "spulen und trafos l ",
+    "pack": "draht und smd"
+  },
+  {
+    "box": "s7",
+    "count": 4,
+    "device": "40000",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": null
+  },
+  {
+    "box": "s7",
+    "count": 2,
+    "device": "40",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": null
+  },
+  {
+    "box": "s7",
+    "count": 1,
+    "device": "39",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": null
+  },
+  {
+    "box": "s7",
+    "count": 3,
+    "device": "4500",
+    "alias": null,
+    "comment": null,
+    "category": "R +/- 5%",
+    "pack": null
+  },
+  {
+    "box": "s7",
+    "count": 30,
+    "device": "R10m",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s7",
+    "count": 1,
+    "device": "150",
+    "alias": null,
+    "comment": null,
+    "category": "R +/- 5%",
+    "pack": null
+  },
+  {
+    "box": "s7",
+    "count": 3,
+    "device": "36",
+    "alias": null,
+    "comment": null,
+    "category": "R +/- 0,1%",
+    "pack": null
+  },
+  {
+    "box": "s7",
+    "count": 1,
+    "device": "10",
+    "alias": null,
+    "comment": null,
+    "category": "R +/- 10%",
+    "pack": null
+  },
+  {
+    "box": "s7",
+    "count": 4,
+    "device": "330",
+    "alias": null,
+    "comment": null,
+    "category": "R +/- 5%",
+    "pack": null
+  },
+  {
+    "box": "s7",
+    "count": 1,
+    "device": "1,7",
+    "alias": null,
+    "comment": null,
+    "category": "R +/- 10%",
+    "pack": null
+  }
+]

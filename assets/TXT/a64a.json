@@ -1,0 +1,83 @@
+[
+  {
+    "box": "a64a",
+    "count": 0,
+    "device": "LED",
+    "alias": null,
+    "comment": "",
+    "category": "LED",
+    "pack": "SMD"
+  },
+  {
+    "box": "a64a",
+    "count": 1,
+    "device": "R912 R2400",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a64a",
+    "count": 10,
+    "device": "R2K7-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a64a",
+    "count": 16,
+    "device": "R8k2-5%",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "a64a",
+    "count": 2,
+    "device": "sn75189an",
+    "alias": null,
+    "comment": "Quadruple Line Receiver",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a64a",
+    "count": 10,
+    "device": "R82R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a64a",
+    "count": 1,
+    "device": " DS14C88 ",
+    "alias": null,
+    "comment": "Quad CMOS Line Driver ",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "a64a",
+    "count": 2,
+    "device": "820",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "a64a",
+    "count": 2,
+    "device": "STPS10H100",
+    "alias": null,
+    "comment": "HIGH VOLTAGE POWER SCHOTTKY RECTIFIER (doppelt)",
+    "category": "Schottky Power Rectifier shottky",
+    "pack": "TO-220"
+  }
+]

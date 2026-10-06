@@ -1,0 +1,38 @@
+[
+  {
+    "box": "k41",
+    "count": 20,
+    "device": "R1k 1%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  },
+  {
+    "box": "k41",
+    "count": 0,
+    "device": "74HC08",
+    "alias": null,
+    "comment": null,
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "k41",
+    "count": 1,
+    "device": "drehschalter encoder",
+    "alias": null,
+    "comment": "Encoder 5 V/DC 0.01 A Schaltpositionen 24 360 ° TT Electronics AB EN12-HS22AF20 1 St.",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "k41",
+    "count": 1,
+    "device": "lm7805",
+    "alias": null,
+    "comment": null,
+    "category": "spannungsregler",
+    "pack": "to92"
+  }
+]

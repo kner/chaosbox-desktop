@@ -1,0 +1,83 @@
+[
+  {
+    "box": "a61a",
+    "count": 5,
+    "device": "R561",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a61a",
+    "count": 1,
+    "device": "DF005",
+    "alias": null,
+    "comment": "1.0A GLASS PASSIVATED BRIDGE RECTIFIER",
+    "category": "BRUECKE",
+    "pack": ""
+  },
+  {
+    "box": "a61a",
+    "count": 1,
+    "device": "MC14011BCP",
+    "alias": null,
+    "comment": "Quad 2-Input NAND Gate",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a61a",
+    "count": 5,
+    "device": "R1K6-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a61a",
+    "count": 1,
+    "device": "R560-1% 27k(3)",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a61a",
+    "count": 1,
+    "device": "R3k0-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a61a",
+    "count": 1,
+    "device": "r100k-1%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a61a",
+    "count": 10,
+    "device": "R18R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a61a",
+    "count": 4,
+    "device": "3.5mm Stecker Audio Jack",
+    "alias": null,
+    "comment": "3.5mm Stecker Audio Jack",
+    "category": null,
+    "pack": "3.5mm"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "box": "h11b",
+    "count": 1,
+    "device": "BC557B",
+    "alias": null,
+    "comment": "PNP general purpose transistors",
+    "category": "pnp",
+    "pack": null
+  },
+  {
+    "box": "h11b",
+    "count": 2,
+    "device": "100u-25V",
+    "alias": null,
+    "comment": null,
+    "category": "elko",
+    "pack": "radial"
+  },
+  {
+    "box": "h11b",
+    "count": 1,
+    "device": "100nH",
+    "alias": null,
+    "comment": "Spule",
+    "category": "L Spule",
+    "pack": "smd"
+  },
+  {
+    "box": "h11b",
+    "count": 2,
+    "device": "100nF",
+    "alias": null,
+    "comment": "C",
+    "category": "C",
+    "pack": "axial"
+  }
+]

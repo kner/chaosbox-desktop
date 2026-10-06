@@ -1,0 +1,65 @@
+[
+  {
+    "box": "a52a",
+    "count": 19,
+    "device": "74HC32",
+    "alias": "",
+    "comment": "Quad 2-input OR gate",
+    "category": "DIG",
+    "pack": "SOIC s"
+  },
+  {
+    "box": "a52a",
+    "count": 1,
+    "device": "R560-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a52a",
+    "count": 10,
+    "device": "cd4016be",
+    "alias": null,
+    "comment": "Texas InstrumentsCMOS Quad Bilateral Switch",
+    "category": "",
+    "pack": "dip14"
+  },
+  {
+    "box": "a52a",
+    "count": 0,
+    "device": "C22u 25V",
+    "alias": null,
+    "comment": "",
+    "category": "C",
+    "pack": "smd"
+  },
+  {
+    "box": "a52a",
+    "count": 10,
+    "device": "R4703",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD "
+  },
+  {
+    "box": "a52a",
+    "count": 10,
+    "device": "681k",
+    "alias": null,
+    "comment": "",
+    "category": "1% 50u/K",
+    "pack": ""
+  },
+  {
+    "box": "a52a",
+    "count": 10,
+    "device": "CG0603MLC-05E",
+    "alias": null,
+    "comment": "esd suppressor chip guard Varistors 5V",
+    "category": "filter ESD Suppressor  varistor",
+    "pack": "smd 603"
+  }
+]

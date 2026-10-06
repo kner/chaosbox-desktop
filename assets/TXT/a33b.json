@@ -1,0 +1,11 @@
+[
+  {
+    "box": "a33b",
+    "count": 1,
+    "device": "74act244",
+    "alias": null,
+    "comment": "octal buffer line driver treiber",
+    "category": "DIG",
+    "pack": "SOIC breit"
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "box": "s29c",
+    "count": 3,
+    "device": "1.8m",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s29c",
+    "count": 10,
+    "device": "R1k5 1.5k",
+    "alias": "",
+    "comment": "1.5k",
+    "category": "r smd",
+    "pack": "smd 805"
+  }
+]

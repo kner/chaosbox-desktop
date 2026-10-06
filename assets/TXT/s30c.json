@@ -1,0 +1,20 @@
+[
+  {
+    "box": "s30c",
+    "count": 2,
+    "device": "r161",
+    "alias": null,
+    "comment": "160OHM",
+    "category": "r",
+    "pack": "dra"
+  },
+  {
+    "box": "s30c",
+    "count": 30,
+    "device": "C4,7nF",
+    "alias": null,
+    "comment": null,
+    "category": "c",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

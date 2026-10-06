@@ -1,0 +1,236 @@
+[
+  {
+    "box": "a12",
+    "count": 2,
+    "device": "GAL20V8R",
+    "alias": "",
+    "comment": "",
+    "category": "GAL",
+    "pack": "QFP28"
+  },
+  {
+    "box": "a12",
+    "count": 2,
+    "device": "16MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": "DIP"
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "74F543",
+    "alias": null,
+    "comment": "Octal Registered Transceiver With 3-State Outputs",
+    "category": "DIG",
+    "pack": "SSOP 20"
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "F126",
+    "alias": null,
+    "comment": "",
+    "category": "DIGITAL",
+    "pack": "SOIC 14"
+  },
+  {
+    "box": "a12",
+    "count": 2,
+    "device": "74F621",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "SOIC 20"
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "74HC138N",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a12",
+    "count": 3,
+    "device": "MC34082P",
+    "alias": null,
+    "comment": "HIGH PERFORMANCE JFET INPUT OPERA0ONAL AMPLIFIERS",
+    "category": "OPAMP",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "LM320T",
+    "alias": null,
+    "comment": "Series 3-Terminal Negative Regulators",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "R33",
+    "alias": null,
+    "comment": "",
+    "category": "R DIP16",
+    "pack": ""
+  },
+  {
+    "box": "a12",
+    "count": 2,
+    "device": "BC182B",
+    "alias": null,
+    "comment": "Transistor Silicon Plastic NPN",
+    "category": "NPN",
+    "pack": "TO92 kurz"
+  },
+  {
+    "box": "a12",
+    "count": 3,
+    "device": "R169-1%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a12",
+    "count": 2,
+    "device": "16MHz Oszillator smd",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": "smd"
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "Relais 24V",
+    "alias": "",
+    "comment": "",
+    "category": "Relais",
+    "pack": ""
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "1,8432MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "8,192",
+    "alias": "",
+    "comment": "8192",
+    "category": "Quartz",
+    "pack": "Draht"
+  },
+  {
+    "box": "a12",
+    "count": 10,
+    "device": "R5602",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a12",
+    "count": 16,
+    "device": "ZPD1",
+    "alias": "",
+    "comment": "0.7V",
+    "category": "Zenerdiode",
+    "pack": ""
+  },
+  {
+    "box": "a12",
+    "count": 5,
+    "device": "C100n Polyester",
+    "alias": null,
+    "comment": "C100n Polyester 50V",
+    "category": "C100n Polyester",
+    "pack": ""
+  },
+  {
+    "box": "a12",
+    "count": 0,
+    "device": "p250k",
+    "alias": null,
+    "comment": "",
+    "category": "poti",
+    "pack": "draht"
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "p50k",
+    "alias": null,
+    "comment": "",
+    "category": "poti",
+    "pack": "draht"
+  },
+  {
+    "box": "a12",
+    "count": 20,
+    "device": "C100nF",
+    "alias": "",
+    "comment": "",
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "TDA8060",
+    "alias": "",
+    "comment": "ClassB   2 x 40 W/2 ohm stereo",
+    "category": "",
+    "pack": "Draht 13 polig stehend"
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "1000nF 330nF 680nf470nF",
+    "alias": "",
+    "comment": "",
+    "category": "C KERAMI",
+    "pack": "smd805"
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "Sicherung 1A Träge, F3.15A",
+    "alias": "",
+    "comment": "glas",
+    "category": "fuse",
+    "pack": ""
+  },
+  {
+    "box": "a12",
+    "count": 1,
+    "device": "R 3.9M",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "R draht"
+  },
+  {
+    "box": "a12",
+    "count": 10,
+    "device": " 10A Flink,15a,2.5A,f5a,t2a,m1c,t1.6a,",
+    "alias": "",
+    "comment": "Sicherung",
+    "category": "FUSE",
+    "pack": "Draht"
+  }
+]

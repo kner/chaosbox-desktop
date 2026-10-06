@@ -1,0 +1,20 @@
+[
+  {
+    "box": "boards",
+    "count": 1,
+    "device": "bus blaster ",
+    "alias": "v 3c 2012",
+    "comment": "",
+    "category": "boards",
+    "pack": ""
+  },
+  {
+    "box": "boards",
+    "count": 1,
+    "device": "avr dragon",
+    "alias": null,
+    "comment": null,
+    "category": "boards",
+    "pack": null
+  }
+]

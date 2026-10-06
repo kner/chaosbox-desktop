@@ -1,0 +1,164 @@
+[
+  {
+    "box": "s1a",
+    "count": 6,
+    "device": "74hct541",
+    "alias": null,
+    "comment": "octal buffer line driver treiber",
+    "category": "DIG",
+    "pack": "SOIC breit"
+  },
+  {
+    "box": "s1a",
+    "count": 3,
+    "device": "74f157a",
+    "alias": null,
+    "comment": "MUX multiplexer",
+    "category": "DIG",
+    "pack": "SOIC"
+  },
+  {
+    "box": "s1a",
+    "count": 1,
+    "device": "ad557jp",
+    "alias": null,
+    "comment": "8bit DAU",
+    "category": "DAU DAC",
+    "pack": "QFP"
+  },
+  {
+    "box": "s1a",
+    "count": 1,
+    "device": "LM567cn",
+    "alias": null,
+    "comment": "Tone Decoder",
+    "category": "analog ",
+    "pack": "dip8"
+  },
+  {
+    "box": "s1a",
+    "count": 1,
+    "device": "op279",
+    "alias": "",
+    "comment": "Rail-to-Rail High Output Current Operational Amplifiers",
+    "category": "opamp",
+    "pack": "soic8"
+  },
+  {
+    "box": "s1a",
+    "count": 3,
+    "device": "cy7c199",
+    "alias": null,
+    "comment": "32K x 8 Static RAM",
+    "category": "SRAM",
+    "pack": "soic28"
+  },
+  {
+    "box": "s1a",
+    "count": 1,
+    "device": "hm628512",
+    "alias": null,
+    "comment": "500k sram",
+    "category": "sram",
+    "pack": "soic breit"
+  },
+  {
+    "box": "s1a",
+    "count": 3,
+    "device": "1Ohm",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "draht"
+  },
+  {
+    "box": "s1a",
+    "count": 1,
+    "device": "bsp220",
+    "alias": "",
+    "comment": "P-channel enhancement mode vertical D-MOS transistor",
+    "category": "power mos",
+    "pack": "smd"
+  },
+  {
+    "box": "s1a",
+    "count": 2,
+    "device": "78l05",
+    "alias": null,
+    "comment": "",
+    "category": "spannungsregler",
+    "pack": "to92"
+  },
+  {
+    "box": "s1a",
+    "count": 1,
+    "device": "mircro",
+    "alias": null,
+    "comment": "mikrofon micro",
+    "category": "mikrofon",
+    "pack": ""
+  },
+  {
+    "box": "s1a",
+    "count": 3,
+    "device": "8.2k sip",
+    "alias": null,
+    "comment": "",
+    "category": "r sip",
+    "pack": "sip"
+  },
+  {
+    "box": "s1a",
+    "count": 1,
+    "device": "c mks 1uF",
+    "alias": null,
+    "comment": "",
+    "category": "c mks folie",
+    "pack": ""
+  },
+  {
+    "box": "s1a",
+    "count": 1,
+    "device": "22k sip 8x",
+    "alias": null,
+    "comment": "",
+    "category": "r sip",
+    "pack": "sip9"
+  },
+  {
+    "box": "s1a",
+    "count": 1,
+    "device": "240k-1%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": "dra"
+  },
+  {
+    "box": "s1a",
+    "count": 30,
+    "device": "R10",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s1a",
+    "count": 20,
+    "device": "C10pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "s1a",
+    "count": 3,
+    "device": "BCX51-160 ",
+    "alias": null,
+    "comment": "45V pnp audio hfe 160",
+    "category": null,
+    "pack": "sot89"
+  }
+]

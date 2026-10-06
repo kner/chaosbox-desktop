@@ -1,0 +1,101 @@
+[
+  {
+    "box": "a14a",
+    "count": 1,
+    "device": "88913",
+    "alias": null,
+    "comment": "LOW SKEW CMOS CLOCK DRIVER",
+    "category": "DIGITAL",
+    "pack": "SOIC "
+  },
+  {
+    "box": "a14a",
+    "count": 1,
+    "device": "DS1232S",
+    "alias": null,
+    "comment": "",
+    "category": "DELAY",
+    "pack": ""
+  },
+  {
+    "box": "a14a",
+    "count": 1,
+    "device": "TLC555CP",
+    "alias": "",
+    "comment": "timer",
+    "category": "timer",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a14a",
+    "count": 3,
+    "device": "MAX691CWE",
+    "alias": null,
+    "comment": "Microprocessor Supervisory Circuits",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a14a",
+    "count": 1,
+    "device": "BRY39",
+    "alias": null,
+    "comment": " Programmable unijunction transistor/ Silicon controlled switch",
+    "category": "",
+    "pack": "TO92 4"
+  },
+  {
+    "box": "a14a",
+    "count": 1,
+    "device": "R120-5%",
+    "alias": null,
+    "comment": "1Watt",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a14a",
+    "count": 1,
+    "device": "R10k-1%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a14a",
+    "count": 2,
+    "device": "R10k-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a14a",
+    "count": 3,
+    "device": "p500klin",
+    "alias": null,
+    "comment": "",
+    "category": "poti",
+    "pack": "draht"
+  },
+  {
+    "box": "a14a",
+    "count": 20,
+    "device": "C1,5nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a14a",
+    "count": 10,
+    "device": "100nF 220nF",
+    "alias": null,
+    "comment": null,
+    "category": "C KERAMI",
+    "pack": "smd805"
+  }
+]

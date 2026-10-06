@@ -1,0 +1,101 @@
+[
+  {
+    "box": "a83a",
+    "count": 2,
+    "device": "R392",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a83a",
+    "count": 1,
+    "device": "PC703",
+    "alias": null,
+    "comment": "High Collector-emitter Voltage Type Photocou",
+    "category": "OPTOKOPPLER",
+    "pack": "DIP6"
+  },
+  {
+    "box": "a83a",
+    "count": 4,
+    "device": "NE531N",
+    "alias": null,
+    "comment": "High slew rate operational amplif",
+    "category": "OPAMP",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a83a",
+    "count": 2,
+    "device": "74LS125",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "dip"
+  },
+  {
+    "box": "a83a",
+    "count": 2,
+    "device": "R510-5%",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "a83a",
+    "count": 2,
+    "device": "R6K8-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a83a",
+    "count": 1,
+    "device": "74s05",
+    "alias": null,
+    "comment": "HEX INVERTER WITH OPEN-COLLECTOR OUTPUTS",
+    "category": "",
+    "pack": "soica"
+  },
+  {
+    "box": "a83a",
+    "count": 2,
+    "device": "74LS125 smd",
+    "alias": "",
+    "comment": "",
+    "category": "DIG",
+    "pack": "soic"
+  },
+  {
+    "box": "a83a",
+    "count": 1,
+    "device": "kia324",
+    "alias": null,
+    "comment": "quad opamp",
+    "category": "opamp",
+    "pack": "soic14"
+  },
+  {
+    "box": "a83a",
+    "count": 5,
+    "device": "BC548",
+    "alias": "",
+    "comment": "NPN General Purpose",
+    "category": "",
+    "pack": "Draht"
+  },
+  {
+    "box": "a83a",
+    "count": 20,
+    "device": "C47pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

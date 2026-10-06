@@ -1,0 +1,101 @@
+[
+  {
+    "box": "s1c",
+    "count": 7,
+    "device": "74hct574",
+    "alias": null,
+    "comment": "octal D Flipflop",
+    "category": "DIG",
+    "pack": "SOIC breit"
+  },
+  {
+    "box": "s1c",
+    "count": 2,
+    "device": "dm7406m",
+    "alias": null,
+    "comment": "inv. buffer open collector",
+    "category": "DIG",
+    "pack": "SOIC"
+  },
+  {
+    "box": "s1c",
+    "count": 1,
+    "device": "rc5054am",
+    "alias": null,
+    "comment": "Programmable Synchronous DC-DC Converter Controller for Low Voltage Microprocessors",
+    "category": "dcdc",
+    "pack": "soic20 breit"
+  },
+  {
+    "box": "s1c",
+    "count": 1,
+    "device": "ne555",
+    "alias": null,
+    "comment": "timer",
+    "category": "analog",
+    "pack": "soic8"
+  },
+  {
+    "box": "s1c",
+    "count": 1,
+    "device": "d71054",
+    "alias": null,
+    "comment": "ogrammable Timer/Counter",
+    "category": "Timer",
+    "pack": "qfo"
+  },
+  {
+    "box": "s1c",
+    "count": 1,
+    "device": "74act04 74act32",
+    "alias": null,
+    "comment": "",
+    "category": "dig",
+    "pack": "soic"
+  },
+  {
+    "box": "s1c",
+    "count": 1,
+    "device": "2.7k sip",
+    "alias": null,
+    "comment": "",
+    "category": "r sip",
+    "pack": "sip"
+  },
+  {
+    "box": "s1c",
+    "count": 0,
+    "device": "240k 1%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": "dr"
+  },
+  {
+    "box": "s1c",
+    "count": 1,
+    "device": "r47 5% 1w",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": "dr"
+  },
+  {
+    "box": "s1c",
+    "count": 30,
+    "device": "R4k7",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s1c",
+    "count": 20,
+    "device": "C220pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

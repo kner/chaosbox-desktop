@@ -152,13 +152,15 @@ class Settings:
         self.app_id = "chaosbox-" + hashlib.sha256(str(self.root).encode()).hexdigest()[:16]
         self.window_class = "Chaosbox-" + self.app_id.removeprefix("chaosbox-")
         self.profiles = []
-        self.limit = 3000
+        self.image_width = 3000
         self.snippets = {}
         self.ssh = {}
 
-    def ensure(self):
+    def ensure(self, default_box=None):
         if not self.path.exists():
             text = DEFAULT_SETUP.read_text(encoding="utf-8")
+            if default_box and not any(name.casefold() == "box" for name, *_ in section_blocks(text)):
+                text += f"\n[Box]\nTitel={default_box}\n"
             text += ("\n[SSH]\nHost=access983197478.webspace-data.io\nPort=22\nUser=u114229695\n"
                      "ImageDestination=l1/storage/app/exif/jpg\nDataDestination=l1/storage/app/exif/data\n"
                      f"KeyFile={self.state_dir / 'credentials/android_copy'}\n"
@@ -221,9 +223,12 @@ class Settings:
                 values.update(app)
                 for key, entries in globals_.items():
                     effective.setdefault(key, {}).update(entries)
-            limit = int(effective.get("imagesize", {}).get("limit", "3000"))
-            if not 1 <= limit <= 20000:
-                raise ValueError("ImageSize LIMIT must be between 1 and 20000.")
+            try:
+                image_width = int(values.get("imagewidth", "3000"))
+            except ValueError as error:
+                raise ValueError("ImageWidth must be an integer between 1 and 20000.") from error
+            if not 1 <= image_width <= 20000:
+                raise ValueError("ImageWidth must be between 1 and 20000.")
             poster = poster_settings(self._text(effective))
             labels = values.get("felder", ",".join(LABELS)).split(",")
             if len(labels) > 7:
@@ -247,7 +252,7 @@ class Settings:
                     raise ValueError(f"Project folder must remain inside the installation: {folder}")
             profile = Profile(identifier, directory.name, images, data, data, self.index,
                               labels, unique_categories(values.get("kategorie", "")), owner, selector,
-                              (limit, snippets, ssh, poster))
+                              (image_width, snippets, ssh, poster))
             profiles.append(profile)
             for title, entries in children:
                 child_values = {key: value for key, value in values.items() if key != "titel"}
@@ -269,7 +274,7 @@ class Settings:
     def reload(self):
         text = self.path.read_text(encoding="utf-8-sig")
         loaded = self._load(text)
-        self.profiles, self.default, self.limit, self.snippets, self.ssh = loaded
+        self.profiles, self.default, self.image_width, self.snippets, self.ssh = loaded
         self.poster = poster_settings(text)
         self.profile(getattr(self, "active", self.default))
 
@@ -284,7 +289,7 @@ class Settings:
         profile = next((p for p in self.profiles if p.id.casefold() == name.casefold()),
                        next(p for p in self.profiles if p.id.casefold() == self.default.casefold()))
         self.active = profile.id
-        self.limit, self.snippets, self.ssh, self.poster = profile.options
+        self.image_width, self.snippets, self.ssh, self.poster = profile.options
         return profile
 
     @property
@@ -724,7 +729,7 @@ def reserve_output(directory, name):
             suffix += 1
 
 
-def save_media(source, profile, metadata, limit):
+def save_media(source, profile, metadata, image_width):
     source = Path(source)
     if source.is_symlink() or not source.is_file() or source.suffix.lower() not in IMPORTS:
         raise ValueError(f"Unsupported or unavailable media file: {source}")
@@ -752,10 +757,13 @@ def save_media(source, profile, metadata, limit):
             with Image.open(original) as image:
                 if image.format not in ("JPEG", "PNG"):
                     raise ValueError("Select a JPG, PNG or MP4 file.")
-                resized = image.format == "PNG" or max(image.size) > limit
+                display_width = image.height if image.getexif().get(274) in (5, 6, 7, 8) else image.width
+                resized = image.format == "PNG" or display_width > image_width
                 if resized:
                     converted = ImageOps.exif_transpose(image).convert("RGBA")
-                    converted.thumbnail((limit, limit), Image.Resampling.LANCZOS)
+                    if converted.width > image_width:
+                        height = max(1, round(converted.height * image_width / converted.width))
+                        converted = converted.resize((image_width, height), Image.Resampling.LANCZOS)
                     rgb = Image.new("RGB", converted.size, "white")
                     rgb.paste(converted, mask=converted.getchannel("A"))
                     rgb.save(temporary, "JPEG", quality=92)
@@ -806,12 +814,12 @@ def save_media(source, profile, metadata, limit):
             target.unlink(missing_ok=True)
 
 
-def save_batch(paths, profile, record, limit, progress=lambda _: None, records=None):
+def save_batch(paths, profile, record, image_width, progress=lambda _: None, records=None):
     selection = list(paths)
     for index, source in enumerate(selection):
         try:
             progress(f"Saving {index + 1}/{len(selection)}: {source.name}")
-            selection[index] = save_media(source, profile, records[index] if records is not None else record, limit)
+            selection[index] = save_media(source, profile, records[index] if records is not None else record, image_width)
         except Exception as error:
             raise BatchError(f"Saved {index} of {len(selection)} files. {source.name}: {error}", selection, index) from error
     return selection

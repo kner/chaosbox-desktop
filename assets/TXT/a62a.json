@@ -1,0 +1,119 @@
+[
+  {
+    "box": "a62a",
+    "count": 3,
+    "device": "DS34C87",
+    "alias": null,
+    "comment": "CMOS Quad TRISTATE Differential Line Driver",
+    "category": "",
+    "pack": "SOIC"
+  },
+  {
+    "box": "a62a",
+    "count": 2,
+    "device": "R750",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a62a",
+    "count": 2,
+    "device": "TC4019",
+    "alias": "",
+    "comment": "quad and or select gate",
+    "category": "",
+    "pack": "DIP"
+  },
+  {
+    "box": "a62a",
+    "count": 5,
+    "device": "R1K1-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a62a",
+    "count": 1,
+    "device": "r24k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a62a",
+    "count": 1,
+    "device": "1M0-5%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a62a",
+    "count": 1,
+    "device": "r15-5%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a62a",
+    "count": 1,
+    "device": "88c681",
+    "alias": null,
+    "comment": "dual uart",
+    "category": "",
+    "pack": "plc44"
+  },
+  {
+    "box": "a62a",
+    "count": 4,
+    "device": "w24257s",
+    "alias": null,
+    "comment": "32K X 8 High Speed CMOS Static RAM",
+    "category": "sram",
+    "pack": "soic"
+  },
+  {
+    "box": "a62a",
+    "count": 1,
+    "device": "ha13525",
+    "alias": null,
+    "comment": "motor driver",
+    "category": "",
+    "pack": "smd"
+  },
+  {
+    "box": "a62a",
+    "count": 1,
+    "device": "mc34064",
+    "alias": null,
+    "comment": "UnderVoltage Sensing Circuit",
+    "category": "",
+    "pack": "soic8"
+  },
+  {
+    "box": "a62a",
+    "count": 8,
+    "device": "2PC1815Y",
+    "alias": null,
+    "comment": "NPN general purpose transistor",
+    "category": "",
+    "pack": "to92"
+  },
+  {
+    "box": "a62a",
+    "count": 10,
+    "device": "R2203",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  }
+]

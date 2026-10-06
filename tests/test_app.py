@@ -82,7 +82,7 @@ class BatchSaveConfirmationTests(unittest.TestCase):
         app.values = Mock(return_value=dict(app.media_baseline, comment="additional text"))
         app.box_path = app.record_index = None
         app.profile = SimpleNamespace(images=Path("/tmp/test-images"))
-        app.settings = SimpleNamespace(limit=3000, remember_category=Mock())
+        app.settings = SimpleNamespace(image_width=3000, remember_category=Mock())
         app.task = Mock()
         app.error = Mock()
         app.log = Mock()

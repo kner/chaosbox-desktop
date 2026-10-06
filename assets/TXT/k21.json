@@ -1,0 +1,20 @@
+[
+  {
+    "box": "k21",
+    "count": 30,
+    "device": "180k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "k21",
+    "count": 4,
+    "device": "330nF",
+    "alias": null,
+    "comment": null,
+    "category": "C Keramik",
+    "pack": "Draht"
+  }
+]

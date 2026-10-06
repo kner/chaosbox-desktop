@@ -1,0 +1,92 @@
+[
+  {
+    "box": "a24",
+    "count": 1,
+    "device": "Quarz",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a24",
+    "count": 4,
+    "device": "C556B",
+    "alias": null,
+    "comment": "PNP general purpose transistor",
+    "category": "PNP",
+    "pack": "TO92 kurz"
+  },
+  {
+    "box": "a24",
+    "count": 1,
+    "device": "R200-2% R1K8 R110",
+    "alias": null,
+    "comment": "",
+    "category": "2%",
+    "pack": ""
+  },
+  {
+    "box": "a24",
+    "count": 2,
+    "device": "r120-2% r91 ",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a24",
+    "count": 1,
+    "device": "R150-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a24",
+    "count": 2,
+    "device": "r240-2%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a24",
+    "count": 1,
+    "device": "R160-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a24",
+    "count": 5,
+    "device": "R100-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a24",
+    "count": 1,
+    "device": "24MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": ""
+  },
+  {
+    "box": "a24",
+    "count": 10,
+    "device": "R2700",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  }
+]

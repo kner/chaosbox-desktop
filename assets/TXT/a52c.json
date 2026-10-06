@@ -1,0 +1,110 @@
+[
+  {
+    "box": "a52c",
+    "count": 1,
+    "device": "R2K0-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a52c",
+    "count": 1,
+    "device": "uc3173a",
+    "alias": null,
+    "comment": "",
+    "category": "MOTOR AMP",
+    "pack": "PLCC-28"
+  },
+  {
+    "box": "a52c",
+    "count": 6,
+    "device": "Diode Si",
+    "alias": null,
+    "comment": "",
+    "category": "D",
+    "pack": "SMD"
+  },
+  {
+    "box": "a52c",
+    "count": 1,
+    "device": "km62256clg-7",
+    "alias": null,
+    "comment": " 32Kx8 bit Low Power CMOS Static RAM",
+    "category": "",
+    "pack": "soic28"
+  },
+  {
+    "box": "a52c",
+    "count": 1,
+    "device": "c1010",
+    "alias": null,
+    "comment": "Photo Coupler, Transistor output",
+    "category": "OPTO",
+    "pack": ""
+  },
+  {
+    "box": "a52c",
+    "count": 1,
+    "device": "74LS05",
+    "alias": null,
+    "comment": "Hex Inverters with Open-Collector Outputs",
+    "category": "DIG",
+    "pack": ""
+  },
+  {
+    "box": "a52c",
+    "count": 1,
+    "device": "15.00R7B",
+    "alias": null,
+    "comment": "",
+    "category": "quarz",
+    "pack": ""
+  },
+  {
+    "box": "a52c",
+    "count": 2,
+    "device": "",
+    "alias": null,
+    "comment": "",
+    "category": "MICROFON",
+    "pack": ""
+  },
+  {
+    "box": "a52c",
+    "count": 0,
+    "device": "C22u 10V",
+    "alias": null,
+    "comment": "",
+    "category": "C",
+    "pack": "smd"
+  },
+  {
+    "box": "a52c",
+    "count": 2,
+    "device": "74HCT273",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a52c",
+    "count": 10,
+    "device": "R4701",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD "
+  },
+  {
+    "box": "a52c",
+    "count": 5,
+    "device": "680k",
+    "alias": null,
+    "comment": "",
+    "category": "1%",
+    "pack": ""
+  }
+]

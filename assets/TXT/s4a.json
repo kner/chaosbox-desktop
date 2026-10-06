@@ -1,0 +1,65 @@
+[
+  {
+    "box": "s4a",
+    "count": 6,
+    "device": "unbekannt unknown",
+    "alias": "",
+    "comment": "unbekannt",
+    "category": "power mos",
+    "pack": "smd"
+  },
+  {
+    "box": "s4a",
+    "count": 65,
+    "device": "Dioden diverse Shottky",
+    "alias": "",
+    "comment": "LED Diode Shottky",
+    "category": "DIODE",
+    "pack": "Draht, smd"
+  },
+  {
+    "box": "s4a",
+    "count": 30,
+    "device": "R221",
+    "alias": "",
+    "comment": "",
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s4a",
+    "count": 10,
+    "device": "74hc4017d",
+    "alias": null,
+    "comment": "Johnson decade counter with 10 decoded outputs",
+    "category": "Johnson Counter",
+    "pack": "soic"
+  },
+  {
+    "box": "s4a",
+    "count": 10,
+    "device": "CL10A106 C CAP 100uF 6.3V",
+    "alias": null,
+    "comment": " C CAP 100uF 6.3V",
+    "category": " C CAP 100uF 6.3V",
+    "pack": "603"
+  },
+  {
+    "box": "s4a",
+    "count": 5,
+    "device": "CL10A106 C CAP 470uF 6.3V",
+    "alias": "",
+    "comment": " C CAP 470uF 6.3V TANTAL",
+    "category": " C CAP 470uF 6.3V ELKO TANTAL",
+    "pack": "2917"
+  },
+  {
+    "box": "s4a",
+    "count": 9,
+    "device": "Quarz 8MHZ CMOS SMD",
+    "alias": "8 MHz XTAL KC5032A8.00000CMGE00 ",
+    "comment": "https://ele.kyocera.com/sites/default/files/assets/static/discontinued/kc5032a_cm_2016_e.pdf",
+    "category": "XTAL quarz ",
+    "pack": "smd"
+  }
+]

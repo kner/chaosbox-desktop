@@ -1,0 +1,47 @@
+[
+  {
+    "box": "a54c",
+    "count": 3,
+    "device": "R56-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a54c",
+    "count": 10,
+    "device": "R1200",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a54c",
+    "count": 4,
+    "device": "v6 46",
+    "alias": null,
+    "comment": "z diode 4.6V",
+    "category": "z diode zener",
+    "pack": "smd"
+  },
+  {
+    "box": "a54c",
+    "count": 12,
+    "device": "attiny2313-20su",
+    "alias": "",
+    "comment": "avr",
+    "category": "avr",
+    "pack": "soic"
+  },
+  {
+    "box": "a54c",
+    "count": 7,
+    "device": "l7809cv",
+    "alias": "7809",
+    "comment": "1.5A",
+    "category": null,
+    "pack": "to220"
+  }
+]

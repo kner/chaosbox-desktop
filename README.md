@@ -33,6 +33,13 @@ Each installation gets its own application menu entry; all boxes use one shared 
 ./install-desktop.sh --installdir=~/cb2
 ```
 
+The installer aborts with an error message if the target installation directory
+already exists, including an empty directory. Existing files remain unchanged.
+Only the first box in the setup receives the contents of `assets/JPG` and
+`assets/TXT` in its respective folders, including subdirectories. Other boxes
+start empty. If the setup contains no `[Box]` section, the installer adds
+`[Box]` with `Titel=ChaosBox` and copies the assets there.
+
 Launch **Chaosbox-cb1** or **Chaosbox-cb2** from the Ubuntu application menu.
 Each launcher is permanently bound to its installation directory. Shared application files
 are stored under `~/.local/share/chaosbox/desktop`; box launchers are stored under
@@ -40,7 +47,7 @@ are stored under `~/.local/share/chaosbox/desktop`; box launchers are stored und
 menu entries are `~/.local/share/applications/<installation-id>.desktop`.
 The ID and window class depend on the full installation path, so directories
 with the same final name still have distinct launchers. Run the installer once
-with any box path to update the application for **all installed boxes**, preserving
+with a new box path to update the application for **all installed boxes**, preserving
 each box's setup and data. Existing per-box launchers are migrated automatically.
 All boxes use the new version on their next launch; reopen any running windows.
 No administrator privileges are needed when dependencies are already present.
@@ -106,6 +113,7 @@ are removed because the subfolders are always `JPG` and `TXT`.
 
 ```ini
 [App]
+ImageWidth=2048
 Felder=Box,Quantity,Device,Alias,Category,Comment,Package
 Kategorie=Werkzeug,Elektronik
 
@@ -119,9 +127,14 @@ Titel=Chaosbox1
 Kategorie=Haushalt,Garten
 ```
 
+Set `ImageWidth` (1–20000 pixels) centrally in `[App]`. Each `[Box]` inherits
+it and can override it with its own `ImageWidth` value. Local `[App]` sections
+and nested boxes follow the same inheritance. The default is 3000 pixels.
+Replace the old `[ImageSize] LIMIT` setting with `[App] ImageWidth`.
+
 Each project inherits its parent's fields and settings, with independent
 categories when specified. An optional `Bilderbox/setup.ini` can override
-`[App]`, `[ImageSize]`, `[Poster]`, `[TextSnippets]` and `[SSH]`, and declare more
+`[App]`, `[Poster]`, `[TextSnippets]` and `[SSH]`, and declare more
 `[Box]` sections such as `Titel=Urlaub` for `Bilderbox/Urlaub`. New categories are
 saved to the matching Box section or local App section. Repeated Box sections
 are preserved independently. Titles must be unique within their parent and
@@ -175,7 +188,7 @@ names are retained without overwriting files.
   is specified. Existing profile media moves there when its category changes;
   media already in the correct folder is updated in place. Imports receive a separate `_cb`
   filename; name collisions get numbered suffixes. PNG files become JPG with a
-  white background. Images exceeding `[ImageSize] LIMIT` are resized. Smaller
+  white background. Images wider than `ImageWidth` are resized proportionally. Smaller
   JPGs retain their encoded image data; MP4 video/audio is not re-encoded.
 - JPG metadata uses EXIF `UserComment`. MP4 metadata uses ItemList `Comment`;
   existing Keys comments are synchronized. JSON strings use the Android field
@@ -226,7 +239,7 @@ names are retained without overwriting files.
   ```
 
   SIZE is **height × width in millimeters**; LIMIT is the longest output edge in
-  pixels, independent of the normal image LIMIT. All four margins are configured in millimeters;
+  pixels, independent of `ImageWidth`. All four margins are configured in millimeters;
   column widths and row heights use the remaining area. The margins must leave
   positive space within POSTER-SIZE. Colors accept hex RGB/RGBA or RRGGBB/RRGGBBAA,
   optionally prefixed with #; `eeee` means translucent light gray (#EEEEEEEE).

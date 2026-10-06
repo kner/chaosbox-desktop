@@ -1,0 +1,110 @@
+[
+  {
+    "box": "k11",
+    "count": 2,
+    "device": "BC547C",
+    "alias": "",
+    "comment": "Low Noise Transistors",
+    "category": "NPN",
+    "pack": "Draht"
+  },
+  {
+    "box": "k11",
+    "count": 5,
+    "device": "22r 10% 1w",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "k11",
+    "count": 5,
+    "device": "27r 10% 1w",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "k11",
+    "count": 10,
+    "device": "39r 10% 0.5W",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "k11",
+    "count": 15,
+    "device": "33r 10% 1w",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "k11",
+    "count": 1,
+    "device": "df06m",
+    "alias": null,
+    "comment": null,
+    "category": "graetz bruecke gleichrichter",
+    "pack": null
+  },
+  {
+    "box": "k11",
+    "count": 1,
+    "device": "Batteriehalterung",
+    "alias": null,
+    "comment": null,
+    "category": "batteriehalterung",
+    "pack": "draht"
+  },
+  {
+    "box": "k11",
+    "count": 2,
+    "device": "L78s10cv",
+    "alias": null,
+    "comment": "10V",
+    "category": "spannungsregler",
+    "pack": "TO92"
+  },
+  {
+    "box": "k11",
+    "count": 4,
+    "device": "0.47uF",
+    "alias": null,
+    "comment": "10V",
+    "category": "C",
+    "pack": "draht 5mm"
+  },
+  {
+    "box": "k11",
+    "count": 3,
+    "device": "myusbtouart",
+    "alias": null,
+    "comment": null,
+    "category": "usb uart",
+    "pack": "modul"
+  },
+  {
+    "box": "k11",
+    "count": 3,
+    "device": "1N4148",
+    "alias": null,
+    "comment": "Fast Switching Diodes",
+    "category": "Diode",
+    "pack": "Draht"
+  },
+  {
+    "box": "k11",
+    "count": 5,
+    "device": "ATMEGA328P",
+    "alias": null,
+    "comment": null,
+    "category": "uC",
+    "pack": "Dip28"
+  }
+]

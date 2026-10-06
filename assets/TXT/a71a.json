@@ -1,0 +1,74 @@
+[
+  {
+    "box": "a71a",
+    "count": 15,
+    "device": "R101",
+    "alias": null,
+    "comment": "R 100 Ohm",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a71a",
+    "count": 1,
+    "device": "R11k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a71a",
+    "count": 4,
+    "device": "R220k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a71a",
+    "count": 2,
+    "device": "bc490 bc546b",
+    "alias": null,
+    "comment": "bipolar Transistroren",
+    "category": "Transistor",
+    "pack": ""
+  },
+  {
+    "box": "a71a",
+    "count": 10,
+    "device": "r4702",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a71a",
+    "count": 1,
+    "device": "74hc125",
+    "alias": null,
+    "comment": "",
+    "category": "dig",
+    "pack": "soic"
+  },
+  {
+    "box": "a71a",
+    "count": 0,
+    "device": "C15u 25v",
+    "alias": null,
+    "comment": "",
+    "category": "c",
+    "pack": "smd"
+  },
+  {
+    "box": "a71a",
+    "count": 20,
+    "device": "C68nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

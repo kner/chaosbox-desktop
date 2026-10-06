@@ -1,0 +1,47 @@
+[
+  {
+    "box": "a51c",
+    "count": 30,
+    "device": "Transistoren npn pnp",
+    "alias": null,
+    "comment": "http://info.electronicwerkstatt.de/bereiche/bauteile/smd/smd_aktiv/l.html",
+    "category": "TRANSISTOR",
+    "pack": "SMD"
+  },
+  {
+    "box": "a51c",
+    "count": 7,
+    "device": "R75-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a51c",
+    "count": 1,
+    "device": "l4962",
+    "alias": null,
+    "comment": "1.5A POWER SWITCHING REGULATOR",
+    "category": "",
+    "pack": "dip16"
+  },
+  {
+    "box": "a51c",
+    "count": 10,
+    "device": "R39R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD "
+  },
+  {
+    "box": "a51c",
+    "count": 2,
+    "device": "L 10uH",
+    "alias": "Spule Inductor",
+    "comment": "FIXED IND 10UH 1.5A",
+    "category": "L",
+    "pack": "draht"
+  }
+]

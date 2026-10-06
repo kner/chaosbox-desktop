@@ -1,0 +1,38 @@
+[
+  {
+    "box": "k 2/1",
+    "count": 30,
+    "device": "R472",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "k 2/1",
+    "count": 1,
+    "device": "SN75452BP",
+    "alias": "",
+    "comment": "Dual Very-High Speed, High-Current Peripheral Driver",
+    "category": "DRIVER",
+    "pack": "DIP8 Plastik"
+  },
+  {
+    "box": "k 2/1",
+    "count": 2,
+    "device": "TMP03F",
+    "alias": "",
+    "comment": "Serial Digital Output Thermometer",
+    "category": "TEMPERATUR",
+    "pack": "SOIC8"
+  },
+  {
+    "box": "k 2/1",
+    "count": 4,
+    "device": "43k",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  }
+]

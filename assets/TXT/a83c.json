@@ -1,0 +1,83 @@
+[
+  {
+    "box": "a83c",
+    "count": 4,
+    "device": "R471",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a83c",
+    "count": 1,
+    "device": "CA3140E",
+    "alias": null,
+    "comment": "4.5MHz, BiMOS Operational Amplifier with MOSFET Input/Bipolar Output",
+    "category": "OPAMP",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a83c",
+    "count": 1,
+    "device": "H6006A2",
+    "alias": null,
+    "comment": "  Failsafe Watchdog",
+    "category": "",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a83c",
+    "count": 2,
+    "device": "74LS624",
+    "alias": null,
+    "comment": "Voltage-controlled osc",
+    "category": "VCO",
+    "pack": ""
+  },
+  {
+    "box": "a83c",
+    "count": 1,
+    "device": "R56-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a83c",
+    "count": 1,
+    "device": "R470K-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a83c",
+    "count": 1,
+    "device": "4020",
+    "alias": "",
+    "comment": "14-stage binary counter",
+    "category": "",
+    "pack": "soic16"
+  },
+  {
+    "box": "a83c",
+    "count": 11,
+    "device": "lm393",
+    "alias": null,
+    "comment": "",
+    "category": "comp",
+    "pack": "soic8"
+  },
+  {
+    "box": "a83c",
+    "count": 20,
+    "device": "C150pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

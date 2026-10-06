@@ -1,0 +1,56 @@
+[
+  {
+    "box": "s5b",
+    "count": 9,
+    "device": "quarze klein smd",
+    "alias": "",
+    "comment": "quarze xtal",
+    "category": "quarze xtal",
+    "pack": "smd"
+  },
+  {
+    "box": "s5b",
+    "count": 0,
+    "device": "lm358",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "soic8"
+  },
+  {
+    "box": "s5b",
+    "count": 12,
+    "device": "quarze klein draht",
+    "alias": "",
+    "comment": "quarze xtal",
+    "category": "quarze xtal",
+    "pack": "draht"
+  },
+  {
+    "box": "s5b",
+    "count": 21,
+    "device": "quarze groß Draht",
+    "alias": null,
+    "comment": "quarze groß Draht",
+    "category": "quarze groß Draht",
+    "pack": "draht"
+  },
+  {
+    "box": "s5b",
+    "count": 30,
+    "device": "R47k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s5b",
+    "count": 1,
+    "device": "AD589 1.2 V References",
+    "alias": "",
+    "comment": "",
+    "category": "",
+    "pack": ""
+  }
+]

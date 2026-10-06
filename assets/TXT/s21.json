@@ -1,0 +1,47 @@
+[
+  {
+    "box": "s21",
+    "count": 38,
+    "device": "Kondensator Folie",
+    "alias": "",
+    "comment": "",
+    "category": "C Kondensator Folie",
+    "pack": ""
+  },
+  {
+    "box": "s21",
+    "count": 4,
+    "device": "74hc157d",
+    "alias": "",
+    "comment": "IC QUAD 2-IN MUX",
+    "category": "dig",
+    "pack": "soic"
+  },
+  {
+    "box": "s21",
+    "count": 1,
+    "device": "R10k-5%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": null
+  },
+  {
+    "box": "s21",
+    "count": 30,
+    "device": "R6k8",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s21",
+    "count": 20,
+    "device": "C10pF",
+    "alias": "",
+    "comment": "",
+    "category": "C Keramik",
+    "pack": "smd 805"
+  }
+]

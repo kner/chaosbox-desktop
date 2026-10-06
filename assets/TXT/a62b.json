@@ -1,0 +1,83 @@
+[
+  {
+    "box": "a62b",
+    "count": 4,
+    "device": "R821",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a62b",
+    "count": 1,
+    "device": "DS1488",
+    "alias": null,
+    "comment": "Quad Line Driver",
+    "category": "DRIVER",
+    "pack": "DIP"
+  },
+  {
+    "box": "a62b",
+    "count": 2,
+    "device": "R1K2-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a62b",
+    "count": 1,
+    "device": "R1K2-5% R1M2",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a62b",
+    "count": 4,
+    "device": "1k21-1%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a62b",
+    "count": 1,
+    "device": "93c06",
+    "alias": null,
+    "comment": "256 Bit/1K 5.0V CMOS Serial EEPROM",
+    "category": "serial eeprom",
+    "pack": "SOIC-8"
+  },
+  {
+    "box": "a62b",
+    "count": 2,
+    "device": "bc558c",
+    "alias": null,
+    "comment": "PNP Epitaxial Silicon Transistor",
+    "category": "",
+    "pack": "to92"
+  },
+  {
+    "box": "a62b",
+    "count": 10,
+    "device": "R8202",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a62b",
+    "count": 10,
+    "device": "BZX79-F33",
+    "alias": null,
+    "comment": "33V",
+    "category": "ZENERDIODE",
+    "pack": "undefined"
+  }
+]

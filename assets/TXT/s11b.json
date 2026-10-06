@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s11b",
+    "count": 1,
+    "device": "HIP6006CB",
+    "alias": "",
+    "comment": "Buck and Synchronous-Rectifier Pulse-Width Modulator (PWM) Controller",
+    "category": "",
+    "pack": "soic  "
+  },
+  {
+    "box": "s11b",
+    "count": 30,
+    "device": "R120",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s11b",
+    "count": 1,
+    "device": "max7221",
+    "alias": "",
+    "comment": " Serially Interfaced, 8-Digit LED Display Drivers",
+    "category": "",
+    "pack": "dip24 schmal"
+  }
+]

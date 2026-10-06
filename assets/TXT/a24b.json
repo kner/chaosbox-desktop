@@ -1,0 +1,74 @@
+[
+  {
+    "box": "a24b",
+    "count": 0,
+    "device": "LM381",
+    "alias": null,
+    "comment": "Low Noise Dual Preamplifier",
+    "category": "OPAMP",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a24b",
+    "count": 1,
+    "device": "32MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": ""
+  },
+  {
+    "box": "a24b",
+    "count": 10,
+    "device": "R1202",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a24b",
+    "count": 10,
+    "device": "R64.9 65Ohm",
+    "alias": null,
+    "comment": "64.9 Ohm 1%",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a24b",
+    "count": 10,
+    "device": "4071",
+    "alias": "",
+    "comment": "HEF4071B Quad 2-input OR gate ",
+    "category": "",
+    "pack": "Dip14"
+  },
+  {
+    "box": "a24b",
+    "count": 6,
+    "device": "Attiny 1320PU",
+    "alias": null,
+    "comment": null,
+    "category": "uc",
+    "pack": "Dip8"
+  },
+  {
+    "box": "a24b",
+    "count": 5,
+    "device": "attiny15l",
+    "alias": null,
+    "comment": "avr",
+    "category": "avr",
+    "pack": "dip8"
+  },
+  {
+    "box": "a24b",
+    "count": 3,
+    "device": "Trimmer 100k",
+    "alias": null,
+    "comment": null,
+    "category": "trimmer poti",
+    "pack": "draht"
+  }
+]

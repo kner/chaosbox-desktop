@@ -1,0 +1,20 @@
+[
+  {
+    "box": "a34",
+    "count": 1,
+    "device": "39VF512",
+    "alias": null,
+    "comment": "512 Kbit / 1 Mbit / 2 Mbit / 4 Mbit (x8) Multi-Purpose Flash",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a34",
+    "count": 5,
+    "device": "74HC573",
+    "alias": "",
+    "comment": "",
+    "category": "DIG",
+    "pack": "SOIC20"
+  }
+]

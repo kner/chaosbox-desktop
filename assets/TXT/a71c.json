@@ -1,0 +1,38 @@
+[
+  {
+    "box": "a71c",
+    "count": 10,
+    "device": "R103",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a71c",
+    "count": 1,
+    "device": "bc878",
+    "alias": null,
+    "comment": "",
+    "category": "transistor",
+    "pack": ""
+  },
+  {
+    "box": "a71c",
+    "count": 10,
+    "device": "r47r0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a71c",
+    "count": 6,
+    "device": "74as1004",
+    "alias": null,
+    "comment": "7404 mit Treiber",
+    "category": "Treiber driver",
+    "pack": "soic14"
+  }
+]

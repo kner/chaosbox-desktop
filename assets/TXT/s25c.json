@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s25c",
+    "count": 6,
+    "device": "68k",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s25c",
+    "count": 5,
+    "device": "680k",
+    "alias": null,
+    "comment": "",
+    "category": "10%",
+    "pack": ""
+  },
+  {
+    "box": "s25c",
+    "count": 2,
+    "device": "79L05A",
+    "alias": null,
+    "comment": "",
+    "category": "vreg",
+    "pack": "soic8"
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s29a",
+    "count": 15,
+    "device": "820",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s29a",
+    "count": 3,
+    "device": "Quarz 16MHz",
+    "alias": "",
+    "comment": "",
+    "category": "XTAL quarz",
+    "pack": "smd"
+  },
+  {
+    "box": "s29a",
+    "count": 9,
+    "device": "smd elko 22uf 10v",
+    "alias": "",
+    "comment": "22u",
+    "category": "elko",
+    "pack": "smd"
+  }
+]

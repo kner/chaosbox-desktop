@@ -1,0 +1,65 @@
+[
+  {
+    "box": "s26c",
+    "count": 3,
+    "device": "1.8k",
+    "alias": null,
+    "comment": "",
+    "category": "10%",
+    "pack": ""
+  },
+  {
+    "box": "s26c",
+    "count": 3,
+    "device": "1.2M",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s26c",
+    "count": 1,
+    "device": "9.1k",
+    "alias": null,
+    "comment": "",
+    "category": "5% 10w",
+    "pack": ""
+  },
+  {
+    "box": "s26c",
+    "count": 2,
+    "device": "LM311",
+    "alias": null,
+    "comment": "VOLTAGE COMPARATORS",
+    "category": "COMP",
+    "pack": "soic"
+  },
+  {
+    "box": "s26c",
+    "count": 1,
+    "device": "LM358",
+    "alias": "",
+    "comment": "",
+    "category": "OPAMP",
+    "pack": "smd"
+  },
+  {
+    "box": "s26c",
+    "count": 1,
+    "device": "LM386",
+    "alias": null,
+    "comment": "LOW VOLTAGE AUDIO POWER AMPLIFIER",
+    "category": "OPAMP Audio",
+    "pack": "soic"
+  },
+  {
+    "box": "s26c",
+    "count": 30,
+    "device": "R3k9",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

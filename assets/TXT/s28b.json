@@ -1,0 +1,38 @@
+[
+  {
+    "box": "s28b",
+    "count": 3,
+    "device": "620k",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s28b",
+    "count": 2,
+    "device": "74vhcu04",
+    "alias": null,
+    "comment": "",
+    "category": "dig",
+    "pack": "soic"
+  },
+  {
+    "box": "s28b",
+    "count": 4,
+    "device": "act153",
+    "alias": null,
+    "comment": "Dual 4-Input Multiplexer",
+    "category": "DIG",
+    "pack": "sop"
+  },
+  {
+    "box": "s28b",
+    "count": 30,
+    "device": "R68",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

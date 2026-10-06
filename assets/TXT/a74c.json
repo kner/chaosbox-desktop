@@ -1,0 +1,119 @@
+[
+  {
+    "box": "a74c",
+    "count": 15,
+    "device": "R222",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a74c",
+    "count": 1,
+    "device": "HEF4001",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a74c",
+    "count": 1,
+    "device": "R2k4-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a74c",
+    "count": 10,
+    "device": "R1K8-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a74c",
+    "count": 20,
+    "device": "C33pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a74c",
+    "count": 18,
+    "device": "22u 16v",
+    "alias": null,
+    "comment": null,
+    "category": "C keramik",
+    "pack": "smd"
+  },
+  {
+    "box": "a74c",
+    "count": 4,
+    "device": "C10u16V",
+    "alias": null,
+    "comment": null,
+    "category": "C elko",
+    "pack": "smd"
+  },
+  {
+    "box": "a74c",
+    "count": 8,
+    "device": "R003 3milliohm",
+    "alias": null,
+    "comment": null,
+    "category": "r Strommesswiderstand",
+    "pack": "smd"
+  },
+  {
+    "box": "a74c",
+    "count": 3,
+    "device": "MIC2951-03BM",
+    "alias": "",
+    "comment": " High accuracy 5V, 150mA ldo",
+    "category": "ldo",
+    "pack": "soic8"
+  },
+  {
+    "box": "a74c",
+    "count": 6,
+    "device": "ltc1629cg",
+    "alias": null,
+    "comment": "synchronous step-down current mode switching regulator",
+    "category": "dcdc",
+    "pack": "SSOP-28"
+  },
+  {
+    "box": "a74c",
+    "count": 9,
+    "device": "1R8BA",
+    "alias": null,
+    "comment": "2uH 30A Induktivität panasonic",
+    "category": "L Spule",
+    "pack": "smd"
+  },
+  {
+    "box": "a74c",
+    "count": 8,
+    "device": "MBRS240LT3G ",
+    "alias": null,
+    "comment": "Schottky Power Rectifier 40V 2A",
+    "category": "schottky D",
+    "pack": "smd"
+  },
+  {
+    "box": "a74c",
+    "count": 1,
+    "device": "atmega328p",
+    "alias": null,
+    "comment": "uc avr",
+    "category": "AVR",
+    "pack": "dip28 small"
+  }
+]

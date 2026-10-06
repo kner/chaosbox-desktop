@@ -1,0 +1,11 @@
+[
+  {
+    "box": "s3",
+    "count": 9,
+    "device": "IRFD110",
+    "alias": null,
+    "comment": "MOSFET N-CH 100V 1A 4-DIP ",
+    "category": "power mosfet n-ch",
+    "pack": "kühlkörper to92"
+  }
+]

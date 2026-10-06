@@ -1,0 +1,38 @@
+[
+  {
+    "box": "s15",
+    "count": 4,
+    "device": " IPB06N03L",
+    "alias": "",
+    "comment": "OptiMOS  2 Power-Transistor",
+    "category": "POWER MOS",
+    "pack": "SMD"
+  },
+  {
+    "box": "s15",
+    "count": 2,
+    "device": "P45N02L",
+    "alias": "",
+    "comment": "45A, 20V, 0.022 Ohm, N-Channel  Logic Level Power MOSFETs",
+    "category": "POWER MOS",
+    "pack": "SMD"
+  },
+  {
+    "box": "s15",
+    "count": 100,
+    "device": "BZX55",
+    "alias": null,
+    "comment": "Zener 5.5V",
+    "category": "Zener",
+    "pack": "Draht"
+  },
+  {
+    "box": "s15",
+    "count": 10,
+    "device": "1N4148",
+    "alias": null,
+    "comment": "Fast Switching Diodes",
+    "category": "Diode",
+    "pack": "Draht"
+  }
+]

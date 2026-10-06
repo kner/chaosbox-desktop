@@ -1,0 +1,47 @@
+[
+  {
+    "box": "s13b",
+    "count": 5,
+    "device": "2.4m",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s13b",
+    "count": 4,
+    "device": "74HC244",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "soic20"
+  },
+  {
+    "box": "s13b",
+    "count": 1,
+    "device": "74ls30",
+    "alias": null,
+    "comment": "8-INPUT NAND GATE ",
+    "category": null,
+    "pack": "dip14"
+  },
+  {
+    "box": "s13b",
+    "count": 30,
+    "device": "R120k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s13b",
+    "count": 2,
+    "device": "74hc32",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": "dip"
+  }
+]

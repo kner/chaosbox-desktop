@@ -1,0 +1,56 @@
+[
+  {
+    "box": "s13c",
+    "count": 6,
+    "device": "15",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s13c",
+    "count": 5,
+    "device": "270 10%",
+    "alias": "",
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "s13c",
+    "count": 1,
+    "device": "sn75185",
+    "alias": null,
+    "comment": "rs232 interface",
+    "category": "rs232",
+    "pack": "soic"
+  },
+  {
+    "box": "s13c",
+    "count": 1,
+    "device": "L4981AD",
+    "alias": "",
+    "comment": "POWER FACTOR CORRECTOR",
+    "category": "DCDC",
+    "pack": "SOIC"
+  },
+  {
+    "box": "s13c",
+    "count": 1,
+    "device": "74ls02",
+    "alias": null,
+    "comment": "Quadruple 2-Input Positive-NOR Gates ",
+    "category": null,
+    "pack": "dip14"
+  },
+  {
+    "box": "s13c",
+    "count": 30,
+    "device": "R12k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

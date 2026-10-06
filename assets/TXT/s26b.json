@@ -1,0 +1,56 @@
+[
+  {
+    "box": "s26b",
+    "count": 5,
+    "device": "200",
+    "alias": null,
+    "comment": "",
+    "category": "10%",
+    "pack": ""
+  },
+  {
+    "box": "s26b",
+    "count": 30,
+    "device": "10k",
+    "alias": null,
+    "comment": "",
+    "category": "5% klein",
+    "pack": ""
+  },
+  {
+    "box": "s26b",
+    "count": 1,
+    "device": "47k",
+    "alias": null,
+    "comment": "",
+    "category": "10% 5w",
+    "pack": ""
+  },
+  {
+    "box": "s26b",
+    "count": 2,
+    "device": "ADM707",
+    "alias": null,
+    "comment": "LOW COST UP SUPERVISORY CIRCUITS",
+    "category": "supervisor spannungsausfall",
+    "pack": "smd"
+  },
+  {
+    "box": "s26b",
+    "count": 2,
+    "device": "24C128",
+    "alias": null,
+    "comment": "Serial EEprom 128k",
+    "category": "SERIAL EEPROM",
+    "pack": "soic"
+  },
+  {
+    "box": "s26b",
+    "count": 30,
+    "device": "R680",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

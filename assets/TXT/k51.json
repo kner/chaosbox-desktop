@@ -1,0 +1,20 @@
+[
+  {
+    "box": "k51",
+    "count": 10,
+    "device": "buchsen diverse m/w",
+    "alias": "schwarz quadratisch",
+    "comment": null,
+    "category": "buchsen ",
+    "pack": "draht stift"
+  },
+  {
+    "box": "k51",
+    "count": 10,
+    "device": "led rot/gruen",
+    "alias": null,
+    "comment": null,
+    "category": "led",
+    "pack": "draht"
+  }
+]

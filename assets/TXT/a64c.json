@@ -1,0 +1,119 @@
+[
+  {
+    "box": "a64c",
+    "count": 1,
+    "device": "R3300 R7500",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a64c",
+    "count": 3,
+    "device": "R43-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a64c",
+    "count": 1,
+    "device": "m6242b",
+    "alias": null,
+    "comment": "REAL TIME CLOCK IC WITH BUILT-IN CRYSTAL",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a64c",
+    "count": 10,
+    "device": "R3902",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a64c",
+    "count": 8,
+    "device": "1n4007",
+    "alias": null,
+    "comment": "General Purpose Plastic Rectifier, Forward Current 1.0A, Reverse Voltage 1000V",
+    "category": "D",
+    "pack": "draht"
+  },
+  {
+    "box": "a64c",
+    "count": 1,
+    "device": "2SD1189",
+    "alias": null,
+    "comment": "NPN 32V 5W 2A",
+    "category": "NPN",
+    "pack": "to220"
+  },
+  {
+    "box": "a64c",
+    "count": 1,
+    "device": "74ls366",
+    "alias": null,
+    "comment": "HEX BUS DROVERS WITH 3-STATE OUTPUTS",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "a64c",
+    "count": 1,
+    "device": "H6006B3",
+    "alias": null,
+    "comment": "Failsafe Watchdog",
+    "category": "",
+    "pack": "dip8"
+  },
+  {
+    "box": "a64c",
+    "count": 10,
+    "device": "33pf 22pf 68pf",
+    "alias": null,
+    "comment": null,
+    "category": "C KERAMI",
+    "pack": "smd805"
+  },
+  {
+    "box": "a64c",
+    "count": 4,
+    "device": "R10K-5%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": null
+  },
+  {
+    "box": "a64c",
+    "count": 1,
+    "device": "2sk3569 2sk3568",
+    "alias": null,
+    "comment": "Dual High-Voltage Trench MOS Barrier Schottky Rectifier Ultra Low VF = 0.455 V at IF = 5 A ",
+    "category": "power schottky ",
+    "pack": "TO-220"
+  },
+  {
+    "box": "a64c",
+    "count": 10,
+    "device": "led superhell rot",
+    "alias": "",
+    "comment": "",
+    "category": "led SMD superhell grün",
+    "pack": "SMD 805"
+  },
+  {
+    "box": "a64c",
+    "count": 1,
+    "device": "led superhell weiß",
+    "alias": null,
+    "comment": null,
+    "category": "led SMD superhell",
+    "pack": "SMD"
+  }
+]

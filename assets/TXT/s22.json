@@ -1,0 +1,56 @@
+[
+  {
+    "box": "s22",
+    "count": 7,
+    "device": "R619",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "draht 10W"
+  },
+  {
+    "box": "s22",
+    "count": 4,
+    "device": "sn75188",
+    "alias": null,
+    "comment": "QUADRUPLE LINE DRIVERS",
+    "category": "dig",
+    "pack": "soic"
+  },
+  {
+    "box": "s22",
+    "count": 50,
+    "device": "MBRS240LT3 ",
+    "alias": null,
+    "comment": "Schottky Power Rectifier diverse Groessen",
+    "category": "Schottky Power Rectifier shottky",
+    "pack": "smd"
+  },
+  {
+    "box": "s22",
+    "count": 50,
+    "device": "led",
+    "alias": "",
+    "comment": "",
+    "category": "led SMD",
+    "pack": "SMD"
+  },
+  {
+    "box": "s22",
+    "count": 30,
+    "device": "R180k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s22",
+    "count": 20,
+    "device": "C68pFF",
+    "alias": "",
+    "comment": "",
+    "category": "C Keramik",
+    "pack": "smd 805"
+  }
+]

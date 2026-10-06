@@ -1,0 +1,38 @@
+[
+  {
+    "box": "a41",
+    "count": 4,
+    "device": "R1K1-1%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a41",
+    "count": 3,
+    "device": "R10k-1% r330",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a41",
+    "count": 20,
+    "device": "r5k92-1% 5k6",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "rolle"
+  },
+  {
+    "box": "a41",
+    "count": 10,
+    "device": "R220-1%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "rolle"
+  }
+]

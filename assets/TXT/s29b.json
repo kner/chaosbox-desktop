@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s29b",
+    "count": 17,
+    "device": "BZX284 3.6V ",
+    "alias": null,
+    "comment": "3.6V zener",
+    "category": "Z diode",
+    "pack": ""
+  },
+  {
+    "box": "s29b",
+    "count": 19,
+    "device": "R1004 1MOHM 1%",
+    "alias": "",
+    "comment": "1meg 1% 805",
+    "category": "r smd",
+    "pack": "smd"
+  },
+  {
+    "box": "s29b",
+    "count": 2,
+    "device": "R331",
+    "alias": "",
+    "comment": "330",
+    "category": "R",
+    "pack": ""
+  }
+]

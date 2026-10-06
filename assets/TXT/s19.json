@@ -1,0 +1,47 @@
+[
+  {
+    "box": "s19",
+    "count": 148,
+    "device": "Dioden Si",
+    "alias": "",
+    "comment": "Div.",
+    "category": "Diode",
+    "pack": "Draht"
+  },
+  {
+    "box": "s19",
+    "count": 6,
+    "device": "Schieberegler",
+    "alias": "",
+    "comment": "",
+    "category": "Poti Schieberegler",
+    "pack": ""
+  },
+  {
+    "box": "s19",
+    "count": 3,
+    "device": "R24-5%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "Draht"
+  },
+  {
+    "box": "s19",
+    "count": 4,
+    "device": "R10-5",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "  "
+  },
+  {
+    "box": "s19",
+    "count": 1,
+    "device": "WS2811",
+    "alias": "https://cdn-shop.adafruit.com/datasheets/WS28",
+    "comment": "S i g n a l l i n e 2 5 6 G r a y l e v e l 3 c h a n n a l C o n s t a n t c u r r e n t L E D d r i v e I C",
+    "category": "LED Driver mit Dateninterface",
+    "pack": "soic8"
+  }
+]

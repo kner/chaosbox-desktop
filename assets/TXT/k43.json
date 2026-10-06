@@ -1,0 +1,38 @@
+[
+  {
+    "box": "k43",
+    "count": 3,
+    "device": "33nF",
+    "alias": null,
+    "comment": "MKS-Folienkondensator",
+    "category": "C Folie",
+    "pack": "Draht"
+  },
+  {
+    "box": "k43",
+    "count": 4,
+    "device": "udn2981",
+    "alias": "80 V and output currents to -500 mA",
+    "comment": null,
+    "category": "driver treiber",
+    "pack": "dip18"
+  },
+  {
+    "box": "k43",
+    "count": 4,
+    "device": "taster",
+    "alias": "schwarz quadratisch",
+    "comment": null,
+    "category": "taster button pushbutton",
+    "pack": "draht"
+  },
+  {
+    "box": "k43",
+    "count": 33,
+    "device": "BZX55 C5V6",
+    "alias": null,
+    "comment": "5.6V Z Diode",
+    "category": "Z-Diode",
+    "pack": "Draht"
+  }
+]

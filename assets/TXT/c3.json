@@ -1,0 +1,74 @@
+[
+  {
+    "box": "c3",
+    "count": 1,
+    "device": "12.288 4.09 14.31 16.38 15 .36 26.73 13.59",
+    "alias": null,
+    "comment": "",
+    "category": "quarz",
+    "pack": "Draht"
+  },
+  {
+    "box": "c3",
+    "count": 2,
+    "device": "mbr20100",
+    "alias": null,
+    "comment": "20 Amp Schottky Barrier Rectifier 20 to 100 Volts",
+    "category": "gleichrichter",
+    "pack": ""
+  },
+  {
+    "box": "c3",
+    "count": 1,
+    "device": "1311",
+    "alias": null,
+    "comment": "Center-Tapped Positive (CC) HS Rectifier",
+    "category": "gleichrichter",
+    "pack": ""
+  },
+  {
+    "box": "c3",
+    "count": 2,
+    "device": "2sc2625",
+    "alias": null,
+    "comment": " HIGH VOLTAGE HIGH SPEED SWITCHING",
+    "category": "power transistor",
+    "pack": ""
+  },
+  {
+    "box": "c3",
+    "count": 1,
+    "device": "ctb34",
+    "alias": null,
+    "comment": "Schottky Barrier Diodes (Center-tap) 40V",
+    "category": "schottky",
+    "pack": ""
+  },
+  {
+    "box": "c3",
+    "count": 14,
+    "device": "d677a",
+    "alias": null,
+    "comment": " Plastic Medium-Power Silicon NPN Darlingtons",
+    "category": "power transistor",
+    "pack": ""
+  },
+  {
+    "box": "c3",
+    "count": 2,
+    "device": "s9636af",
+    "alias": null,
+    "comment": "RS-423 Dual Programmable Slew Rate Line Driver",
+    "category": "rs423",
+    "pack": "qfp"
+  },
+  {
+    "box": "c3",
+    "count": 1,
+    "device": "tms28f210",
+    "alias": null,
+    "comment": "65536 BY 16-BIT FLASH MEMORY",
+    "category": "flash",
+    "pack": "qfp"
+  }
+]

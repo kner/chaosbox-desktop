@@ -1,0 +1,29 @@
+[
+  {
+    "box": "k 1/1",
+    "count": 2,
+    "device": "AD781JN",
+    "alias": "",
+    "comment": "Complete 700 ns Sample-and-Hold Amplifier",
+    "category": "S",
+    "pack": "DIP8"
+  },
+  {
+    "box": "k 1/1",
+    "count": 3,
+    "device": "74LS161",
+    "alias": "",
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP16"
+  },
+  {
+    "box": "k 1/1",
+    "count": 9,
+    "device": "56",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "box": "h11a",
+    "count": 5,
+    "device": "LED ROT GELB GRÜN 5mm",
+    "alias": null,
+    "comment": "LED 5mm",
+    "category": "LED",
+    "pack": "LED 5mm"
+  },
+  {
+    "box": "h11a",
+    "count": 2,
+    "device": "R22k-5%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  },
+  {
+    "box": "h11a",
+    "count": 1,
+    "device": "10nF",
+    "alias": null,
+    "comment": "C Keramik",
+    "category": "C",
+    "pack": "axial"
+  }
+]

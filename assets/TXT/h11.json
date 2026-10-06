@@ -1,0 +1,20 @@
+[
+  {
+    "box": "h11",
+    "count": 2,
+    "device": "BC547B",
+    "alias": null,
+    "comment": "Low Noise Transistors",
+    "category": "NPN",
+    "pack": "Draht"
+  },
+  {
+    "box": "h11",
+    "count": 5,
+    "device": "74VHC125",
+    "alias": null,
+    "comment": "Treiber",
+    "category": null,
+    "pack": null
+  }
+]

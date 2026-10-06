@@ -1,0 +1,65 @@
+[
+  {
+    "box": "a61c",
+    "count": 7,
+    "device": "R681",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a61c",
+    "count": 1,
+    "device": "ULN2804",
+    "alias": null,
+    "comment": "HIGH-VOLTAGE/ HIGH-CURRENT DARLINGTON ARRAYS",
+    "category": "TRANSISTOR ARRAY",
+    "pack": ""
+  },
+  {
+    "box": "a61c",
+    "count": 2,
+    "device": "74LS20",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP14"
+  },
+  {
+    "box": "a61c",
+    "count": 5,
+    "device": "R620-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a61c",
+    "count": 5,
+    "device": "R471-1%",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a61c",
+    "count": 2,
+    "device": "r15k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a61c",
+    "count": 10,
+    "device": "R8203",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  }
+]

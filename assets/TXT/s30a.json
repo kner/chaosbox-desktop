@@ -1,0 +1,38 @@
+[
+  {
+    "box": "s30a",
+    "count": 2,
+    "device": "33k",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s30a",
+    "count": 16,
+    "device": "r471",
+    "alias": "",
+    "comment": "4700",
+    "category": "R",
+    "pack": "SMD 805"
+  },
+  {
+    "box": "s30a",
+    "count": 18,
+    "device": "C 22pf",
+    "alias": "",
+    "comment": "22pf Keramik",
+    "category": "",
+    "pack": "smd 805"
+  },
+  {
+    "box": "s30a",
+    "count": 1,
+    "device": "r681",
+    "alias": null,
+    "comment": "680OHM",
+    "category": "r",
+    "pack": "dra"
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "box": "c1",
+    "count": 0,
+    "device": "40208",
+    "alias": null,
+    "comment": " x 4 MULTIPORT REGISTER",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "c1",
+    "count": 4,
+    "device": "pm7628",
+    "alias": null,
+    "comment": "Dual 8-Bit Buffered Multiplying CMOS D/A Converter",
+    "category": "",
+    "pack": "soic20"
+  },
+  {
+    "box": "c1",
+    "count": 2,
+    "device": "tc5561",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "c1",
+    "count": 1,
+    "device": "621024",
+    "alias": null,
+    "comment": "128K X 8 BIT CMOS SRAM",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "c1",
+    "count": 1,
+    "device": "102H60",
+    "alias": null,
+    "comment": "Microcomputer - 16bit - General Purpose",
+    "category": "",
+    "pack": "smd "
+  },
+  {
+    "box": "c1",
+    "count": 3,
+    "device": "EL2244CS",
+    "alias": null,
+    "comment": "Dual/Quad Low-Power 120MHz Unity-Gain Stable Op Amp",
+    "category": "",
+    "pack": "soic8"
+  },
+  {
+    "box": "c1",
+    "count": 2,
+    "device": "7905",
+    "alias": null,
+    "comment": "",
+    "category": "vreg",
+    "pack": ""
+  },
+  {
+    "box": "c1",
+    "count": 2,
+    "device": "rfm01 rfm02",
+    "alias": null,
+    "comment": "Neuhold Funkmodule",
+    "category": "Funk",
+    "pack": ""
+  }
+]

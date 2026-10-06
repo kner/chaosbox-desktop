@@ -1,0 +1,128 @@
+[
+  {
+    "box": "a72b",
+    "count": 4,
+    "device": "R105",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a72b",
+    "count": 1,
+    "device": "R20K-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a72b",
+    "count": 1,
+    "device": "R820k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a72b",
+    "count": 1,
+    "device": "R51K-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a72b",
+    "count": 6,
+    "device": "bs107",
+    "alias": null,
+    "comment": "SIPMOS Small-Signal Transistor (N channel Enhancement mode Logic Level)",
+    "category": "SIPMOS Transistor",
+    "pack": "TO92"
+  },
+  {
+    "box": "a72b",
+    "count": 1,
+    "device": "mc79l05",
+    "alias": null,
+    "comment": "THREE-TERMINAL LOW CURRENT NEGATIVE FIXED VOLTAGE REGULATORS",
+    "category": "reg",
+    "pack": ""
+  },
+  {
+    "box": "a72b",
+    "count": 9,
+    "device": "mc34082",
+    "alias": null,
+    "comment": "HIGH PERFORMANCE JFET INPUT OPERATIONAL AMPLIFIERS",
+    "category": "",
+    "pack": "dip8"
+  },
+  {
+    "box": "a72b",
+    "count": 10,
+    "device": "r2201",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a72b",
+    "count": 8,
+    "device": "c9v1ph",
+    "alias": null,
+    "comment": "9.1V Zener",
+    "category": "Zener",
+    "pack": "dra"
+  },
+  {
+    "box": "a72b",
+    "count": 1,
+    "device": "YG802C04 ",
+    "alias": "",
+    "comment": "SCHOTTKY BARRIER DIODE 10A",
+    "category": "",
+    "pack": "s1 "
+  },
+  {
+    "box": "a72b",
+    "count": 10,
+    "device": "MH2029-300Y",
+    "alias": null,
+    "comment": "EMI Filter Beads, Chips & Arrays Impedance 30ohms IDC 3.0",
+    "category": "filter",
+    "pack": "smd"
+  },
+  {
+    "box": "a72b",
+    "count": 3,
+    "device": "Micro",
+    "alias": null,
+    "comment": "Micro Mikrofon",
+    "category": null,
+    "pack": "draht/smd"
+  },
+  {
+    "box": "a72b",
+    "count": 2,
+    "device": "Speaker",
+    "alias": null,
+    "comment": "Speaker Lautsprecher klein",
+    "category": null,
+    "pack": "draht/smd"
+  },
+  {
+    "box": "a72b",
+    "count": 1,
+    "device": "ALD5w-k Relais",
+    "alias": "",
+    "comment": "Low Signal Relais Relay 5V 2A",
+    "category": "Relais",
+    "pack": "draht"
+  }
+]

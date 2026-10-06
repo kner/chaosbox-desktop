@@ -1,0 +1,47 @@
+[
+  {
+    "box": "a42c",
+    "count": 11,
+    "device": "74HC08",
+    "alias": "",
+    "comment": "",
+    "category": "DIG",
+    "pack": "soic"
+  },
+  {
+    "box": "a42c",
+    "count": 1,
+    "device": "74HC132",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "soic"
+  },
+  {
+    "box": "a42c",
+    "count": 1,
+    "device": "74HC139",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a42c",
+    "count": 10,
+    "device": "R1001",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "smd"
+  },
+  {
+    "box": "a42c",
+    "count": 3,
+    "device": "74as244",
+    "alias": null,
+    "comment": "",
+    "category": "dig",
+    "pack": "soic"
+  }
+]

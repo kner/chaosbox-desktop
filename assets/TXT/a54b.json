@@ -1,0 +1,65 @@
+[
+  {
+    "box": "a54b",
+    "count": 3,
+    "device": "R36-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a54b",
+    "count": 10,
+    "device": "R6803",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a54b",
+    "count": 1,
+    "device": "attiny2323-20su",
+    "alias": "",
+    "comment": "avr",
+    "category": "avr",
+    "pack": "soic"
+  },
+  {
+    "box": "a54b",
+    "count": 1,
+    "device": "MC145406",
+    "alias": null,
+    "comment": "MotorolaDriver/Receiver EIA 232-E and CCITT V.28",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a54b",
+    "count": 1,
+    "device": "78l05",
+    "alias": null,
+    "comment": "",
+    "category": "spannungsregler",
+    "pack": "to92"
+  },
+  {
+    "box": "a54b",
+    "count": 3,
+    "device": "v6 41",
+    "alias": null,
+    "comment": "z diode 4.1V",
+    "category": "z diode zener",
+    "pack": "smd"
+  },
+  {
+    "box": "a54b",
+    "count": 7,
+    "device": "l7805cv",
+    "alias": "7805",
+    "comment": "1.5A",
+    "category": null,
+    "pack": "to220"
+  }
+]

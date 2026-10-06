@@ -1,0 +1,29 @@
+[
+  {
+    "box": "raa3",
+    "count": 11,
+    "device": "39k",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "raa3",
+    "count": 1,
+    "device": "1meg5",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "raa3",
+    "count": 5,
+    "device": "910k",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  }
+]

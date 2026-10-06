@@ -1,0 +1,56 @@
+[
+  {
+    "box": "a34a",
+    "count": 5,
+    "device": "BC547B",
+    "alias": null,
+    "comment": "",
+    "category": "NPN",
+    "pack": ""
+  },
+  {
+    "box": "a34a",
+    "count": 9,
+    "device": "ua747",
+    "alias": null,
+    "comment": "dual",
+    "category": "OPAMP",
+    "pack": "DIP14"
+  },
+  {
+    "box": "a34a",
+    "count": 1,
+    "device": "R470-2% R270 R30 R300",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a34a",
+    "count": 0,
+    "device": "CQ27-000f",
+    "alias": null,
+    "comment": "",
+    "category": "quarz",
+    "pack": ""
+  },
+  {
+    "box": "a34a",
+    "count": 10,
+    "device": "R12R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a34a",
+    "count": 2,
+    "device": "2A",
+    "alias": null,
+    "comment": "",
+    "category": "graetz bruecke gleichrichter",
+    "pack": ""
+  }
+]

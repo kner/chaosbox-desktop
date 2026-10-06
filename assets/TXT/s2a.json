@@ -1,0 +1,146 @@
+[
+  {
+    "box": "s2a",
+    "count": 0,
+    "device": "74hct640",
+    "alias": "",
+    "comment": "invertierender octal buffer line driver treiber",
+    "category": "DIG",
+    "pack": "SOIC breit"
+  },
+  {
+    "box": "s2a",
+    "count": 1,
+    "device": "2272c",
+    "alias": "",
+    "comment": "Advanced LinCMOSE RAIL-TO-RAIL OPERATIONAL AMPLIFIERS ",
+    "category": "opamp",
+    "pack": "soic8"
+  },
+  {
+    "box": "s2a",
+    "count": 1,
+    "device": "max691",
+    "alias": null,
+    "comment": "Microprocessor Supervisory Circuits",
+    "category": "uc reset",
+    "pack": ""
+  },
+  {
+    "box": "s2a",
+    "count": 0,
+    "device": "lm1877",
+    "alias": "",
+    "comment": "Dual Audio Power Amplifier ",
+    "category": "soic14 breit",
+    "pack": ""
+  },
+  {
+    "box": "s2a",
+    "count": 0,
+    "device": "st16c1451",
+    "alias": "",
+    "comment": "UART with One Byte FIFO ",
+    "category": "uart",
+    "pack": "qfp"
+  },
+  {
+    "box": "s2a",
+    "count": 1,
+    "device": "56p  keramik",
+    "alias": null,
+    "comment": "",
+    "category": "c keramik",
+    "pack": "draht"
+  },
+  {
+    "box": "s2a",
+    "count": 1,
+    "device": "buk454",
+    "alias": "",
+    "comment": "",
+    "category": "power mos",
+    "pack": "draht"
+  },
+  {
+    "box": "s2a",
+    "count": 1,
+    "device": "zjys-2",
+    "alias": null,
+    "comment": "common mode filter ttdk",
+    "category": "filter",
+    "pack": ""
+  },
+  {
+    "box": "s2a",
+    "count": 0,
+    "device": "33Ohm 5x sip",
+    "alias": "",
+    "comment": "",
+    "category": "r sip",
+    "pack": "sip10"
+  },
+  {
+    "box": "s2a",
+    "count": 8,
+    "device": "5k Poti ",
+    "alias": null,
+    "comment": "",
+    "category": "pot",
+    "pack": "draht"
+  },
+  {
+    "box": "s2a",
+    "count": 2,
+    "device": "74hct640 smd",
+    "alias": "",
+    "comment": "invertierender octal buffer line driver treiber",
+    "category": "DIG",
+    "pack": "dip"
+  },
+  {
+    "box": "s2a",
+    "count": 15,
+    "device": "R33-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "s2a",
+    "count": 0,
+    "device": "R150",
+    "alias": "",
+    "comment": "3W",
+    "category": "R 3W",
+    "pack": "a  "
+  },
+  {
+    "box": "s2a",
+    "count": 1,
+    "device": "74bt640d",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "s2a",
+    "count": 30,
+    "device": "R3m3",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s2a",
+    "count": 20,
+    "device": "C820pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

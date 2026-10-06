@@ -1,0 +1,92 @@
+[
+  {
+    "box": "a83b",
+    "count": 0,
+    "device": "R470",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a83b",
+    "count": 1,
+    "device": "X24C02",
+    "alias": null,
+    "comment": "Serial EEprom",
+    "category": "SERIAL EEPROM",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a83b",
+    "count": 1,
+    "device": "1741C",
+    "alias": null,
+    "comment": "gen purpose OPAMP",
+    "category": "OPAMP",
+    "pack": ""
+  },
+  {
+    "box": "a83b",
+    "count": 2,
+    "device": "74LS04",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": ""
+  },
+  {
+    "box": "a83b",
+    "count": 4,
+    "device": "74HCT374",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": ""
+  },
+  {
+    "box": "a83b",
+    "count": 1,
+    "device": "R270-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a83b",
+    "count": 8,
+    "device": "LM358",
+    "alias": null,
+    "comment": "",
+    "category": "OPAMP",
+    "pack": "smd"
+  },
+  {
+    "box": "a83b",
+    "count": 1,
+    "device": "74F32",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "SOIC "
+  },
+  {
+    "box": "a83b",
+    "count": 5,
+    "device": "LBC HF Drossel 10mH",
+    "alias": null,
+    "comment": "L 10 mH HF Drossel",
+    "category": "L",
+    "pack": "draht"
+  },
+  {
+    "box": "a83b",
+    "count": 20,
+    "device": "C560pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

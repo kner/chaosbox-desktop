@@ -1,0 +1,65 @@
+[
+  {
+    "box": "s4b",
+    "count": 1,
+    "device": "tl592b",
+    "alias": null,
+    "comment": "TL592B - DIFFERENTIAL VIDEO AMPLIFIER",
+    "category": "analog",
+    "pack": "soic8"
+  },
+  {
+    "box": "s4b",
+    "count": 3,
+    "device": "lm358n",
+    "alias": "",
+    "comment": "",
+    "category": "opamp",
+    "pack": "dip"
+  },
+  {
+    "box": "s4b",
+    "count": 1,
+    "device": "buz73",
+    "alias": "",
+    "comment": "",
+    "category": "power mos",
+    "pack": ""
+  },
+  {
+    "box": "s4b",
+    "count": 8,
+    "device": "100n keramik",
+    "alias": "",
+    "comment": "",
+    "category": "c keramik",
+    "pack": "draht"
+  },
+  {
+    "box": "s4b",
+    "count": 1,
+    "device": "zjys-4",
+    "alias": null,
+    "comment": "common mode filter ttdk",
+    "category": "filter",
+    "pack": ""
+  },
+  {
+    "box": "s4b",
+    "count": 30,
+    "device": "R4r7",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s4b",
+    "count": 9,
+    "device": "CL10A106 C CAP 10uF 6.3V",
+    "alias": "",
+    "comment": " C CAP 10uF 6.3V",
+    "category": " C CAP 10uF 6.3V",
+    "pack": "603"
+  }
+]

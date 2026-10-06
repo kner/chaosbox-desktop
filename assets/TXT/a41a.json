@@ -1,0 +1,38 @@
+[
+  {
+    "box": "a41a",
+    "count": 1,
+    "device": "50MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": "DIP"
+  },
+  {
+    "box": "a41a",
+    "count": 7,
+    "device": "74HC04",
+    "alias": null,
+    "comment": "smd",
+    "category": "DIG",
+    "pack": "SOIC s"
+  },
+  {
+    "box": "a41a",
+    "count": 10,
+    "device": "R56R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a41a",
+    "count": 1,
+    "device": "AD7545A",
+    "alias": null,
+    "comment": "Buffered Multiplying DAC 12 bit",
+    "category": "dac",
+    "pack": "dip20"
+  }
+]

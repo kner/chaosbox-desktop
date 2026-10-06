@@ -1,0 +1,146 @@
+[
+  {
+    "box": "a22",
+    "count": 1,
+    "device": "CD4070",
+    "alias": null,
+    "comment": "Quad 2-Input EXCLUSIVE-OR Gate",
+    "category": "DIGITAL",
+    "pack": "DIP"
+  },
+  {
+    "box": "a22",
+    "count": 1,
+    "device": "CD4001",
+    "alias": null,
+    "comment": "Quad 2-Input NOR Buffered Quad 2-input NOR gate ",
+    "category": "DIGITAL",
+    "pack": "DIP"
+  },
+  {
+    "box": "a22",
+    "count": 3,
+    "device": "CD4069",
+    "alias": "",
+    "comment": "Hex inverter ",
+    "category": "DIGITAL",
+    "pack": "DIP"
+  },
+  {
+    "box": "a22",
+    "count": 1,
+    "device": "4053",
+    "alias": null,
+    "comment": "",
+    "category": "DIGITAL",
+    "pack": "DIP"
+  },
+  {
+    "box": "a22",
+    "count": 1,
+    "device": "CD4015",
+    "alias": "",
+    "comment": "Dual 4-bit static shift register",
+    "category": "DIGITAL",
+    "pack": "DIP"
+  },
+  {
+    "box": "a22",
+    "count": 3,
+    "device": "CNY17",
+    "alias": null,
+    "comment": "Optokoppler",
+    "category": "Analog-Digital",
+    "pack": "DIP6 WHITE"
+  },
+  {
+    "box": "a22",
+    "count": 1,
+    "device": "Quarz",
+    "alias": null,
+    "comment": "",
+    "category": "XTAL quarz",
+    "pack": ""
+  },
+  {
+    "box": "a22",
+    "count": 1,
+    "device": "MC79L05A",
+    "alias": null,
+    "comment": "THREE-TERMINAL LOW CURRENT NEGATIVE FIXED VOLTAGE REGULATOR",
+    "category": "REG",
+    "pack": ""
+  },
+  {
+    "box": "a22",
+    "count": 2,
+    "device": "CD4520",
+    "alias": "",
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a22",
+    "count": 1,
+    "device": "r1M8",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a22",
+    "count": 10,
+    "device": "R21-1%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a22",
+    "count": 1,
+    "device": "25,175MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": ""
+  },
+  {
+    "box": "a22",
+    "count": 10,
+    "device": "R2703",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a22",
+    "count": 1,
+    "device": "zpd18",
+    "alias": null,
+    "comment": "18v",
+    "category": "Zenerdiode",
+    "pack": ""
+  },
+  {
+    "box": "a22",
+    "count": 20,
+    "device": "C68nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a22",
+    "count": 50,
+    "device": "R4702 47k 1%",
+    "alias": null,
+    "comment": "47k 1% 805",
+    "category": "r smd",
+    "pack": "smd"
+  }
+]

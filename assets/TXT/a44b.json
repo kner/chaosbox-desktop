@@ -1,0 +1,119 @@
+[
+  {
+    "box": "a44b",
+    "count": 5,
+    "device": "R27-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a44b",
+    "count": 1,
+    "device": "r1.0-5%",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a44b",
+    "count": 1,
+    "device": "R121",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a44b",
+    "count": 40,
+    "device": "1N4148",
+    "alias": null,
+    "comment": "Fast Switching Diodes",
+    "category": "D",
+    "pack": ""
+  },
+  {
+    "box": "a44b",
+    "count": 0,
+    "device": "330u 6v",
+    "alias": null,
+    "comment": "",
+    "category": "C",
+    "pack": "smd"
+  },
+  {
+    "box": "a44b",
+    "count": 1,
+    "device": "bd203",
+    "alias": null,
+    "comment": "",
+    "category": "npn",
+    "pack": "TO???"
+  },
+  {
+    "box": "a44b",
+    "count": 20,
+    "device": "BC547B",
+    "alias": "",
+    "comment": "NPN general purpose transisto",
+    "category": "NPN",
+    "pack": "TO92"
+  },
+  {
+    "box": "a44b",
+    "count": 1,
+    "device": "223 224 473 472 102",
+    "alias": null,
+    "comment": "",
+    "category": "poti",
+    "pack": ""
+  },
+  {
+    "box": "a44b",
+    "count": 10,
+    "device": "R4701",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a44b",
+    "count": 15,
+    "device": "100",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "a44b",
+    "count": 20,
+    "device": "C10nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a44b",
+    "count": 1,
+    "device": "ks556",
+    "alias": "",
+    "comment": "LM556 Dual Timer",
+    "category": "",
+    "pack": "dip14"
+  },
+  {
+    "box": "a44b",
+    "count": 2,
+    "device": "7555",
+    "alias": "",
+    "comment": "General purpose CMOS timer 555 Ersatz",
+    "category": "",
+    "pack": "dip8"
+  }
+]

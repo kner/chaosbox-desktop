@@ -1,0 +1,56 @@
+[
+  {
+    "box": "k33",
+    "count": 3,
+    "device": "ds1801",
+    "alias": null,
+    "comment": "Dual Audio Taper Potentiomete r",
+    "category": "digital poti",
+    "pack": "dip14"
+  },
+  {
+    "box": "k33",
+    "count": 3,
+    "device": "1uF",
+    "alias": null,
+    "comment": null,
+    "category": "c folie",
+    "pack": "draht"
+  },
+  {
+    "box": "k33",
+    "count": 3,
+    "device": "10mH",
+    "alias": null,
+    "comment": null,
+    "category": "L Induktivität",
+    "pack": "draht"
+  },
+  {
+    "box": "k33",
+    "count": 3,
+    "device": "10mH 10000uH",
+    "alias": null,
+    "comment": null,
+    "category": "L Induktivität",
+    "pack": "draht"
+  },
+  {
+    "box": "k33",
+    "count": 3,
+    "device": "R10",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  },
+  {
+    "box": "k33",
+    "count": 0,
+    "device": "R100",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "box": "s5c",
+    "count": 0,
+    "device": "npn pnp",
+    "alias": null,
+    "comment": "",
+    "category": "npn pnp",
+    "pack": "draht"
+  },
+  {
+    "box": "s5c",
+    "count": 1,
+    "device": "24lc024",
+    "alias": null,
+    "comment": "serial eeprom",
+    "category": "serial eeprom",
+    "pack": "soic8"
+  },
+  {
+    "box": "s5c",
+    "count": 1,
+    "device": "49MHz",
+    "alias": "",
+    "comment": "TTL Draht",
+    "category": "Oscillator",
+    "pack": "dip16"
+  },
+  {
+    "box": "s5c",
+    "count": 1,
+    "device": "40MHz",
+    "alias": "",
+    "comment": "TTL Draht",
+    "category": "Oscillator",
+    "pack": "dip16"
+  },
+  {
+    "box": "s5c",
+    "count": 1,
+    "device": "50MHz",
+    "alias": "",
+    "comment": "Smd",
+    "category": "Oscillator SMD",
+    "pack": "Smd"
+  },
+  {
+    "box": "s5c",
+    "count": 1,
+    "device": "3.6MHz",
+    "alias": "",
+    "comment": "TTL Draht",
+    "category": "Oscillator",
+    "pack": "dip8"
+  },
+  {
+    "box": "s5c",
+    "count": 1,
+    "device": "32MHz",
+    "alias": "",
+    "comment": "TTL Draht",
+    "category": "Oscillator",
+    "pack": "dip8"
+  },
+  {
+    "box": "s5c",
+    "count": 2,
+    "device": "25MHz",
+    "alias": "",
+    "comment": "Smd",
+    "category": "Oscillator SMD",
+    "pack": "Smd"
+  },
+  {
+    "box": "s5c",
+    "count": 30,
+    "device": "R39k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s5c",
+    "count": 1,
+    "device": "20MHz",
+    "alias": null,
+    "comment": "Smd",
+    "category": "Oscillator SMD",
+    "pack": "Smd"
+  }
+]

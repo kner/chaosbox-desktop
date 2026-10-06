@@ -1,0 +1,20 @@
+[
+  {
+    "box": "rac1",
+    "count": 15,
+    "device": "2meg4",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "rac1",
+    "count": 2,
+    "device": "510k",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  }
+]

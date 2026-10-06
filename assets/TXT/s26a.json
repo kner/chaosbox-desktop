@@ -1,0 +1,74 @@
+[
+  {
+    "box": "s26a",
+    "count": 2,
+    "device": "4.7k",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s26a",
+    "count": 5,
+    "device": "5.6k",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s26a",
+    "count": 5,
+    "device": "6.2k",
+    "alias": null,
+    "comment": "",
+    "category": "10%",
+    "pack": ""
+  },
+  {
+    "box": "s26a",
+    "count": 5,
+    "device": "0.91",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s26a",
+    "count": 2,
+    "device": "820",
+    "alias": null,
+    "comment": "",
+    "category": "10% 10w",
+    "pack": ""
+  },
+  {
+    "box": "s26a",
+    "count": 2,
+    "device": "6520cb",
+    "alias": null,
+    "comment": "Single Synchronous Buck Pulse-Width Modulation (PWM) Controller",
+    "category": "",
+    "pack": "soic8"
+  },
+  {
+    "box": "s26a",
+    "count": 30,
+    "device": "R100k",
+    "alias": null,
+    "comment": null,
+    "category": "tr",
+    "pack": null
+  },
+  {
+    "box": "s26a",
+    "count": 30,
+    "device": "R100",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

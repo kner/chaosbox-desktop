@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s9a",
+    "count": 20,
+    "device": "r drahtwid diverse",
+    "alias": "",
+    "comment": "r drahtwid diverse",
+    "category": "r diverse",
+    "pack": "draht"
+  },
+  {
+    "box": "s9a",
+    "count": 7,
+    "device": "56k",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s9a",
+    "count": 30,
+    "device": "R2m2",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

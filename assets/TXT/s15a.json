@@ -1,0 +1,38 @@
+[
+  {
+    "box": "s15a",
+    "count": 2,
+    "device": "FDB6035",
+    "alias": "",
+    "comment": "N-Channel Logic Level PowerTrench TM MOSFET",
+    "category": "POWER MOS",
+    "pack": "smd"
+  },
+  {
+    "box": "s15a",
+    "count": 1,
+    "device": "APM3023",
+    "alias": "",
+    "comment": "Nkanal Vth=1 bis 2 V",
+    "category": "POWER MOS",
+    "pack": "smd"
+  },
+  {
+    "box": "s15a",
+    "count": 1,
+    "device": "pb137",
+    "alias": null,
+    "comment": "POSITIVE VOLTAGE REGULATOR FOR for lead acid battery charging",
+    "category": null,
+    "pack": "to220"
+  },
+  {
+    "box": "s15a",
+    "count": 4,
+    "device": "TLC5940\t",
+    "alias": "",
+    "comment": "16-Channel LED Driver With DOT Correction and Grayscale PWM Control",
+    "category": "",
+    "pack": "dip28"
+  }
+]

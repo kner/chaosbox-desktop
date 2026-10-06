@@ -980,7 +980,7 @@ class App:
             self.settings.remember_category(profile, record["category"])
             if media:
                 try:
-                    saved = core.save_batch(media, profile, record, self.settings.limit, self.log, records=batch_records)
+                    saved = core.save_batch(media, profile, record, self.settings.image_width, self.log, records=batch_records)
                 except core.BatchError as error:
                     if error.completed:
                         try:

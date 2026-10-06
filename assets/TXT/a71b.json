@@ -1,0 +1,56 @@
+[
+  {
+    "box": "a71b",
+    "count": 20,
+    "device": "R102",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a71b",
+    "count": 1,
+    "device": "FX643O1",
+    "alias": null,
+    "comment": "Call Progress Tone Detector",
+    "category": "TELEFON",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a71b",
+    "count": 2,
+    "device": "bc489",
+    "alias": null,
+    "comment": "",
+    "category": "transistor",
+    "pack": ""
+  },
+  {
+    "box": "a71b",
+    "count": 10,
+    "device": "r5601",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a71b",
+    "count": 1,
+    "device": "74ls14m",
+    "alias": null,
+    "comment": "",
+    "category": "dig",
+    "pack": "soic"
+  },
+  {
+    "box": "a71b",
+    "count": 1,
+    "device": "c220n 20v",
+    "alias": null,
+    "comment": "",
+    "category": "c pol elko",
+    "pack": "smd"
+  }
+]

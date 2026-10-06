@@ -1,0 +1,11 @@
+[
+  {
+    "box": "ss27a",
+    "count": 0,
+    "device": "74HC14",
+    "alias": "",
+    "comment": "Hex inverting Schmitt trigger",
+    "category": "DIG",
+    "pack": "SOIC"
+  }
+]

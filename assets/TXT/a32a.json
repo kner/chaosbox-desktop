@@ -1,0 +1,56 @@
+[
+  {
+    "box": "a32a",
+    "count": 6,
+    "device": "74HC377",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "SOIC"
+  },
+  {
+    "box": "a32a",
+    "count": 1,
+    "device": "LM323K",
+    "alias": null,
+    "comment": "3-Amp/ 5-Volt Positive Regulator",
+    "category": "",
+    "pack": "TO220"
+  },
+  {
+    "box": "a32a",
+    "count": 2,
+    "device": "BF871",
+    "alias": null,
+    "comment": "NPN high-voltage transistor",
+    "category": "",
+    "pack": "TO220"
+  },
+  {
+    "box": "a32a",
+    "count": 2,
+    "device": "BUZ71A",
+    "alias": null,
+    "comment": "13A",
+    "category": " 50V",
+    "pack": " 0.120 Ohm"
+  },
+  {
+    "box": "a32a",
+    "count": 11,
+    "device": "BC557B",
+    "alias": null,
+    "comment": "PNP general purpose transisto",
+    "category": "PNP",
+    "pack": "TO92"
+  },
+  {
+    "box": "a32a",
+    "count": 10,
+    "device": "R1801",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  }
+]

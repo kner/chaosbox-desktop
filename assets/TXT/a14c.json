@@ -1,0 +1,47 @@
+[
+  {
+    "box": "a14c",
+    "count": 1,
+    "device": "mc3486p mc3487p",
+    "alias": null,
+    "comment": "",
+    "category": "line driver receiver",
+    "pack": "dip"
+  },
+  {
+    "box": "a14c",
+    "count": 2,
+    "device": "ds21t07s",
+    "alias": null,
+    "comment": "scsi line terminator",
+    "category": "scsi analog",
+    "pack": "soic"
+  },
+  {
+    "box": "a14c",
+    "count": 1,
+    "device": "tda5142",
+    "alias": null,
+    "comment": "Motor driver brushless",
+    "category": "motor driver",
+    "pack": "soic"
+  },
+  {
+    "box": "a14c",
+    "count": 1,
+    "device": "l2726",
+    "alias": null,
+    "comment": "low drop dual power opamp",
+    "category": "power opamp",
+    "pack": "soic"
+  },
+  {
+    "box": "a14c",
+    "count": 20,
+    "device": "C33nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "box": "k13",
+    "count": 20,
+    "device": "21r0 2% ",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "k13",
+    "count": 4,
+    "device": "10nF",
+    "alias": null,
+    "comment": "keramik 2.5mm",
+    "category": "C",
+    "pack": "Draht"
+  },
+  {
+    "box": "k13",
+    "count": 10,
+    "device": "100nF",
+    "alias": null,
+    "comment": "MKS-Folienkondensator radial bedrahtet 0.1 µF 100 V/DC 20 % 7.5 mm (L x B x H) 10 x 2.5 x 7 mm Wima MKS4 1 St.",
+    "category": "C Folie",
+    "pack": "Draht"
+  }
+]

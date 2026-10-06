@@ -1,0 +1,47 @@
+[
+  {
+    "box": "a43c",
+    "count": 2,
+    "device": "R390-2% R82 R13 R22",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a43c",
+    "count": 1,
+    "device": "R3k16-1%  R210 r6k8",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a43c",
+    "count": 7,
+    "device": "BC559B",
+    "alias": null,
+    "comment": "Low Noise Transistors",
+    "category": "pnp",
+    "pack": ""
+  },
+  {
+    "box": "a43c",
+    "count": 10,
+    "device": "R8200",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a43c",
+    "count": 2,
+    "device": "PC8574",
+    "alias": "",
+    "comment": "REMOTE 8-BIT I/O EXPANDER FOR I 2 C BUS",
+    "category": "I2C",
+    "pack": ""
+  }
+]

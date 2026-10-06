@@ -1,0 +1,29 @@
+[
+  {
+    "box": "a41c",
+    "count": 10,
+    "device": "R2702",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a41c",
+    "count": 10,
+    "device": "R391",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": "smd"
+  },
+  {
+    "box": "a41c",
+    "count": 3,
+    "device": "10k 1%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  }
+]

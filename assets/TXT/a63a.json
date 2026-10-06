@@ -1,0 +1,101 @@
+[
+  {
+    "box": "a63a",
+    "count": 2,
+    "device": "MAX202",
+    "alias": null,
+    "comment": " 5V",
+    "category": " RS-232 Transceivers with 0.1ÂµF External Cap",
+    "pack": ""
+  },
+  {
+    "box": "a63a",
+    "count": 3,
+    "device": "R1001",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a63a",
+    "count": 1,
+    "device": "HIN232Cp",
+    "alias": null,
+    "comment": " 5V Powered RS-232 Transmitters/Receivers",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a63a",
+    "count": 19,
+    "device": "R3k9-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a63a",
+    "count": 1,
+    "device": "max232cwe",
+    "alias": null,
+    "comment": " 5V-Powered, Multichannel RS-232 Drivers/Receivers",
+    "category": "",
+    "pack": "soic16 breit"
+  },
+  {
+    "box": "a63a",
+    "count": 3,
+    "device": "74HC373",
+    "alias": "",
+    "comment": "Octal D-type transparent latch; 3-state",
+    "category": "DIG",
+    "pack": "SOIC20"
+  },
+  {
+    "box": "a63a",
+    "count": 10,
+    "device": "R27R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a63a",
+    "count": 19,
+    "device": "R392",
+    "alias": "",
+    "comment": "3900",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a63a",
+    "count": 2,
+    "device": "MCP4151-103E",
+    "alias": null,
+    "comment": "Digital Potentiometer ICs Digital Pot 256 step SPI single Ch ",
+    "category": "digital poti",
+    "pack": "soic8"
+  },
+  {
+    "box": "a63a",
+    "count": 50,
+    "device": "R10k-5% r330",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  },
+  {
+    "box": "a63a",
+    "count": 3,
+    "device": "2sk772E",
+    "alias": null,
+    "comment": "N-JFET Amplifier",
+    "category": null,
+    "pack": "to92"
+  }
+]

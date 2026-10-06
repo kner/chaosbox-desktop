@@ -1,0 +1,38 @@
+[
+  {
+    "box": "a84c",
+    "count": 0,
+    "device": "",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a84c",
+    "count": 19,
+    "device": "uA741",
+    "alias": "",
+    "comment": "",
+    "category": "OPAMP",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a84c",
+    "count": 2,
+    "device": "MT8880CE",
+    "alias": "",
+    "comment": "ISO2-CMOS Integrated DTMFTransceiv",
+    "category": "DTMF",
+    "pack": "DIP20"
+  },
+  {
+    "box": "a84c",
+    "count": 1,
+    "device": "10",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  }
+]

@@ -1,0 +1,83 @@
+[
+  {
+    "box": "a74b",
+    "count": 5,
+    "device": "R221",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a74b",
+    "count": 1,
+    "device": "HEF4069",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a74b",
+    "count": 20,
+    "device": "R10K-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a74b",
+    "count": 19,
+    "device": "R27K-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a74b",
+    "count": 0,
+    "device": "atmega16-16pu",
+    "alias": null,
+    "comment": "uc avr",
+    "category": "AVR",
+    "pack": "dip40"
+  },
+  {
+    "box": "a74b",
+    "count": 4,
+    "device": "bd238",
+    "alias": null,
+    "comment": "",
+    "category": "npn pnp",
+    "pack": ""
+  },
+  {
+    "box": "a74b",
+    "count": 20,
+    "device": "C12pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a74b",
+    "count": 10,
+    "device": "IRF7811WPBF",
+    "alias": null,
+    "comment": "HEXFET® Power MOSFET for DC-DC Converters",
+    "category": "power mos",
+    "pack": "soic8"
+  },
+  {
+    "box": "a74b",
+    "count": 10,
+    "device": "IRF7811WPBF  7822",
+    "alias": null,
+    "comment": "HEXFET® Power MOSFET for DC-DC Converters",
+    "category": "power mos",
+    "pack": "soic8"
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s25b",
+    "count": 5,
+    "device": "3.9k",
+    "alias": null,
+    "comment": "",
+    "category": "2%",
+    "pack": ""
+  },
+  {
+    "box": "s25b",
+    "count": 16,
+    "device": "27k",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s25b",
+    "count": 4,
+    "device": "ne555",
+    "alias": null,
+    "comment": "timer",
+    "category": "analog",
+    "pack": "soic8"
+  }
+]

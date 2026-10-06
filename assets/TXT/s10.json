@@ -1,0 +1,20 @@
+[
+  {
+    "box": "s10",
+    "count": 71,
+    "device": "Elkos divers",
+    "alias": "",
+    "comment": "elkos",
+    "category": "elkos c",
+    "pack": " draht"
+  },
+  {
+    "box": "s10",
+    "count": 30,
+    "device": "R1k8",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

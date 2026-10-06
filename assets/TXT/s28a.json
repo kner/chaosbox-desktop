@@ -1,0 +1,38 @@
+[
+  {
+    "box": "s28a",
+    "count": 8,
+    "device": "130",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s28a",
+    "count": 1,
+    "device": "74VHC32",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "soic"
+  },
+  {
+    "box": "s28a",
+    "count": 2,
+    "device": "act157",
+    "alias": null,
+    "comment": "MUX multiplexer",
+    "category": "DIG",
+    "pack": "sop"
+  },
+  {
+    "box": "s28a",
+    "count": 30,
+    "device": "R0",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

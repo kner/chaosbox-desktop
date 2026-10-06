@@ -1,0 +1,92 @@
+[
+  {
+    "box": "a14b",
+    "count": 2,
+    "device": "74HCT374",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "soic"
+  },
+  {
+    "box": "a14b",
+    "count": 1,
+    "device": "tq6700",
+    "alias": null,
+    "comment": "4 Transistor array",
+    "category": "transistor array npn",
+    "pack": "dip"
+  },
+  {
+    "box": "a14b",
+    "count": 1,
+    "device": "29ee512",
+    "alias": null,
+    "comment": "eeprom",
+    "category": "eeprom",
+    "pack": "qfp"
+  },
+  {
+    "box": "a14b",
+    "count": 1,
+    "device": "mx7628",
+    "alias": null,
+    "comment": "dual multiplying dac ",
+    "category": "dac",
+    "pack": "soic 24"
+  },
+  {
+    "box": "a14b",
+    "count": 1,
+    "device": "tl081cp",
+    "alias": null,
+    "comment": "breitbandig jfet opamp",
+    "category": "opamp",
+    "pack": "dip"
+  },
+  {
+    "box": "a14b",
+    "count": 3,
+    "device": "74f367",
+    "alias": null,
+    "comment": "d ff",
+    "category": "",
+    "pack": "soic16"
+  },
+  {
+    "box": "a14b",
+    "count": 1,
+    "device": "74ls32",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "soic14"
+  },
+  {
+    "box": "a14b",
+    "count": 3,
+    "device": "p100klin",
+    "alias": null,
+    "comment": "",
+    "category": "poti",
+    "pack": "draht"
+  },
+  {
+    "box": "a14b",
+    "count": 20,
+    "device": "C1,5nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a14b",
+    "count": 10,
+    "device": "1nF 2.2nF 3.3NF",
+    "alias": null,
+    "comment": null,
+    "category": "C KERAMI",
+    "pack": "smd805"
+  }
+]

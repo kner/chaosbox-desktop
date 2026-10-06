@@ -1,0 +1,245 @@
+[
+  {
+    "box": "a53a",
+    "count": 1,
+    "device": "HEF4557",
+    "alias": null,
+    "comment": "1-to-64 bit variable length shift register",
+    "category": "",
+    "pack": "SOIC16 s"
+  },
+  {
+    "box": "a53a",
+    "count": 0,
+    "device": "R62-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a53a",
+    "count": 1,
+    "device": "LM317MP",
+    "alias": null,
+    "comment": "",
+    "category": "REG",
+    "pack": "TO220"
+  },
+  {
+    "box": "a53a",
+    "count": 2,
+    "device": "AD712JN",
+    "alias": null,
+    "comment": "Dual Precision, Low Cost, High Speed, BiFET Op Amp",
+    "category": "",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a53a",
+    "count": 13,
+    "device": "NE555D",
+    "alias": "",
+    "comment": "GENERAL PURPOSE SINGLE BIPOLAR TIMERS",
+    "category": "",
+    "pack": "soic8"
+  },
+  {
+    "box": "a53a",
+    "count": 0,
+    "device": "CD4066BP cd4066bcn",
+    "alias": "",
+    "comment": "Quad Bilateral Switch",
+    "category": "DIGITAL",
+    "pack": "DIP"
+  },
+  {
+    "box": "a53a",
+    "count": 2,
+    "device": "mct26",
+    "alias": null,
+    "comment": "PHOTOTRANSISTOR OPTOCOUPLER",
+    "category": "OPTOKOPPLER",
+    "pack": "dip6"
+  },
+  {
+    "box": "a53a",
+    "count": 0,
+    "device": "74act373",
+    "alias": null,
+    "comment": "Octal Transparent Latch",
+    "category": "",
+    "pack": "soic20"
+  },
+  {
+    "box": "a53a",
+    "count": 2,
+    "device": "ad7821",
+    "alias": "",
+    "comment": "8-Bit ADC with Track/Hold",
+    "category": "adc",
+    "pack": "qfp20"
+  },
+  {
+    "box": "a53a",
+    "count": 0,
+    "device": "g65sc51",
+    "alias": null,
+    "comment": "CMOS ASYNCHRONOUS COMMUNICATIONS INTERFACE ADAPTER",
+    "category": "",
+    "pack": "qfp28"
+  },
+  {
+    "box": "a53a",
+    "count": 4,
+    "device": "3427",
+    "alias": null,
+    "comment": "shottky diode ?",
+    "category": "D",
+    "pack": "smd"
+  },
+  {
+    "box": "a53a",
+    "count": 1,
+    "device": "r100 r470 1w",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "smd"
+  },
+  {
+    "box": "a53a",
+    "count": 10,
+    "device": "R3302",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD "
+  },
+  {
+    "box": "a53a",
+    "count": 1,
+    "device": "r561",
+    "alias": null,
+    "comment": "560OHM",
+    "category": "r",
+    "pack": "dra"
+  },
+  {
+    "box": "a53a",
+    "count": 2,
+    "device": "fua723dc",
+    "alias": null,
+    "comment": "korea 14 anschlüsse",
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "a53a",
+    "count": 1,
+    "device": "61achfk",
+    "alias": null,
+    "comment": "20 anschlüsse",
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "a53a",
+    "count": 1,
+    "device": "ua723cn",
+    "alias": null,
+    "comment": "14 anschlüsse",
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "a53a",
+    "count": 1,
+    "device": "tc4066bp",
+    "alias": null,
+    "comment": "14 anschlüsse",
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "a53a",
+    "count": 1,
+    "device": "lt1181acs",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "a53a",
+    "count": 3,
+    "device": "842 485",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "a53a",
+    "count": 23,
+    "device": "LED rot 3mm",
+    "alias": "",
+    "comment": "",
+    "category": "led",
+    "pack": "draht"
+  },
+  {
+    "box": "a53a",
+    "count": 0,
+    "device": "m50 pfosten doppelreihe ",
+    "alias": "",
+    "comment": "",
+    "category": "m50 pfosten pin",
+    "pack": "m50 pfosten"
+  },
+  {
+    "box": "a53a",
+    "count": 0,
+    "device": "sockel dip28 schmal",
+    "alias": null,
+    "comment": null,
+    "category": "sockel",
+    "pack": "dip28"
+  },
+  {
+    "box": "a53a",
+    "count": 0,
+    "device": "jumper",
+    "alias": "",
+    "comment": "",
+    "category": "jumper",
+    "pack": "jumper"
+  },
+  {
+    "box": "a53a",
+    "count": 1,
+    "device": "R 470k 5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "draht"
+  },
+  {
+    "box": "a53a",
+    "count": 30,
+    "device": "C22nF",
+    "alias": null,
+    "comment": null,
+    "category": "c",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "a53a",
+    "count": 5,
+    "device": "r 820",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": "draht"
+  }
+]

@@ -1,0 +1,218 @@
+[
+  {
+    "box": "a13",
+    "count": 1,
+    "device": "GAL20L8",
+    "alias": null,
+    "comment": "",
+    "category": "GAL",
+    "pack": "QFP28"
+  },
+  {
+    "box": "a13",
+    "count": 5,
+    "device": "20MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": "draht"
+  },
+  {
+    "box": "a13",
+    "count": 4,
+    "device": "F374",
+    "alias": null,
+    "comment": "Octal Edge-Triggered D-type Flip-Flops With 3-State Outputs",
+    "category": "DIG",
+    "pack": "SSOP 20"
+  },
+  {
+    "box": "a13",
+    "count": 2,
+    "device": "F367",
+    "alias": null,
+    "comment": "",
+    "category": "DIGITAL",
+    "pack": "SOIC 14"
+  },
+  {
+    "box": "a13",
+    "count": 1,
+    "device": "DS1013S25",
+    "alias": "   ",
+    "comment": "25ms Verzoegerung",
+    "category": "DELAY",
+    "pack": "smd"
+  },
+  {
+    "box": "a13",
+    "count": 4,
+    "device": "74LS47N",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a13",
+    "count": 1,
+    "device": "LM358",
+    "alias": null,
+    "comment": "",
+    "category": "OPAMP",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a13",
+    "count": 3,
+    "device": "74F374",
+    "alias": null,
+    "comment": "Octal Edge-Triggered D-type Flip-Flops With 3-State Outputs",
+    "category": "DIG",
+    "pack": "SSOP 20"
+  },
+  {
+    "box": "a13",
+    "count": 1,
+    "device": "LM317T",
+    "alias": null,
+    "comment": "1.2V TO 37V ADJUSTABLE VOLTAGE REGULATOR",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a13",
+    "count": 2,
+    "device": "ATT3030",
+    "alias": "",
+    "comment": "  Field-Programmable Gate Arrays",
+    "category": "",
+    "pack": "PLCC68"
+  },
+  {
+    "box": "a13",
+    "count": 1,
+    "device": "LA7311",
+    "alias": null,
+    "comment": "  VTR-Use PAL/Secam Discriminator S-VHS Discriminator",
+    "category": "PAL/SECAM",
+    "pack": "SIP16Z"
+  },
+  {
+    "box": "a13",
+    "count": 1,
+    "device": "BC108B",
+    "alias": null,
+    "comment": "npn sisicon transistor",
+    "category": "NPN",
+    "pack": "TO92"
+  },
+  {
+    "box": "a13",
+    "count": 6,
+    "device": "R5K1-1%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a13",
+    "count": 2,
+    "device": "R1K-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a13",
+    "count": 1,
+    "device": "R5K1-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a13",
+    "count": 1,
+    "device": "R1K-1%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a13",
+    "count": 1,
+    "device": "1.843MHZ Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZ",
+    "pack": ""
+  },
+  {
+    "box": "a13",
+    "count": 5,
+    "device": "MIC29302bu",
+    "alias": null,
+    "comment": "",
+    "category": "reg ldo",
+    "pack": "to220 "
+  },
+  {
+    "box": "a13",
+    "count": 10,
+    "device": "R2202",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a13",
+    "count": 10,
+    "device": "BZVB85C 4V7",
+    "alias": null,
+    "comment": "4.7V",
+    "category": "Zenerdiode",
+    "pack": ""
+  },
+  {
+    "box": "a13",
+    "count": 4,
+    "device": "Selen Dioden",
+    "alias": null,
+    "comment": "Selen",
+    "category": "Selen",
+    "pack": ""
+  },
+  {
+    "box": "a13",
+    "count": 2,
+    "device": "p1Mlin",
+    "alias": null,
+    "comment": "",
+    "category": "poti",
+    "pack": "draht"
+  },
+  {
+    "box": "a13",
+    "count": 20,
+    "device": "C6,8nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a13",
+    "count": 10,
+    "device": "4700 6800 470 33",
+    "alias": null,
+    "comment": null,
+    "category": "C KERAMI",
+    "pack": "smd805"
+  }
+]

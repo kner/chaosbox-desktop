@@ -1,0 +1,65 @@
+[
+  {
+    "box": "c2",
+    "count": 2,
+    "device": "74HC244",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "soic20"
+  },
+  {
+    "box": "c2",
+    "count": 1,
+    "device": "M5M5256",
+    "alias": null,
+    "comment": "262144-BIT (32768-WORD BY 8-BIT) CMOS STATIC RAM",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "c2",
+    "count": 1,
+    "device": "pt6315",
+    "alias": null,
+    "comment": "VFD Driver/Controller IC",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "c2",
+    "count": 1,
+    "device": "ba5810",
+    "alias": null,
+    "comment": "CD / CD-ROM IC",
+    "category": "",
+    "pack": "soic kÃƒÅ’hlung"
+  },
+  {
+    "box": "c2",
+    "count": 3,
+    "device": "7805",
+    "alias": null,
+    "comment": "",
+    "category": "vregler",
+    "pack": ""
+  },
+  {
+    "box": "c2",
+    "count": 10,
+    "device": "sram",
+    "alias": null,
+    "comment": "sram",
+    "category": "sram",
+    "pack": "dip"
+  },
+  {
+    "box": "c2",
+    "count": 1,
+    "device": "R10k 7x SIP",
+    "alias": null,
+    "comment": "",
+    "category": "sip",
+    "pack": "SIP8"
+  }
+]

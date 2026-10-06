@@ -1,0 +1,20 @@
+[
+  {
+    "box": "g8",
+    "count": 50,
+    "device": "poti",
+    "alias": null,
+    "comment": "",
+    "category": "poti",
+    "pack": "draht"
+  },
+  {
+    "box": "g8",
+    "count": 0,
+    "device": "potis",
+    "alias": "",
+    "comment": "",
+    "category": "poti",
+    "pack": "draht"
+  }
+]

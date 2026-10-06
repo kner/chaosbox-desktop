@@ -1,0 +1,20 @@
+[
+  {
+    "box": "s15c",
+    "count": 5,
+    "device": "910k",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s15c",
+    "count": 1,
+    "device": "KA5H0380R",
+    "alias": null,
+    "comment": "Fairchild Power Switch",
+    "category": "Power Switch",
+    "pack": "TO-220F-4L"
+  }
+]

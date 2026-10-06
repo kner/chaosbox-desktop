@@ -1,0 +1,164 @@
+[
+  {
+    "box": "a33",
+    "count": 3,
+    "device": "74HC374",
+    "alias": "",
+    "comment": "Octal D-type flip-flop; positive edge-trigger",
+    "category": "DIG",
+    "pack": "SOIC20"
+  },
+  {
+    "box": "a33",
+    "count": 6,
+    "device": "NE5532D",
+    "alias": null,
+    "comment": "Internally-compensated dual low noise operational amplifie",
+    "category": "",
+    "pack": "SOIC16"
+  },
+  {
+    "box": "a33",
+    "count": 2,
+    "device": "KA431Z",
+    "alias": null,
+    "comment": "Adjustable/2.5V, 2% Tolerance Shunt Regulator",
+    "category": "REG",
+    "pack": "TO92"
+  },
+  {
+    "box": "a33",
+    "count": 1,
+    "device": "CD4025",
+    "alias": "",
+    "comment": "Triple 3-Input NAND Gate",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a33",
+    "count": 1,
+    "device": "CD4013",
+    "alias": null,
+    "comment": "Dual D-Type Flip-Flop ",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a33",
+    "count": 2,
+    "device": "CD4040",
+    "alias": "",
+    "comment": "12-stage binary ripple counter",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a33",
+    "count": 4,
+    "device": "R18-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a33",
+    "count": 3,
+    "device": "R51-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a33",
+    "count": 2,
+    "device": "r30-2%",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a33",
+    "count": 7,
+    "device": "R100-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a33",
+    "count": 10,
+    "device": "MJE13007",
+    "alias": null,
+    "comment": "NPN EPITAXIAL PLANAR TRANSISTO",
+    "category": "NPN POWER",
+    "pack": "TP220"
+  },
+  {
+    "box": "a33",
+    "count": 3,
+    "device": "BC140",
+    "alias": null,
+    "comment": "NPN SILICON TRANSISTORS",
+    "category": "NPN",
+    "pack": ""
+  },
+  {
+    "box": "a33",
+    "count": 6,
+    "device": "bc107b",
+    "alias": null,
+    "comment": "",
+    "category": "npn",
+    "pack": "to92 metall"
+  },
+  {
+    "box": "a33",
+    "count": 3,
+    "device": "sn75452",
+    "alias": null,
+    "comment": "Dual Very-High Speed, High-Current Peripheral Drivers",
+    "category": "DRIVER",
+    "pack": "dip8 im case"
+  },
+  {
+    "box": "a33",
+    "count": 1,
+    "device": "26,67mhZ 20.0",
+    "alias": null,
+    "comment": "",
+    "category": "quarz",
+    "pack": ""
+  },
+  {
+    "box": "a33",
+    "count": 9,
+    "device": "R1002",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a33",
+    "count": 3,
+    "device": "BC160",
+    "alias": null,
+    "comment": "NPN SILICON TRANSISTORS",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a33",
+    "count": 5,
+    "device": "W20nc50",
+    "alias": "Powermosfet",
+    "comment": "500V 18A 270mOhm Rdson",
+    "category": "POWER MOS ",
+    "pack": "Draht"
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "box": "k 3/2",
+    "count": 1,
+    "device": "R51K-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "k 3/2",
+    "count": 1,
+    "device": "R332",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  }
+]

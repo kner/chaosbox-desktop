@@ -1,0 +1,20 @@
+[
+  {
+    "box": "s20a",
+    "count": 30,
+    "device": "R75",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s20a",
+    "count": 1,
+    "device": "C100uF 16V elko",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": "smd"
+  }
+]

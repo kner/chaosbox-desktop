@@ -1,0 +1,20 @@
+[
+  {
+    "box": "a43",
+    "count": 1,
+    "device": "LM79L",
+    "alias": null,
+    "comment": "Series 3-Terminal Negative Regulators fixed-5",
+    "category": "REG",
+    "pack": "SOIC8"
+  },
+  {
+    "box": "a43",
+    "count": 5,
+    "device": "LM741",
+    "alias": null,
+    "comment": "OPAMP",
+    "category": "OPAMP",
+    "pack": "Sackerl"
+  }
+]

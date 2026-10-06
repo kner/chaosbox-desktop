@@ -1,0 +1,92 @@
+[
+  {
+    "box": "a52b",
+    "count": 1,
+    "device": "R75R0",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a52b",
+    "count": 2,
+    "device": "R680-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a52b",
+    "count": 1,
+    "device": "r680-5%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a52b",
+    "count": 1,
+    "device": "ds14c89",
+    "alias": null,
+    "comment": "Quad CMOS Receiver ",
+    "category": "RS232",
+    "pack": ""
+  },
+  {
+    "box": "a52b",
+    "count": 1,
+    "device": "74HC164",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "SOIC14"
+  },
+  {
+    "box": "a52b",
+    "count": 0,
+    "device": "txc 23 ay6nf",
+    "alias": null,
+    "comment": "",
+    "category": "quarz",
+    "pack": ""
+  },
+  {
+    "box": "a52b",
+    "count": 2,
+    "device": "C1u 55V",
+    "alias": null,
+    "comment": "",
+    "category": "C",
+    "pack": "smd"
+  },
+  {
+    "box": "a52b",
+    "count": 0,
+    "device": "74hct245",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "dip20"
+  },
+  {
+    "box": "a52b",
+    "count": 10,
+    "device": "R2701",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a52b",
+    "count": 20,
+    "device": "C680pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

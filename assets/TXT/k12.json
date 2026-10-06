@@ -1,0 +1,65 @@
+[
+  {
+    "box": "k12",
+    "count": 50,
+    "device": "10k 5%",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "k12",
+    "count": 15,
+    "device": "43r 10% 1w",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "k12",
+    "count": 10,
+    "device": "23r6 1% ",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "k12",
+    "count": 4,
+    "device": "1uF",
+    "alias": null,
+    "comment": "10V",
+    "category": "C",
+    "pack": "draht 5mm"
+  },
+  {
+    "box": "k12",
+    "count": 9,
+    "device": "R 100k 2%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  },
+  {
+    "box": "k12",
+    "count": 2,
+    "device": "2200uF",
+    "alias": null,
+    "comment": null,
+    "category": "C Elko",
+    "pack": "Draht"
+  },
+  {
+    "box": "k12",
+    "count": 2,
+    "device": "47uF",
+    "alias": null,
+    "comment": null,
+    "category": "C Elko",
+    "pack": "Draht"
+  }
+]

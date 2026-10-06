@@ -1,0 +1,65 @@
+[
+  {
+    "box": "s27c",
+    "count": 3,
+    "device": "62",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s27c",
+    "count": 1,
+    "device": "AHC08",
+    "alias": null,
+    "comment": "",
+    "category": "dig",
+    "pack": "soic"
+  },
+  {
+    "box": "s27c",
+    "count": 2,
+    "device": "PCA9556",
+    "alias": null,
+    "comment": "IC OCT SMBUS/I2C INTRFC ",
+    "category": "i2c smbus",
+    "pack": "sop"
+  },
+  {
+    "box": "s27c",
+    "count": 12,
+    "device": "HIP6601BCB",
+    "alias": null,
+    "comment": "Synchronous Rectified Buck MOSFET Drivers",
+    "category": "MOSFET DRIVER",
+    "pack": "soic8"
+  },
+  {
+    "box": "s27c",
+    "count": 2,
+    "device": "1.1k 5% ",
+    "alias": null,
+    "comment": "Hochstrom smd Widerstand",
+    "category": "r",
+    "pack": "smd"
+  },
+  {
+    "box": "s27c",
+    "count": 2,
+    "device": "rsip  33Ohm",
+    "alias": null,
+    "comment": "sip",
+    "category": null,
+    "pack": "sip 10"
+  },
+  {
+    "box": "s27c",
+    "count": 30,
+    "device": "R56k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

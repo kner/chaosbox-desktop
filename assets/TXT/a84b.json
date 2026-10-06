@@ -1,0 +1,38 @@
+[
+  {
+    "box": "a84b",
+    "count": 0,
+    "device": "",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a84b",
+    "count": 5,
+    "device": "Dioden",
+    "alias": "",
+    "comment": "",
+    "category": "D",
+    "pack": "draht"
+  },
+  {
+    "box": "a84b",
+    "count": 5,
+    "device": "72LS245",
+    "alias": "",
+    "comment": "",
+    "category": "",
+    "pack": "DIP"
+  },
+  {
+    "box": "a84b",
+    "count": 0,
+    "device": "R47K-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  }
+]

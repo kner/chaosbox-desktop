@@ -1,0 +1,65 @@
+[
+  {
+    "box": "s27b",
+    "count": 3,
+    "device": "12",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s27b",
+    "count": 3,
+    "device": "ds1489",
+    "alias": null,
+    "comment": "QUAD LINE RECEIVER",
+    "category": "dig",
+    "pack": "soic"
+  },
+  {
+    "box": "s27b",
+    "count": 3,
+    "device": "74hc4020",
+    "alias": "",
+    "comment": " 14-STAGE BINARY RIPPLE counter",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "s27b",
+    "count": 2,
+    "device": "PCA9516",
+    "alias": null,
+    "comment": "i2c hub",
+    "category": "i2c",
+    "pack": "sop"
+  },
+  {
+    "box": "s27b",
+    "count": 5,
+    "device": "FDS6680A",
+    "alias": null,
+    "comment": "2.5 A, 30V",
+    "category": "power mosfet",
+    "pack": "soic8"
+  },
+  {
+    "box": "s27b",
+    "count": 1,
+    "device": "h11c1",
+    "alias": "",
+    "comment": " PACKAGE SCHEMATIC PHOTO SCR OPTOCOUPLERS",
+    "category": "optokoppler",
+    "pack": "dip"
+  },
+  {
+    "box": "s27b",
+    "count": 30,
+    "device": "R1k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

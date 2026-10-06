@@ -1,0 +1,29 @@
+[
+  {
+    "box": "a84a",
+    "count": 0,
+    "device": "",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a84a",
+    "count": 10,
+    "device": "PC703V",
+    "alias": null,
+    "comment": "High Collector-emitter Voltage Type Photocoupler",
+    "category": "OPTOKOPPLER",
+    "pack": "DIP6"
+  },
+  {
+    "box": "a84a",
+    "count": 2,
+    "device": "74LS573",
+    "alias": "",
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  }
+]

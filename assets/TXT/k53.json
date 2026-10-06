@@ -1,0 +1,38 @@
+[
+  {
+    "box": "k53",
+    "count": 2,
+    "device": "sockel dip28 schmal",
+    "alias": null,
+    "comment": null,
+    "category": "sockel",
+    "pack": "dip28"
+  },
+  {
+    "box": "k53",
+    "count": 2,
+    "device": "uln2803a",
+    "alias": null,
+    "comment": "Eight Darlington array",
+    "category": "darlington",
+    "pack": "dip18"
+  },
+  {
+    "box": "k53",
+    "count": 2,
+    "device": "sockel dip28 dip14  schmal",
+    "alias": null,
+    "comment": null,
+    "category": "sockel",
+    "pack": "dip28"
+  },
+  {
+    "box": "k53",
+    "count": 2,
+    "device": "T5744",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": "so20"
+  }
+]

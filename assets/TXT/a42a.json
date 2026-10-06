@@ -1,0 +1,56 @@
+[
+  {
+    "box": "a42a",
+    "count": 7,
+    "device": "74HC14",
+    "alias": null,
+    "comment": "Hex inverting Schmitt trigger",
+    "category": "DIG",
+    "pack": "SOIC"
+  },
+  {
+    "box": "a42a",
+    "count": 8,
+    "device": "74HC4052",
+    "alias": null,
+    "comment": "Dual 4-channel analog multiplexer/demultiplexer",
+    "category": "ANALOG MUX",
+    "pack": "SOIC16"
+  },
+  {
+    "box": "a42a",
+    "count": 10,
+    "device": "R1003",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "smd"
+  },
+  {
+    "box": "a42a",
+    "count": 3,
+    "device": "r152",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": "smd"
+  },
+  {
+    "box": "a42a",
+    "count": 11,
+    "device": "CQX 48",
+    "alias": null,
+    "comment": "IR Sendediode CQX 48 U=1.3V I=100mA   1.",
+    "category": "IR Sendediode",
+    "pack": "blau"
+  },
+  {
+    "box": "a42a",
+    "count": 1,
+    "device": "L6472h",
+    "alias": null,
+    "comment": "fully integrated microstepping motor drive",
+    "category": "motor stepper",
+    "pack": "HTSSOP "
+  }
+]

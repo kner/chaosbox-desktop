@@ -1,0 +1,38 @@
+[
+  {
+    "box": "a41b",
+    "count": 10,
+    "device": "R1502",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a41b",
+    "count": 1,
+    "device": "77.411 Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": "DIP "
+  },
+  {
+    "box": "a41b",
+    "count": 6,
+    "device": "HEF4011BP",
+    "alias": "",
+    "comment": "14 Füße",
+    "category": "IC",
+    "pack": "dip14"
+  },
+  {
+    "box": "a41b",
+    "count": 20,
+    "device": "C1,8nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

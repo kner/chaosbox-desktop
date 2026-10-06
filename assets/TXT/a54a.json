@@ -1,0 +1,83 @@
+[
+  {
+    "box": "a54a",
+    "count": 12,
+    "device": "74HC02",
+    "alias": "",
+    "comment": "",
+    "category": "DIG",
+    "pack": "SOIC s"
+  },
+  {
+    "box": "a54a",
+    "count": 5,
+    "device": "R16-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a54a",
+    "count": 1,
+    "device": "82C501",
+    "alias": null,
+    "comment": "  ETHERNET SERIAL INTERFACE",
+    "category": "ETHERNET",
+    "pack": "PLCC28"
+  },
+  {
+    "box": "a54a",
+    "count": 10,
+    "device": "R4700",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD "
+  },
+  {
+    "box": "a54a",
+    "count": 3,
+    "device": "bzx79 2.4V",
+    "alias": null,
+    "comment": "2.4V ",
+    "category": "Zenerdiode",
+    "pack": ""
+  },
+  {
+    "box": "a54a",
+    "count": 1,
+    "device": "l6232",
+    "alias": null,
+    "comment": "brushless motor SPINDLE DRIVER",
+    "category": "motor driver",
+    "pack": ""
+  },
+  {
+    "box": "a54a",
+    "count": 1,
+    "device": "brx49",
+    "alias": null,
+    "comment": "",
+    "category": "thyristor",
+    "pack": "to92"
+  },
+  {
+    "box": "a54a",
+    "count": 4,
+    "device": "v6 30",
+    "alias": null,
+    "comment": "z diode 3.0V",
+    "category": "z diode zener",
+    "pack": "smd"
+  },
+  {
+    "box": "a54a",
+    "count": 4,
+    "device": "8x1.5k ",
+    "alias": "9x-1-152",
+    "comment": null,
+    "category": null,
+    "pack": "r sip"
+  }
+]

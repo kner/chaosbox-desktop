@@ -1,0 +1,47 @@
+[
+  {
+    "box": "a24c",
+    "count": 1,
+    "device": "36MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": ""
+  },
+  {
+    "box": "a24c",
+    "count": 10,
+    "device": "R6800",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a24c",
+    "count": 4,
+    "device": "LM324",
+    "alias": "",
+    "comment": "LOW POWER QUAD OPERATIONAL AMPLIFIERS",
+    "category": "opamp",
+    "pack": "dip14"
+  },
+  {
+    "box": "a24c",
+    "count": 20,
+    "device": "68k",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "a24c",
+    "count": 1,
+    "device": "R68k R683",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD groß"
+  }
+]

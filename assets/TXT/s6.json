@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s6",
+    "count": 20,
+    "device": "buchsen und stecker",
+    "alias": null,
+    "comment": "buchsen und stecker",
+    "category": "buchsen und stecker",
+    "pack": ""
+  },
+  {
+    "box": "s6",
+    "count": 30,
+    "device": "R68k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s6",
+    "count": 20,
+    "device": "180pF",
+    "alias": null,
+    "comment": null,
+    "category": "c keramik",
+    "pack": "smd"
+  }
+]

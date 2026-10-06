@@ -1,0 +1,92 @@
+[
+  {
+    "box": "a82b",
+    "count": 10,
+    "device": "R332",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a82b",
+    "count": 3,
+    "device": "74HCT123",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": ""
+  },
+  {
+    "box": "a82b",
+    "count": 3,
+    "device": "74HCT688",
+    "alias": null,
+    "comment": "8-bit magnitude comparator",
+    "category": "DIG",
+    "pack": "DIP20"
+  },
+  {
+    "box": "a82b",
+    "count": 1,
+    "device": "R82-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a82b",
+    "count": 2,
+    "device": "R100-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a82b",
+    "count": 24,
+    "device": "R4K7-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a82b",
+    "count": 1,
+    "device": "fs1km",
+    "alias": null,
+    "comment": "MITSUBISHI Nch POWER MOSFET HIGH-SPEED SWITCHING USE",
+    "category": "power mosfet",
+    "pack": "TO220"
+  },
+  {
+    "box": "a82b",
+    "count": 1,
+    "device": "74as32",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "a82b",
+    "count": 4,
+    "device": "bc337",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "to92"
+  },
+  {
+    "box": "a82b",
+    "count": 20,
+    "device": "C8pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

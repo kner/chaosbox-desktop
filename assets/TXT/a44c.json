@@ -1,0 +1,110 @@
+[
+  {
+    "box": "a44c",
+    "count": 2,
+    "device": "R25-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a44c",
+    "count": 1,
+    "device": "r2.4-5%",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a44c",
+    "count": 2,
+    "device": "R241",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a44c",
+    "count": 4,
+    "device": "1N4004",
+    "alias": "",
+    "comment": "1.0A Standard Recovery Rectifier",
+    "category": "Diode",
+    "pack": ""
+  },
+  {
+    "box": "a44c",
+    "count": 1,
+    "device": "220u 16v",
+    "alias": null,
+    "comment": "",
+    "category": "C",
+    "pack": "smd"
+  },
+  {
+    "box": "a44c",
+    "count": 2,
+    "device": "22u 6v",
+    "alias": null,
+    "comment": "",
+    "category": "C",
+    "pack": "smd"
+  },
+  {
+    "box": "a44c",
+    "count": 9,
+    "device": "BC546B",
+    "alias": null,
+    "comment": "NPN general purpose transisto",
+    "category": "NPN",
+    "pack": "TO92"
+  },
+  {
+    "box": "a44c",
+    "count": 6,
+    "device": "BC327",
+    "alias": null,
+    "comment": "NPN general purpose transisto",
+    "category": "PNP",
+    "pack": "TO92 PAPIER"
+  },
+  {
+    "box": "a44c",
+    "count": 1,
+    "device": "3K 10K",
+    "alias": null,
+    "comment": "",
+    "category": "POTI",
+    "pack": "DRAHT"
+  },
+  {
+    "box": "a44c",
+    "count": 8,
+    "device": "k827p",
+    "alias": null,
+    "comment": "Optocoupler with Phototransistor Output",
+    "category": "OPTOKOPPLER",
+    "pack": "dip"
+  },
+  {
+    "box": "a44c",
+    "count": 10,
+    "device": "R8201",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a44c",
+    "count": 20,
+    "device": "MMBT3904L",
+    "alias": null,
+    "comment": "NPN switching transistor",
+    "category": "npn",
+    "pack": "sot23"
+  }
+]

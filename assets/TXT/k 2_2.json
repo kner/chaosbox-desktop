@@ -1,0 +1,47 @@
+[
+  {
+    "box": "k 2/2",
+    "count": 10,
+    "device": "R473",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "k 2/2",
+    "count": 1,
+    "device": "CNY17",
+    "alias": "",
+    "comment": "Optocoupler Phototransistor Output",
+    "category": " OPTOKOPPLER",
+    "pack": "DIP6 wHITE"
+  },
+  {
+    "box": "k 2/2",
+    "count": 1,
+    "device": "SN75451BP",
+    "alias": "",
+    "comment": "Dual Very-High Speed, High-Current Peripheral Driver",
+    "category": "DRIVER",
+    "pack": "DIP8 Plastik"
+  },
+  {
+    "box": "k 2/2",
+    "count": 1,
+    "device": "R5K1-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "k 2/2",
+    "count": 1,
+    "device": "230",
+    "alias": null,
+    "comment": null,
+    "category": "5%",
+    "pack": null
+  }
+]

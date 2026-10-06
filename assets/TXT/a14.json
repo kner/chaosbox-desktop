@@ -1,0 +1,38 @@
+[
+  {
+    "box": "a14",
+    "count": 1,
+    "device": "8.192MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "osz",
+    "pack": ""
+  },
+  {
+    "box": "a14",
+    "count": 10,
+    "device": "R1501",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a14",
+    "count": 5,
+    "device": "BY127",
+    "alias": null,
+    "comment": "1A",
+    "category": "DIODE GLEICHRICHTER",
+    "pack": ""
+  },
+  {
+    "box": "a14",
+    "count": 3,
+    "device": "bzx83c 6.2",
+    "alias": null,
+    "comment": "6.2v",
+    "category": "zenerdiode",
+    "pack": ""
+  }
+]

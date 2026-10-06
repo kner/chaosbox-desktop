@@ -1,0 +1,101 @@
+[
+  {
+    "box": "a73c",
+    "count": 1,
+    "device": "R182 R183",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a73c",
+    "count": 17,
+    "device": "R100k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "a73c",
+    "count": 2,
+    "device": "R130k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a73c",
+    "count": 1,
+    "device": "R390k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a73c",
+    "count": 1,
+    "device": "R560k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a73c",
+    "count": 6,
+    "device": "PC702V",
+    "alias": null,
+    "comment": "High Collector-emitter Voltage Type Photocoupler",
+    "category": "OPTOKOPPLER",
+    "pack": "DIP6"
+  },
+  {
+    "box": "a73c",
+    "count": 10,
+    "device": "r15R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a73c",
+    "count": 50,
+    "device": "100n",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 603"
+  },
+  {
+    "box": "a73c",
+    "count": 6,
+    "device": "2u2",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a73c",
+    "count": 9,
+    "device": "lmv431",
+    "alias": "N08A LMV431IM5 ",
+    "comment": null,
+    "category": "Low-Voltage (1.24V) Adjustable Precision Shun",
+    "pack": "SOT-23-5"
+  },
+  {
+    "box": "a73c",
+    "count": 20,
+    "device": "2N7002",
+    "alias": null,
+    "comment": "n-ch mosfet",
+    "category": "nmos",
+    "pack": "sot23"
+  }
+]

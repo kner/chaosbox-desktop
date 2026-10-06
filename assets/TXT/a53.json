@@ -1,0 +1,20 @@
+[
+  {
+    "box": "a53",
+    "count": 3,
+    "device": "ua723dc",
+    "alias": null,
+    "comment": "",
+    "category": "reg",
+    "pack": "dip14"
+  },
+  {
+    "box": "a53",
+    "count": 1,
+    "device": "mc3423",
+    "alias": null,
+    "comment": "OverVoltage Crowbar Sensing Circuit",
+    "category": "PROTECTION",
+    "pack": "dip8"
+  }
+]

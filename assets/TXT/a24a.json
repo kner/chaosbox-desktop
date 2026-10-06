@@ -1,0 +1,47 @@
+[
+  {
+    "box": "a24a",
+    "count": 16,
+    "device": "74HC4053",
+    "alias": null,
+    "comment": "High-Speed CMOS Logic Analog Multiplexers/Demultiplexers",
+    "category": "DIG",
+    "pack": "SOIC16"
+  },
+  {
+    "box": "a24a",
+    "count": 10,
+    "device": "R1201",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a24a",
+    "count": 2,
+    "device": "bzx bzv",
+    "alias": null,
+    "comment": "5,1v",
+    "category": "Zenerdiode",
+    "pack": "Zenerdiode"
+  },
+  {
+    "box": "a24a",
+    "count": 21,
+    "device": "LTC1446",
+    "alias": null,
+    "comment": "Dual 12-Bit Rail-to-Rail Micropower DAC",
+    "category": "DAC",
+    "pack": "Dip8"
+  },
+  {
+    "box": "a24a",
+    "count": 20,
+    "device": "C5,6nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

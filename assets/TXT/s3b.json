@@ -1,0 +1,74 @@
+[
+  {
+    "box": "s3b",
+    "count": 1,
+    "device": "irf246",
+    "alias": "",
+    "comment": "14A and 13A, 275V and 250V, 0.28 and 0.34 Ohm, N-Channel Power MOSFETs",
+    "category": "MOSFET POWER MOS MOS",
+    "pack": ""
+  },
+  {
+    "box": "s3b",
+    "count": 1,
+    "device": "f6p02",
+    "alias": "",
+    "comment": "Power MOSFET -6.0 Amps, -20 Volts P-Channel SOT-223",
+    "category": "powermos sot-223",
+    "pack": "smd"
+  },
+  {
+    "box": "s3b",
+    "count": 1,
+    "device": "hct14",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "s3b",
+    "count": 15,
+    "device": "LEDbalken 7seg",
+    "alias": "",
+    "comment": "ledbalken 7seg",
+    "category": "7seg ledbalken",
+    "pack": "draht"
+  },
+  {
+    "box": "s3b",
+    "count": 2,
+    "device": "GD75232a",
+    "alias": "",
+    "comment": "Multiple RS-232 Drivers And Receivers",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "s3b",
+    "count": 2,
+    "device": "R20k-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "s3b",
+    "count": 30,
+    "device": "R33k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s3b",
+    "count": 20,
+    "device": "C470pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

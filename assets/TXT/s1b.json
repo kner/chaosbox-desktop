@@ -1,0 +1,119 @@
+[
+  {
+    "box": "s1b",
+    "count": 6,
+    "device": "74hct573",
+    "alias": null,
+    "comment": "octal latch",
+    "category": "DIG",
+    "pack": "SOIC breit"
+  },
+  {
+    "box": "s1b",
+    "count": 2,
+    "device": "htc14a",
+    "alias": null,
+    "comment": "Schmitt-Trigger",
+    "category": "DIG",
+    "pack": "SOIC"
+  },
+  {
+    "box": "s1b",
+    "count": 1,
+    "device": "ADC0808",
+    "alias": null,
+    "comment": "8-bit Microprocessor Compatible A/D Converters With 8-Channel Multiplexer",
+    "category": "ADC ADU",
+    "pack": "qfp"
+  },
+  {
+    "box": "s1b",
+    "count": 1,
+    "device": "34063",
+    "alias": null,
+    "comment": "DC-TO-DC CONVERTER CONTROL CIRCUITS",
+    "category": "dcdc",
+    "pack": "dip8"
+  },
+  {
+    "box": "s1b",
+    "count": 1,
+    "device": "24c02n",
+    "alias": null,
+    "comment": "2-WireÃ‚Â SerialÃ‚Â EEPROM 2KByte",
+    "category": "eeprom serial",
+    "pack": "soic8"
+  },
+  {
+    "box": "s1b",
+    "count": 3,
+    "device": "ltc485",
+    "alias": null,
+    "comment": "RS485 Driver; VCC=12V ",
+    "category": "Driver RS485",
+    "pack": "soic8"
+  },
+  {
+    "box": "s1b",
+    "count": 3,
+    "device": "4.7k sip",
+    "alias": null,
+    "comment": "",
+    "category": "r sip",
+    "pack": "sip"
+  },
+  {
+    "box": "s1b",
+    "count": 1,
+    "device": "Lautsprecher 16ohm",
+    "alias": null,
+    "comment": "",
+    "category": "lautsprecher",
+    "pack": "smd"
+  },
+  {
+    "box": "s1b",
+    "count": 1,
+    "device": "shottky ",
+    "alias": null,
+    "comment": "",
+    "category": "shottky power",
+    "pack": "smd"
+  },
+  {
+    "box": "s1b",
+    "count": 1,
+    "device": "22Ohm 5x sip",
+    "alias": null,
+    "comment": "",
+    "category": "r sip",
+    "pack": "sip10"
+  },
+  {
+    "box": "s1b",
+    "count": 30,
+    "device": "R22",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s1b",
+    "count": 2,
+    "device": "BCX54-160 ",
+    "alias": "bd",
+    "comment": "npn hfe160 comp BCX51-16",
+    "category": null,
+    "pack": "sot89"
+  },
+  {
+    "box": "s1b",
+    "count": 5,
+    "device": "R22 3W",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "Draht"
+  }
+]

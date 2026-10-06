@@ -1,0 +1,92 @@
+[
+  {
+    "box": "s18",
+    "count": 10,
+    "device": "64.9 22k",
+    "alias": "",
+    "comment": "",
+    "category": "1%",
+    "pack": ""
+  },
+  {
+    "box": "s18",
+    "count": 5,
+    "device": "15k",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s18",
+    "count": 30,
+    "device": "10k",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s18",
+    "count": 10,
+    "device": "68",
+    "alias": "",
+    "comment": "",
+    "category": "5% 2W",
+    "pack": ""
+  },
+  {
+    "box": "s18",
+    "count": 3,
+    "device": "220",
+    "alias": "",
+    "comment": "",
+    "category": "10%",
+    "pack": ""
+  },
+  {
+    "box": "s18",
+    "count": 83,
+    "device": "LED diverse",
+    "alias": "",
+    "comment": "rund und eckig",
+    "category": "LED diverse",
+    "pack": ""
+  },
+  {
+    "box": "s18",
+    "count": 30,
+    "device": "R8k2",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s18",
+    "count": 20,
+    "device": "C47nF",
+    "alias": "",
+    "comment": "",
+    "category": "C Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "s18",
+    "count": 10,
+    "device": "43",
+    "alias": null,
+    "comment": null,
+    "category": "5%",
+    "pack": null
+  },
+  {
+    "box": "s18",
+    "count": 4,
+    "device": "2r2 10Watt",
+    "alias": null,
+    "comment": null,
+    "category": "r Leistung",
+    "pack": "draht"
+  }
+]

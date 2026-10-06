@@ -1,0 +1,29 @@
+[
+  {
+    "box": "a32b",
+    "count": 1,
+    "device": "M5M5256",
+    "alias": "",
+    "comment": "32,768-WORD BY 8-BIT CMOS STATIC RAM",
+    "category": "SRAM",
+    "pack": "dip28"
+  },
+  {
+    "box": "a32b",
+    "count": 1,
+    "device": "40MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": ""
+  },
+  {
+    "box": "a32b",
+    "count": 10,
+    "device": "R33R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  }
+]

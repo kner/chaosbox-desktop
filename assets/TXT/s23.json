@@ -1,0 +1,83 @@
+[
+  {
+    "box": "s23",
+    "count": 16,
+    "device": "Schalter Taster Dipswitch",
+    "alias": null,
+    "comment": "Schalter Taster Dipswitch Codierschalter",
+    "category": "Schalter Taster Dipswitch",
+    "pack": "smd"
+  },
+  {
+    "box": "s23",
+    "count": 4,
+    "device": "Starkstromschalter",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "s23",
+    "count": 5,
+    "device": "Taster",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "s23",
+    "count": 2,
+    "device": "dip switch",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "s23",
+    "count": 9,
+    "device": "Diverse Taster",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "s23",
+    "count": 30,
+    "device": "R5k6",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s23",
+    "count": 26,
+    "device": "C1uF",
+    "alias": "",
+    "comment": "",
+    "category": "C Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "s23",
+    "count": 0,
+    "device": "C100uF 10V",
+    "alias": "",
+    "comment": "",
+    "category": "C",
+    "pack": "SMD"
+  },
+  {
+    "box": "s23",
+    "count": 1,
+    "device": "33",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  }
+]

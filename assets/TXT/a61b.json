@@ -1,0 +1,56 @@
+[
+  {
+    "box": "a61b",
+    "count": 1,
+    "device": "R564 R682",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a61b",
+    "count": 1,
+    "device": "MTD392N",
+    "alias": null,
+    "comment": "Coaxial Transceiver Interface",
+    "category": "COAX",
+    "pack": ""
+  },
+  {
+    "box": "a61b",
+    "count": 3,
+    "device": "R1K5-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a61b",
+    "count": 10,
+    "device": "r2k77-1%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a61b",
+    "count": 10,
+    "device": "R6802",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a61b",
+    "count": 1,
+    "device": "CXK581000AM",
+    "alias": "",
+    "comment": " 131072-word x 8-bit High Speed CMOS Static RAM",
+    "category": "SRAMa",
+    "pack": "soic"
+  }
+]

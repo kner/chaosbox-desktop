@@ -1,0 +1,218 @@
+[
+  {
+    "box": "a31",
+    "count": 5,
+    "device": "74HC245",
+    "alias": null,
+    "comment": "Octal bus transceiver; 3-stat",
+    "category": "DIG",
+    "pack": "SOIC20"
+  },
+  {
+    "box": "a31",
+    "count": 2,
+    "device": "74HC4046",
+    "alias": null,
+    "comment": "Phase-locked-loop with VCO",
+    "category": "DIG",
+    "pack": "SOIC16 schmal"
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "MAX1232",
+    "alias": null,
+    "comment": "Microprocessor Monitor",
+    "category": "",
+    "pack": "SOIC8 "
+  },
+  {
+    "box": "a31",
+    "count": 2,
+    "device": "AT28C256E",
+    "alias": null,
+    "comment": "256K 32K x 8 Paged CMOS E2PRO",
+    "category": "",
+    "pack": "PLCC36"
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "AD7524JN",
+    "alias": null,
+    "comment": "CMOS 8-Bit Buffered Multiplying DAC",
+    "category": "DAC",
+    "pack": "DIP16"
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "CMPWR150",
+    "alias": null,
+    "comment": "500mA/3.3V SMARTOR Power Regulator",
+    "category": "",
+    "pack": "TO263"
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "BUK454",
+    "alias": null,
+    "comment": "PowerMOS transistor",
+    "category": "POWER MOS",
+    "pack": "TO220"
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "TQ2-L",
+    "alias": null,
+    "comment": "Relais",
+    "category": "Relais",
+    "pack": ""
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "IRFD9020",
+    "alias": null,
+    "comment": "HEXFET TRANSISTORS P CHANNEL HEXDIP",
+    "category": "HEXFET",
+    "pack": "DIP4"
+  },
+  {
+    "box": "a31",
+    "count": 3,
+    "device": "LF357",
+    "alias": null,
+    "comment": "JFET Input Operational Amplifiers",
+    "category": "",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a31",
+    "count": 3,
+    "device": "PTC C975",
+    "alias": null,
+    "comment": "20V 550mA 1.8Ohm",
+    "category": "PTC",
+    "pack": "blau"
+  },
+  {
+    "box": "a31",
+    "count": 3,
+    "device": "M6242B",
+    "alias": null,
+    "comment": "DIRECT BUS CONNECTED CMOS REAL TIME CLOCK/CALENDAR",
+    "category": "",
+    "pack": "SOIC24"
+  },
+  {
+    "box": "a31",
+    "count": 9,
+    "device": "22K",
+    "alias": null,
+    "comment": "Potentiometer",
+    "category": "POTI",
+    "pack": "draht"
+  },
+  {
+    "box": "a31",
+    "count": 5,
+    "device": "BC546A",
+    "alias": null,
+    "comment": "NPN general purpose transisto",
+    "category": "NPN",
+    "pack": "TO92"
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "8052AH-BASIC",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "DIP40"
+  },
+  {
+    "box": "a31",
+    "count": 3,
+    "device": "R180-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "r910-2% R12 R24",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "37,25MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": ""
+  },
+  {
+    "box": "a31",
+    "count": 10,
+    "device": "R3301",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "SKU 80711",
+    "alias": null,
+    "comment": "Wireless Bluetooth RS232 TTL Transceiver Module",
+    "category": "Bluetooth",
+    "pack": null
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "ntc semi833",
+    "alias": null,
+    "comment": "ntc",
+    "category": "ntc",
+    "pack": "draht"
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "LTC3105",
+    "alias": null,
+    "comment": " - 400mA Step-Up DC/DC Converter with Maximum Power Point Control and 250mV Start-Up",
+    "category": null,
+    "pack": "MSOP"
+  },
+  {
+    "box": "a31",
+    "count": 20,
+    "device": "C 1pf 2.2pf 4.7pf",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a31",
+    "count": 1,
+    "device": "sp232ecn modul",
+    "alias": null,
+    "comment": "sp232ecn modul",
+    "category": null,
+    "pack": "modul"
+  }
+]

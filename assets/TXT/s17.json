@@ -1,0 +1,65 @@
+[
+  {
+    "box": "s17",
+    "count": 4,
+    "device": "TC55100",
+    "alias": null,
+    "comment": "131,072 Word X 8 Bit Static Ram",
+    "category": "SRAM ",
+    "pack": "soic"
+  },
+  {
+    "box": "s17",
+    "count": 8,
+    "device": "74vhc4316M",
+    "alias": null,
+    "comment": "IC ANALOG SWITCH QUAD 16-SOIC",
+    "category": "IC ANALOG SWITCH QUAD 16-SOIC",
+    "pack": "soic"
+  },
+  {
+    "box": "s17",
+    "count": 4,
+    "device": "cy 7c199-12vc",
+    "alias": null,
+    "comment": "7C199-12 (Cypress) - 32K x 8 Static RAM",
+    "category": "sram",
+    "pack": "soic"
+  },
+  {
+    "box": "s17",
+    "count": 9,
+    "device": "LM393M",
+    "alias": null,
+    "comment": "LOW POWER DUAL BIPOLAR COMPARATORS",
+    "category": "COMP",
+    "pack": "soic8"
+  },
+  {
+    "box": "s17",
+    "count": 30,
+    "device": "R390k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s17",
+    "count": 1,
+    "device": "C15000µF 3300uF",
+    "alias": "",
+    "comment": "",
+    "category": "C Elko",
+    "pack": "Draht"
+  },
+  {
+    "box": "s17",
+    "count": 20,
+    "device": "100k 10k",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "box": "k 1/2",
+    "count": 2,
+    "device": "K3020P",
+    "alias": "",
+    "comment": "",
+    "category": "OPTOKOPPLER",
+    "pack": "DIP6"
+  },
+  {
+    "box": "k 1/2",
+    "count": 1,
+    "device": "74LS30",
+    "alias": "",
+    "comment": "",
+    "category": "DIG",
+    "pack": ""
+  },
+  {
+    "box": "k 1/2",
+    "count": 10,
+    "device": "33k",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  }
+]

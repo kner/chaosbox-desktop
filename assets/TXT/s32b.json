@@ -1,0 +1,20 @@
+[
+  {
+    "box": "s32b",
+    "count": 4,
+    "device": "2.2k",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s32b",
+    "count": 11,
+    "device": "702k",
+    "alias": "",
+    "comment": "n-ch mosfet 60V 0.11A",
+    "category": "nmos",
+    "pack": "sot23"
+  }
+]

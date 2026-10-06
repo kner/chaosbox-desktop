@@ -1,0 +1,38 @@
+[
+  {
+    "box": "a81a",
+    "count": 45,
+    "device": "R330",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a81a",
+    "count": 4,
+    "device": "C33p",
+    "alias": null,
+    "comment": "",
+    "category": "C",
+    "pack": "draht"
+  },
+  {
+    "box": "a81a",
+    "count": 2,
+    "device": "HEF4538",
+    "alias": "",
+    "comment": "Dual precision monostable multivibrator",
+    "category": "",
+    "pack": "DIP"
+  },
+  {
+    "box": "a81a",
+    "count": 19,
+    "device": "R18K-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  }
+]

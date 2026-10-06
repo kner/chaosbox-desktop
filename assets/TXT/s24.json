@@ -1,0 +1,47 @@
+[
+  {
+    "box": "s24",
+    "count": 30,
+    "device": "82k",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s24",
+    "count": 12,
+    "device": "1k",
+    "alias": "",
+    "comment": "",
+    "category": "5% 5W Draht",
+    "pack": ""
+  },
+  {
+    "box": "s24",
+    "count": 3,
+    "device": "74HC132",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "soic"
+  },
+  {
+    "box": "s24",
+    "count": 30,
+    "device": "R1",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s24",
+    "count": 7,
+    "device": "gold cap 0.1F",
+    "alias": null,
+    "comment": null,
+    "category": "gold cap",
+    "pack": "draht"
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "box": "a81c",
+    "count": 14,
+    "device": "R223",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a81c",
+    "count": 1,
+    "device": "HEF4541",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a81c",
+    "count": 12,
+    "device": "R820-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  }
+]

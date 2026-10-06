@@ -1,0 +1,47 @@
+[
+  {
+    "box": "a34b",
+    "count": 5,
+    "device": "LM741CN14",
+    "alias": null,
+    "comment": "",
+    "category": "OPAMP",
+    "pack": "DIP14"
+  },
+  {
+    "box": "a34b",
+    "count": 2,
+    "device": "R11-2% R33 R82  R130",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a34b",
+    "count": 0,
+    "device": "65.000 Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": ""
+  },
+  {
+    "box": "a34b",
+    "count": 1,
+    "device": "mx01P",
+    "alias": null,
+    "comment": "",
+    "category": "quarz",
+    "pack": ""
+  },
+  {
+    "box": "a34b",
+    "count": 10,
+    "device": "R3903",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  }
+]

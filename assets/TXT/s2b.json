@@ -1,0 +1,65 @@
+[
+  {
+    "box": "s2b",
+    "count": 2,
+    "device": "74hct244",
+    "alias": "",
+    "comment": "octal buffer line driver treiber",
+    "category": "DIG",
+    "pack": "SOIC breit"
+  },
+  {
+    "box": "s2b",
+    "count": 1,
+    "device": "hct00",
+    "alias": "",
+    "comment": "nand",
+    "category": "DIG",
+    "pack": "SOIC"
+  },
+  {
+    "box": "s2b",
+    "count": 0,
+    "device": "lt1181",
+    "alias": "",
+    "comment": " 5V, RS-232 Transceivers with 0.1Ã‚ÂµF External Capacitors",
+    "category": "RS232",
+    "pack": "soic breit"
+  },
+  {
+    "box": "s2b",
+    "count": 1,
+    "device": "smd15n",
+    "alias": "",
+    "comment": "",
+    "category": "POWER MOS N ",
+    "pack": "smd"
+  },
+  {
+    "box": "s2b",
+    "count": 26,
+    "device": "R10K-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "s2b",
+    "count": 30,
+    "device": "R220k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s2b",
+    "count": 20,
+    "device": "C15pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

@@ -1,0 +1,65 @@
+[
+  {
+    "box": "a43a",
+    "count": 4,
+    "device": "HEF4013B",
+    "alias": null,
+    "comment": "Dual D-type flip-flop",
+    "category": "",
+    "pack": "SOIC16 s"
+  },
+  {
+    "box": "a43a",
+    "count": 1,
+    "device": "R110-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a43a",
+    "count": 2,
+    "device": "r390-1%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a43a",
+    "count": 1,
+    "device": "Diode",
+    "alias": null,
+    "comment": "",
+    "category": "Diode",
+    "pack": "SMD"
+  },
+  {
+    "box": "a43a",
+    "count": 50,
+    "device": "BC557B",
+    "alias": "",
+    "comment": "PNP general purpose transistors",
+    "category": "pnp",
+    "pack": ""
+  },
+  {
+    "box": "a43a",
+    "count": 10,
+    "device": "R3303",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": "smd"
+  },
+  {
+    "box": "a43a",
+    "count": 0,
+    "device": "66HY15K",
+    "alias": null,
+    "comment": null,
+    "category": "232",
+    "pack": "dip 14"
+  }
+]

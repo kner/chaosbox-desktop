@@ -1,0 +1,20 @@
+[
+  {
+    "box": "b7",
+    "count": 20,
+    "device": "USB buchsen diverse",
+    "alias": null,
+    "comment": null,
+    "category": "USB",
+    "pack": "A,B"
+  },
+  {
+    "box": "b7",
+    "count": 20,
+    "device": "FC-10 FC-6 Klemmen für Flachbandkabel",
+    "alias": null,
+    "comment": null,
+    "category": "Flachband flat band",
+    "pack": "Klemm"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "box": "s20b",
+    "count": 0,
+    "device": "C100uF 6,3V",
+    "alias": "",
+    "comment": "",
+    "category": "Cap",
+    "pack": "SMD"
+  },
+  {
+    "box": "s20b",
+    "count": 1,
+    "device": "C110uF 330V",
+    "alias": null,
+    "comment": "Elko",
+    "category": "C",
+    "pack": "Draht "
+  },
+  {
+    "box": "s20b",
+    "count": 30,
+    "device": "R39",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s20b",
+    "count": 40,
+    "device": "bc238c",
+    "alias": null,
+    "comment": "npn",
+    "category": "npn",
+    "pack": "to92"
+  }
+]

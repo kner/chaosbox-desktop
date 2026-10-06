@@ -1,0 +1,56 @@
+[
+  {
+    "box": "a43b",
+    "count": 1,
+    "device": "R430-2%  R130 R11 R20",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a43b",
+    "count": 1,
+    "device": "R2k-1% R31k6 R150",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a43b",
+    "count": 16,
+    "device": "BC549B",
+    "alias": null,
+    "comment": "Low Noise Transistors",
+    "category": "NPN",
+    "pack": ""
+  },
+  {
+    "box": "a43b",
+    "count": 10,
+    "device": "R10R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a43b",
+    "count": 12,
+    "device": "NE555N",
+    "alias": null,
+    "comment": "555",
+    "category": "555 Timer",
+    "pack": "DIP"
+  },
+  {
+    "box": "a43b",
+    "count": 2,
+    "device": " SC1566I5T-1.8T ",
+    "alias": "ldo 1.8V",
+    "comment": null,
+    "category": "ldo 1.8V",
+    "pack": "draht "
+  }
+]

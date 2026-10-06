@@ -1,0 +1,29 @@
+[
+  {
+    "box": "rab1",
+    "count": 5,
+    "device": "1meg2",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "rab1",
+    "count": 1,
+    "device": "180k",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "rab1",
+    "count": 1,
+    "device": "860k",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  }
+]

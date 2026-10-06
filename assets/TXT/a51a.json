@@ -1,0 +1,101 @@
+[
+  {
+    "box": "a51a",
+    "count": 4,
+    "device": "74HC139",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "SOIC s"
+  },
+  {
+    "box": "a51a",
+    "count": 1,
+    "device": "R3320 R1301",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD "
+  },
+  {
+    "box": "a51a",
+    "count": 4,
+    "device": "R000",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a51a",
+    "count": 1,
+    "device": "R1K8-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a51a",
+    "count": 1,
+    "device": "lm2574",
+    "alias": null,
+    "comment": "Series SIMPLE SWITCHER 0.5A Step-Down Voltage Regulator",
+    "category": "reg",
+    "pack": ""
+  },
+  {
+    "box": "a51a",
+    "count": 2,
+    "device": "tc551001",
+    "alias": null,
+    "comment": "SILICON GATE CMOS 131,072 WORD x 8 BIT STATIC RAM",
+    "category": "sram",
+    "pack": "soic"
+  },
+  {
+    "box": "a51a",
+    "count": 1,
+    "device": "kia4558p",
+    "alias": null,
+    "comment": "Dual Low Noise OP Amp.",
+    "category": "",
+    "pack": "dip8"
+  },
+  {
+    "box": "a51a",
+    "count": 1,
+    "device": "a6462d",
+    "alias": null,
+    "comment": "High-Performance Dual Operational Amplifiers",
+    "category": "opamp",
+    "pack": "dip8"
+  },
+  {
+    "box": "a51a",
+    "count": 1,
+    "device": "ta7343",
+    "alias": null,
+    "comment": "FM PLL MPX",
+    "category": "sip",
+    "pack": ""
+  },
+  {
+    "box": "a51a",
+    "count": 10,
+    "device": "R6801",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD "
+  },
+  {
+    "box": "a51a",
+    "count": 5,
+    "device": "tda7052 At",
+    "alias": null,
+    "comment": "1 W BTL mono audio amplifie",
+    "category": "audio amplifier",
+    "pack": "soic8"
+  }
+]

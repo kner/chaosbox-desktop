@@ -1,0 +1,164 @@
+[
+  {
+    "box": "a53c",
+    "count": 3,
+    "device": "R360-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a53c",
+    "count": 2,
+    "device": "74hct4066E",
+    "alias": null,
+    "comment": "",
+    "category": "DIGITAL",
+    "pack": "DIP"
+  },
+  {
+    "box": "a53c",
+    "count": 8,
+    "device": "mc1458d",
+    "alias": null,
+    "comment": "HIGH PERFORMANCE DUAL OPERATIONAL AMPLIFIERS",
+    "category": "opamp",
+    "pack": "soic8"
+  },
+  {
+    "box": "a53c",
+    "count": 3,
+    "device": "74HCT245",
+    "alias": null,
+    "comment": "Octal bus transceive",
+    "category": "DIG",
+    "pack": "SOIC20"
+  },
+  {
+    "box": "a53c",
+    "count": 2,
+    "device": "mb84256",
+    "alias": null,
+    "comment": "CMOS 256K bit Low Power SRAM",
+    "category": "sram",
+    "pack": "soic28"
+  },
+  {
+    "box": "a53c",
+    "count": 1,
+    "device": "ln12",
+    "alias": null,
+    "comment": "p-ch DMOSfet 50V 0.25A",
+    "category": "",
+    "pack": "smd"
+  },
+  {
+    "box": "a53c",
+    "count": 1,
+    "device": "ka339d",
+    "alias": null,
+    "comment": "Quad Comparator",
+    "category": "comp",
+    "pack": "soic14"
+  },
+  {
+    "box": "a53c",
+    "count": 1,
+    "device": "mt8889ce",
+    "alias": null,
+    "comment": "Integrated DTMFTransceiver with Adaptive Micro Interface",
+    "category": "",
+    "pack": "dip20"
+  },
+  {
+    "box": "a53c",
+    "count": 3,
+    "device": "bd140",
+    "alias": null,
+    "comment": "Power 1.5A 80V PNP",
+    "category": "pnp",
+    "pack": "To220"
+  },
+  {
+    "box": "a53c",
+    "count": 10,
+    "device": "R22R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD "
+  },
+  {
+    "box": "a53c",
+    "count": 1,
+    "device": "hef4557bt",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "a53c",
+    "count": 1,
+    "device": "act373",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "a53c",
+    "count": 2,
+    "device": "x0403de",
+    "alias": "BT148-600R",
+    "comment": "thyristor",
+    "category": "thyristor",
+    "pack": "draht"
+  },
+  {
+    "box": "a53c",
+    "count": 5,
+    "device": "r  4.7  4R7",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": "draht"
+  },
+  {
+    "box": "a53c",
+    "count": 5,
+    "device": "c 3.3u 25V",
+    "alias": null,
+    "comment": null,
+    "category": "tantal elko c",
+    "pack": "draht 5mm"
+  },
+  {
+    "box": "a53c",
+    "count": 5,
+    "device": "r 20 2w",
+    "alias": null,
+    "comment": "2w",
+    "category": "r draht",
+    "pack": "draht"
+  },
+  {
+    "box": "a53c",
+    "count": 4,
+    "device": "bc369",
+    "alias": "",
+    "comment": "PNP General Purpose",
+    "category": "",
+    "pack": "draht"
+  },
+  {
+    "box": "a53c",
+    "count": 1,
+    "device": "lmc555",
+    "alias": "",
+    "comment": "cmos GENERAL PURPOSE SINGLE BIPOLAR TIMERS",
+    "category": "555",
+    "pack": "soic8"
+  }
+]

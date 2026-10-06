@@ -1,0 +1,20 @@
+[
+  {
+    "box": "k32",
+    "count": 2,
+    "device": "R100",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  },
+  {
+    "box": "k32",
+    "count": 20,
+    "device": "R10k 1%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  }
+]

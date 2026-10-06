@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s31b",
+    "count": 0,
+    "device": "2.7k",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s31b",
+    "count": 19,
+    "device": "R2,7k-5%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": null
+  },
+  {
+    "box": "s31b",
+    "count": 30,
+    "device": "C3,3nF",
+    "alias": null,
+    "comment": null,
+    "category": "c",
+    "pack": "SMD (Papierstreifen)"
+  }
+]

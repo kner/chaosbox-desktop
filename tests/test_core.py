@@ -23,10 +23,10 @@ class DesktopTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.settings = core.Settings(self.root, self.root / ".config/chaosbox")
         template = core.DEFAULT_SETUP.read_text()
-        template = ('[App]\nFelder=Box,Quantity,Device,Alias,Category,Comment,Package\n'
+        template = ('[App]\nImageWidth=3000\nFelder=Box,Quantity,Device,Alias,Category,Comment,Package\n'
                     '[Box]\nTitel=Chaosbox\nKategorie=Heizung\n'
                     '[Box]\nTitel=Bilderbox\nFelder=Box,,,Tags,Category,Comment\nKategorie=Familie\n\n'
-                    + template[template.index('[ImageSize]'):])
+                    + template[template.index('[Poster]'):])
         core.atomic_write(self.settings.path, template)
         self.settings.ensure()
         self.profile = self.settings.profile("Chaosbox")
@@ -61,23 +61,24 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(self.settings.path.read_text(), unchanged)
 
     def test_recursive_project_setup_inheritance_and_sibling_isolation(self):
+        inherited_limit = self.settings.image_width
         local = self.root / "Bilderbox/setup.ini"
         local.parent.mkdir()
-        local.write_text('[ImageSize]\nLIMIT=1200\n[Poster]\nPOSTER-COLS=2\n'
+        local.write_text('[Poster]\nPOSTER-COLS=2\n'
                          '[TextSnippets]\nLocal="parent"\n'
-                         '[App]\nKategorie=Local\n'
+                         '[App]\nImageWidth=1200\nKategorie=Local\n'
                          '[Box]\nTitel=Urlaub\n'
                          '[Box]\nTitel=Familie\n')
         nested = local.parent / "Urlaub/setup.ini"
         nested.parent.mkdir()
-        nested.write_text('[imagesize]\nlimit=800\n[TextSnippets]\nLocal="child"\n'
-                          '[App]\nKategorie=\n'
+        nested.write_text('[TextSnippets]\nLocal="child"\n'
+                          '[App]\nimagewidth=800\nKategorie=\n'
                           '[Box]\nTitel=Berge\n')
         self.settings.reload()
         child = self.settings.profile("Bilderbox/Urlaub")
         self.assertEqual(child.images, nested.parent / "JPG")
         self.assertEqual(child.categories, [])
-        self.assertEqual(self.settings.limit, 800)
+        self.assertEqual(self.settings.image_width, 800)
         self.assertEqual(self.settings.poster.cols, 2)
         self.assertEqual(self.settings.poster.rows, 3)
         self.assertEqual(self.settings.snippets["Local"], "child")
@@ -85,27 +86,27 @@ class DesktopTests(unittest.TestCase):
         grandchild = self.settings.profile("Bilderbox/Urlaub/Berge")
         self.assertEqual(grandchild.images, nested.parent / "Berge/JPG")
         self.assertEqual(grandchild.labels, child.labels)
-        self.assertEqual(self.settings.limit, 800)
+        self.assertEqual(self.settings.image_width, 800)
         sibling = self.settings.profile("Bilderbox/Familie")
         self.assertEqual(sibling.categories, ["Local"])
-        self.assertEqual(self.settings.limit, 1200)
+        self.assertEqual(self.settings.image_width, 1200)
         self.assertEqual(self.settings.snippets["Local"], "parent")
         self.settings.profile("Chaosbox")
-        self.assertEqual(self.settings.limit, 3000)
+        self.assertEqual(self.settings.image_width, inherited_limit)
         self.assertNotIn("Local", self.settings.snippets)
         self.assertEqual(self.settings.active_path, self.settings.path)
 
     def test_local_setup_save_validation_and_category_destination(self):
         local = self.root / "Bilderbox/setup.ini"
         local.parent.mkdir()
-        local.write_text('[ImageSize]\nLIMIT=1000\n'
+        local.write_text('[App]\nImageWidth=1000\n'
                          '[Box]\nTitel=Child\n')
         original = self.settings.path.read_bytes()
         self.settings.reload()
         profile = self.settings.profile("Bilderbox")
         self.settings.remember_category(profile, "New local")
         self.assertEqual(self.settings.path.read_bytes(), original)
-        self.assertEqual(set(core.sections(local.read_text())["App"]), {"kategorie"})
+        self.assertEqual(set(core.sections(local.read_text())["App"]), {"kategorie", "imagewidth"})
         self.assertIn("New local", self.settings.profile("Bilderbox/Child").categories)
         self.settings.remember_category(self.settings.profile("Bilderbox/Child"), "Child only")
         self.assertNotIn("Child only", self.settings.profile("Bilderbox").categories)
@@ -114,9 +115,34 @@ class DesktopTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.settings.save_text('[Poster]\nPOSTER-COLS=0\n', local)
         self.assertEqual(local.read_bytes(), before)
-        self.settings.save_text(local.read_text().replace('LIMIT=1000', 'LIMIT=900'), local)
+        self.settings.save_text(local.read_text().replace('ImageWidth=1000', 'ImageWidth=900'), local)
         self.assertEqual(self.settings.active, "Bilderbox/Child")
-        self.assertEqual(self.settings.limit, 900)
+        self.assertEqual(self.settings.image_width, 900)
+
+    def test_image_width_box_overrides_and_validation(self):
+        text = ("[App]\nImageWidth=2048\n"
+                "[Box]\nTitel=First\nImageWidth=1200\n"
+                "[Box]\nTitel=Second\n")
+        self.settings.save_text(text)
+        self.settings.profile("First")
+        self.assertEqual(self.settings.image_width, 1200)
+        self.settings.profile("Second")
+        self.assertEqual(self.settings.image_width, 2048)
+        for value in ("0", "20001", "invalid", "1.5"):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "ImageWidth"):
+                self.settings.parse(text.replace("ImageWidth=1200", f"ImageWidth={value}"))
+        profiles, *_ = self.settings.parse("[App]\n[Box]\nTitel=Default\n")
+        self.assertEqual(profiles[0].options[0], 3000)
+
+    def test_image_width_resizes_portrait_proportionally_without_height_limit(self):
+        source = self.picture("portrait.jpg", (120, 240))
+        saved = core.save_media(source, self.profile, self.record, 60)
+        with Image.open(saved) as image:
+            self.assertEqual(image.size, (60, 120))
+        narrow = self.picture("narrow.jpg", (40, 240))
+        saved = core.save_media(narrow, self.profile, self.record, 60)
+        with Image.open(saved) as image:
+            self.assertEqual(image.size, (40, 240))
 
     def test_recursive_setup_rejects_escaping_and_duplicate_folders(self):
         local = self.root / "Bilderbox/setup.ini"
@@ -408,11 +434,59 @@ class DesktopTests(unittest.TestCase):
         settings = core.Settings(home / "ChaosBox")
         settings.reload()
         settings.remember_category(settings.profile("Chaosbox"), "Keep this")
-        install.install(home, credentials=False)
+        with self.assertRaises(FileExistsError):
+            install.install(home, credentials=False)
         settings.reload()
         self.assertIn("Keep this", settings.profile(settings.default).categories)
         self.assertFalse((home / ".config/chaosbox/credentials/android_copy").exists())
         self.assertIn("Exec=\"", launcher.read_text())
+
+    def test_installer_populates_only_first_box_from_assets(self):
+        home = self.root / "seeded-home"
+        _, setup, _ = install.install(home, credentials=False)
+        settings = core.Settings(setup.parent)
+        settings.reload()
+        assets = Path(install.__file__).resolve().parent / "assets"
+        self.assertGreater(len(settings.profiles), 1)
+        for profile in settings.profiles:
+            for name, destination in (("JPG", profile.images), ("TXT", profile.data)):
+                if profile is not settings.profiles[0]:
+                    self.assertEqual(list(destination.iterdir()), [])
+                    continue
+                source = assets / name
+                files = [path for path in source.rglob("*") if path.is_file()]
+                self.assertTrue(files)
+                for path in files:
+                    with self.subTest(profile=profile.id, asset=path.relative_to(assets)):
+                        self.assertEqual((destination / path.relative_to(source)).read_bytes(),
+                                         path.read_bytes())
+        self.assertFalse((settings.root / "JPG").exists())
+        self.assertFalse((settings.root / "TXT").exists())
+
+    def test_installer_creates_default_box_when_setup_has_no_boxes(self):
+        template = self.root / "no-boxes.ini"
+        template.write_text("[App]\nKategorie=Example\nImageWidth=2048\n")
+        home = self.root / "default-box-home"
+        with patch.object(core, "DEFAULT_SETUP", template):
+            _, setup, _ = install.install(home, credentials=False)
+        settings = core.Settings(setup.parent)
+        settings.reload()
+        self.assertEqual([profile.id for profile in settings.profiles], ["ChaosBox"])
+        self.assertEqual(settings.image_width, 2048)
+        self.assertEqual(settings.profiles[0].categories, ["Example"])
+        self.assertTrue(list(settings.profiles[0].images.iterdir()))
+        self.assertTrue(list(settings.profiles[0].data.iterdir()))
+        self.assertIn("[SSH]", setup.read_text())
+        self.assertFalse((settings.root / "JPG").exists())
+
+    def test_installer_rejects_existing_empty_directory_before_writing(self):
+        home = self.root / "existing-home"
+        destination = home / "existing-box"
+        destination.mkdir(parents=True)
+        with self.assertRaises(FileExistsError):
+            install.install(home, credentials=False, installdir=destination)
+        self.assertEqual(list(destination.iterdir()), [])
+        self.assertFalse((home / ".local").exists())
 
     def test_installer_creates_independent_apps_and_no_root_media_folders(self):
         home = self.root / "desktop-home"
@@ -434,7 +508,8 @@ class DesktopTests(unittest.TestCase):
             self.assertFalse((setup.parent / "JPG").exists())
             self.assertFalse((setup.parent / "TXT").exists())
             self.assertTrue(all(profile.images.is_dir() and profile.data.is_dir() for profile in settings.profiles))
-        self.assertEqual(install.install(home, credentials=False, installdir=first_dir), first)
+        with self.assertRaises(FileExistsError):
+            install.install(home, credentials=False, installdir=first_dir)
         self.assertEqual(first[1].read_bytes(), first_setup)
         self.assertTrue(second[2].is_file())
 
@@ -454,7 +529,7 @@ class DesktopTests(unittest.TestCase):
         for version in ("new version", "next version"):
             runtime = f'import json, sys\nprint(json.dumps([{version!r}, sys.argv[1:]]))\n'.encode()
             with patch.object(Path, "read_bytes", lambda path: runtime if path == source_app else read_bytes(path)):
-                second = install.install(home, credentials=False, installdir=home / "second box")
+                second = install.install(home, credentials=False, installdir=home / f"second box {version}")
             for target, setup, _ in (first, second):
                 output = subprocess.check_output([str(target / "run-desktop.sh"), "--extra", "argument with spaces"], text=True)
                 self.assertEqual(json.loads(output), [version, ["--installdir", str(setup.parent),

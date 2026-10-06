@@ -1,0 +1,128 @@
+[
+  {
+    "box": "a82a",
+    "count": 8,
+    "device": "R331",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a82a",
+    "count": 1,
+    "device": "74HCT368",
+    "alias": null,
+    "comment": "HC/HCT368; Hex buffer/line driver; 3-state; inverting",
+    "category": "DIG",
+    "pack": ""
+  },
+  {
+    "box": "a82a",
+    "count": 1,
+    "device": "R1-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a82a",
+    "count": 3,
+    "device": "R56-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a82a",
+    "count": 3,
+    "device": "R91-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a82a",
+    "count": 1,
+    "device": "but11af",
+    "alias": null,
+    "comment": "NPN Silicon Transistor",
+    "category": "power transistor",
+    "pack": "to220"
+  },
+  {
+    "box": "a82a",
+    "count": 1,
+    "device": "  PQ018EF01SZH",
+    "alias": null,
+    "comment": "Low Voltage Operation Low Power-Loss Voltage Regulators",
+    "category": "reg",
+    "pack": ""
+  },
+  {
+    "box": "a82a",
+    "count": 0,
+    "device": "74156",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "SOIC "
+  },
+  {
+    "box": "a82a",
+    "count": 1,
+    "device": "PCM1742",
+    "alias": null,
+    "comment": "ti , 24-Bit, 96kHZ Sampling Enhanced Multilevel, Delta-Sigma, Audio DAC",
+    "category": "audio sigma delta dac",
+    "pack": "ssop16"
+  },
+  {
+    "box": "a82a",
+    "count": 1,
+    "device": "470ohm 3x",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "sip6"
+  },
+  {
+    "box": "a82a",
+    "count": 1,
+    "device": "2sd1468",
+    "alias": null,
+    "comment": " Low saturation voltage, typically VCE(sat) = 0.08V at Ic / IB = 500mA / 500Î¼A. 2) Ideal for low voltage, high ",
+    "category": "npn",
+    "pack": "to92"
+  },
+  {
+    "box": "a82a",
+    "count": 1,
+    "device": "MPS3904 ",
+    "alias": null,
+    "comment": "MPS3904 NPN switching transistor",
+    "category": "npn",
+    "pack": "to92"
+  },
+  {
+    "box": "a82a",
+    "count": 1,
+    "device": "ICM7211AIPL",
+    "alias": null,
+    "comment": "LCD Controller",
+    "category": "lcd controller",
+    "pack": "dip40"
+  },
+  {
+    "box": "a82a",
+    "count": 20,
+    "device": "C4,7pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "box": "s32a",
+    "count": 9,
+    "device": "12k",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s32a",
+    "count": 7,
+    "device": "R160",
+    "alias": null,
+    "comment": "160Ohm 2%",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "s32a",
+    "count": 26,
+    "device": "702B ",
+    "alias": "",
+    "comment": "n-ch mosfet 60V 0.11A",
+    "category": "nmos",
+    "pack": "sot23"
+  },
+  {
+    "box": "s32a",
+    "count": 1,
+    "device": "sip 4*10k",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": "sip5"
+  }
+]

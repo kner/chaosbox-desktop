@@ -1,0 +1,38 @@
+[
+  {
+    "box": "a42",
+    "count": 1,
+    "device": "93C86",
+    "alias": null,
+    "comment": "8K/16K 5.0V Microwire Serial EEPROM",
+    "category": "serial eeprom",
+    "pack": "SOIC-8"
+  },
+  {
+    "box": "a42",
+    "count": 10,
+    "device": "R3K6-1%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "rolle"
+  },
+  {
+    "box": "a42",
+    "count": 10,
+    "device": "22K-1% r681k r680k",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "a42",
+    "count": 10,
+    "device": "290k-1%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  }
+]

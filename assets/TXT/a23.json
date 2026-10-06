@@ -1,0 +1,245 @@
+[
+  {
+    "box": "a23",
+    "count": 3,
+    "device": "74LS08",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "7406",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "74HC244",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "74HC132",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "7433",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "74HCT137",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "74HC74",
+    "alias": null,
+    "comment": "Dual D-type flip-flop with set and reset",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "74LS123",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "74HC139",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 2,
+    "device": "74ls245",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 5,
+    "device": "74LS373",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "74HCT138",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 3,
+    "device": "74HCT00",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "74LS122",
+    "alias": null,
+    "comment": "Retriggerable Monostable Multivibrators(with Clear",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 0,
+    "device": "74HC08",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "74HC04",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "Quarz",
+    "alias": null,
+    "comment": "",
+    "category": "XTAL quarz",
+    "pack": ""
+  },
+  {
+    "box": "a23",
+    "count": 4,
+    "device": "SRM20100",
+    "alias": null,
+    "comment": "1MBit SRAM",
+    "category": "",
+    "pack": "SOIC32"
+  },
+  {
+    "box": "a23",
+    "count": 8,
+    "device": "HM62256",
+    "alias": null,
+    "comment": "32Kx8bit CMOS SRAM",
+    "category": "",
+    "pack": "SOIC"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "MPS3904",
+    "alias": null,
+    "comment": "NPN",
+    "category": "NPN",
+    "pack": "TP92 kurz"
+  },
+  {
+    "box": "a23",
+    "count": 3,
+    "device": "4151CP",
+    "alias": null,
+    "comment": "Voltage-to-Frequency Converter",
+    "category": "",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "lm217",
+    "alias": null,
+    "comment": "1.2V TO 37V VOLTAGE REGULATOR",
+    "category": "REG",
+    "pack": "to220"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "28,322MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": ""
+  },
+  {
+    "box": "a23",
+    "count": 10,
+    "device": "R2700",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a23",
+    "count": 1,
+    "device": "zpd",
+    "alias": null,
+    "comment": "8.2V",
+    "category": "Zenerdiode",
+    "pack": ""
+  },
+  {
+    "box": "a23",
+    "count": 10,
+    "device": "150k",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "a23",
+    "count": 20,
+    "device": "C1nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

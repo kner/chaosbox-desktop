@@ -1,0 +1,65 @@
+[
+  {
+    "box": "s27a",
+    "count": 2,
+    "device": "100",
+    "alias": "",
+    "comment": "",
+    "category": "R 10%",
+    "pack": ""
+  },
+  {
+    "box": "s27a",
+    "count": 29,
+    "device": "82",
+    "alias": "",
+    "comment": "",
+    "category": "R 5%",
+    "pack": ""
+  },
+  {
+    "box": "s27a",
+    "count": 4,
+    "device": "74F244",
+    "alias": null,
+    "comment": "OCTAL BUFFERS 3-STATE",
+    "category": "dig",
+    "pack": "sop"
+  },
+  {
+    "box": "s27a",
+    "count": 5,
+    "device": "FDS4465",
+    "alias": "",
+    "comment": "P-CHANNEL 1.8V SPECIFIED POWERTRENCH MOSFET",
+    "category": "power mosfet",
+    "pack": "soic8"
+  },
+  {
+    "box": "s27a",
+    "count": 2,
+    "device": "lh1502",
+    "alias": null,
+    "comment": "Solid State Relay",
+    "category": "solid state relais optokoppler",
+    "pack": "smd"
+  },
+  {
+    "box": "s27a",
+    "count": 30,
+    "device": "R2k2",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s27a",
+    "count": 3,
+    "device": "smd elko 10uf 16v",
+    "alias": null,
+    "comment": "10u",
+    "category": "elko",
+    "pack": "smd"
+  }
+]

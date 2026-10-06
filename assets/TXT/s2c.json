@@ -1,0 +1,83 @@
+[
+  {
+    "box": "s2c",
+    "count": 3,
+    "device": "74hct245",
+    "alias": "",
+    "comment": "octal buffer line driver treiber",
+    "category": "DIG",
+    "pack": "SOIC breit"
+  },
+  {
+    "box": "s2c",
+    "count": 2,
+    "device": "hct123",
+    "alias": "",
+    "comment": "",
+    "category": "",
+    "pack": "smd"
+  },
+  {
+    "box": "s2c",
+    "count": 0,
+    "device": "2.2k  sip 8x",
+    "alias": "",
+    "comment": "",
+    "category": "r sip",
+    "pack": "sip9"
+  },
+  {
+    "box": "s2c",
+    "count": 0,
+    "device": "R10k 4x SIP",
+    "alias": "",
+    "comment": "",
+    "category": "sip",
+    "pack": "SIP5"
+  },
+  {
+    "box": "s2c",
+    "count": 0,
+    "device": "180k",
+    "alias": "",
+    "comment": "",
+    "category": "5% a",
+    "pack": ""
+  },
+  {
+    "box": "s2c",
+    "count": 1,
+    "device": "R8.2-5",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "  "
+  },
+  {
+    "box": "s2c",
+    "count": 3,
+    "device": "R62-2%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": null
+  },
+  {
+    "box": "s2c",
+    "count": 30,
+    "device": "R1k5",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s2c",
+    "count": 20,
+    "device": "C330pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

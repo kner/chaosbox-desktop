@@ -1,0 +1,47 @@
+[
+  {
+    "box": "k22",
+    "count": 15,
+    "device": "24r9 1%",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  },
+  {
+    "box": "k22",
+    "count": 6,
+    "device": "22nF",
+    "alias": null,
+    "comment": null,
+    "category": "C Keramik",
+    "pack": "Draht"
+  },
+  {
+    "box": "k22",
+    "count": 10,
+    "device": "330nF",
+    "alias": null,
+    "comment": null,
+    "category": "C Folie",
+    "pack": "Draht"
+  },
+  {
+    "box": "k22",
+    "count": 2,
+    "device": "ld1117v33",
+    "alias": "LDO Voltage Regulators 3.3V 0.8A Positive ",
+    "comment": null,
+    "category": "reg ldo",
+    "pack": "to220 "
+  },
+  {
+    "box": "k22",
+    "count": 1,
+    "device": "lm358n",
+    "alias": "",
+    "comment": "",
+    "category": "opamp",
+    "pack": "dip"
+  }
+]

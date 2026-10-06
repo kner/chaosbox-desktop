@@ -1,0 +1,47 @@
+[
+  {
+    "box": "s12",
+    "count": 7,
+    "device": "rfm70",
+    "alias": null,
+    "comment": "2.4 GHZ Transceiver",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "s12",
+    "count": 6,
+    "device": "150",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s12",
+    "count": 1,
+    "device": "lm392",
+    "alias": "",
+    "comment": " Low Power Operational Amplifier/Voltage Comparator",
+    "category": "",
+    "pack": "soic8    "
+  },
+  {
+    "box": "s12",
+    "count": 30,
+    "device": "R330k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s12",
+    "count": 20,
+    "device": "C100nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

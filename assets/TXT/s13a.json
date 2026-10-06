@@ -1,0 +1,47 @@
+[
+  {
+    "box": "s13a",
+    "count": 2,
+    "device": "74ls00",
+    "alias": "",
+    "comment": "",
+    "category": "dig",
+    "pack": "dip"
+  },
+  {
+    "box": "s13a",
+    "count": 5,
+    "device": "2.7M",
+    "alias": null,
+    "comment": "",
+    "category": "10%",
+    "pack": ""
+  },
+  {
+    "box": "s13a",
+    "count": 5,
+    "device": "74HC245",
+    "alias": null,
+    "comment": "Octal bus transceiver; 3-stat",
+    "category": "DIG",
+    "pack": "SOIC20"
+  },
+  {
+    "box": "s13a",
+    "count": 30,
+    "device": "R560k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s13a",
+    "count": 10,
+    "device": "3.3k 3k3",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "draht"
+  }
+]

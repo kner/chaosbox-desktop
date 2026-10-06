@@ -1,0 +1,20 @@
+[
+  {
+    "box": "b2",
+    "count": 12,
+    "device": "BC549B",
+    "alias": null,
+    "comment": "Low Noise Transistors",
+    "category": "NPN",
+    "pack": "Draht"
+  },
+  {
+    "box": "b2",
+    "count": 6,
+    "device": "BTS621L1",
+    "alias": null,
+    "comment": "Smart Two Channel Highside Power Switch",
+    "category": "MOS FET SWITCH HIGH SIDE SMART",
+    "pack": null
+  }
+]

@@ -1,0 +1,110 @@
+[
+  {
+    "box": "a73a",
+    "count": 1,
+    "device": "R121",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a73a",
+    "count": 2,
+    "device": "DS34C86",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "DIP16"
+  },
+  {
+    "box": "a73a",
+    "count": 0,
+    "device": "R47k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a73a",
+    "count": 50,
+    "device": "r1k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a73a",
+    "count": 3,
+    "device": "R4K7 10x SIP",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "SIP11"
+  },
+  {
+    "box": "a73a",
+    "count": 7,
+    "device": "1n4150",
+    "alias": "",
+    "comment": "High Conductance Ultra Fast Diode",
+    "category": "D",
+    "pack": "draht"
+  },
+  {
+    "box": "a73a",
+    "count": 6,
+    "device": "bc327",
+    "alias": null,
+    "comment": "Switching and Amplifier Applications",
+    "category": "",
+    "pack": "to92"
+  },
+  {
+    "box": "a73a",
+    "count": 1,
+    "device": "st5088",
+    "alias": null,
+    "comment": "PROGRAMMABLE AUDIO FRONT END FOR DIGITAL PHONES AND ISDN TERMINALS",
+    "category": "audio",
+    "pack": "qfp"
+  },
+  {
+    "box": "a73a",
+    "count": 1,
+    "device": "3.686jx",
+    "alias": null,
+    "comment": "",
+    "category": "osz ",
+    "pack": "smd"
+  },
+  {
+    "box": "a73a",
+    "count": 10,
+    "device": "r1802",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a73a",
+    "count": 5,
+    "device": "BAT54A",
+    "alias": null,
+    "comment": "Schottky barrier (double) diodes",
+    "category": "schottky",
+    "pack": "sot23"
+  },
+  {
+    "box": "a73a",
+    "count": 2,
+    "device": "MBR4045",
+    "alias": "Schottky 40A Power Rectifier",
+    "comment": "2x20A   45V Sperrspannung",
+    "category": "Schottky",
+    "pack": "Draht sot-93"
+  }
+]

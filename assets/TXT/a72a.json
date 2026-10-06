@@ -1,0 +1,101 @@
+[
+  {
+    "box": "a72a",
+    "count": 2,
+    "device": "R104 R000",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a72a",
+    "count": 1,
+    "device": "MC14541BCP",
+    "alias": null,
+    "comment": "Programmable Timer",
+    "category": "",
+    "pack": "DIP16"
+  },
+  {
+    "box": "a72a",
+    "count": 1,
+    "device": "R33k-5% R36k",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a72a",
+    "count": 10,
+    "device": "R180k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a72a",
+    "count": 2,
+    "device": "R3M9-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a72a",
+    "count": 1,
+    "device": "R4M7-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a72a",
+    "count": 0,
+    "device": "pc815",
+    "alias": null,
+    "comment": "High Sensitivity/ High Density Mounting Type Photocoupler",
+    "category": "optokoppler",
+    "pack": "dip8"
+  },
+  {
+    "box": "a72a",
+    "count": 1,
+    "device": "pg51256sl",
+    "alias": null,
+    "comment": "256K(32K x 8) CMOS SLOW STATIC RAM",
+    "category": "soic",
+    "pack": ""
+  },
+  {
+    "box": "a72a",
+    "count": 10,
+    "device": "r3901",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a72a",
+    "count": 1,
+    "device": "2SK2645",
+    "alias": "",
+    "comment": "N-CHANNEL SILICON POWER MOS-FET",
+    "category": "to-220 mit Kuehlblech",
+    "pack": "asdf    "
+  },
+  {
+    "box": "a72a",
+    "count": 2,
+    "device": "AD 8400 AR-100",
+    "alias": null,
+    "comment": "Digitalpotentiometer, 1-Kanal, 100KOhm, SO-8",
+    "category": "Digitalpotentiometer",
+    "pack": "soic 8"
+  }
+]

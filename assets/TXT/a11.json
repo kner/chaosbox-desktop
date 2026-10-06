@@ -1,0 +1,292 @@
+[
+  {
+    "box": "a11",
+    "count": 7,
+    "device": "GAL22V10B",
+    "alias": null,
+    "comment": "",
+    "category": "GAL",
+    "pack": "QFP28"
+  },
+  {
+    "box": "a11",
+    "count": 2,
+    "device": "M5M27C202",
+    "alias": null,
+    "comment": "EPROM",
+    "category": "EPROM",
+    "pack": "QFP44"
+  },
+  {
+    "box": "a11",
+    "count": 4,
+    "device": "CXK58257AM",
+    "alias": null,
+    "comment": "32768-WORD X 8-BIT HIGH SPEED CMOS STA0C RAM",
+    "category": "SRAM",
+    "pack": ""
+  },
+  {
+    "box": "a11",
+    "count": 13,
+    "device": "74ABT245",
+    "alias": "",
+    "comment": "BT245",
+    "category": "DIG",
+    "pack": "smd"
+  },
+  {
+    "box": "a11",
+    "count": 1,
+    "device": "F08",
+    "alias": null,
+    "comment": "",
+    "category": "DIGITAL",
+    "pack": "SOIC 14"
+  },
+  {
+    "box": "a11",
+    "count": 2,
+    "device": "TMP03Fa ad731",
+    "alias": null,
+    "comment": "N29790",
+    "category": "Temperatursensor",
+    "pack": "SOIC8"
+  },
+  {
+    "box": "a11",
+    "count": 4,
+    "device": "33u ",
+    "alias": null,
+    "comment": "ELKO",
+    "category": "ELKO",
+    "pack": "SMD"
+  },
+  {
+    "box": "a11",
+    "count": 6,
+    "device": "R10K",
+    "alias": null,
+    "comment": "RES,NTWK,10K,2%",
+    "category": "R-ARRAY",
+    "pack": "SOIC 16 gruen"
+  },
+  {
+    "box": "a11",
+    "count": 2,
+    "device": "GAL16V8",
+    "alias": null,
+    "comment": "",
+    "category": "GAL",
+    "pack": "DIP20"
+  },
+  {
+    "box": "a11",
+    "count": 1,
+    "device": "ST7033",
+    "alias": null,
+    "comment": "Reed Relay",
+    "category": "Relais",
+    "pack": "SMD"
+  },
+  {
+    "box": "a11",
+    "count": 0,
+    "device": "Sicherung 1A Flink",
+    "alias": null,
+    "comment": "Sicherung",
+    "category": "FUSE",
+    "pack": "Draht 1W"
+  },
+  {
+    "box": "a11",
+    "count": 1,
+    "device": "74HC04",
+    "alias": null,
+    "comment": "dip",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a11",
+    "count": 5,
+    "device": "MAX232",
+    "alias": "",
+    "comment": "",
+    "category": "RS232",
+    "pack": "DIP"
+  },
+  {
+    "box": "a11",
+    "count": 1,
+    "device": "Relais",
+    "alias": null,
+    "comment": "",
+    "category": "Relais",
+    "pack": "DIP"
+  },
+  {
+    "box": "a11",
+    "count": 8,
+    "device": "LM311N",
+    "alias": null,
+    "comment": "VOLTAGE COMPARATORS",
+    "category": "COMP",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a11",
+    "count": 1,
+    "device": "AQV203",
+    "alias": null,
+    "comment": "Optokoppler CMOS",
+    "category": "Analog-Digital",
+    "pack": "DIP6"
+  },
+  {
+    "box": "a11",
+    "count": 1,
+    "device": "HM62256",
+    "alias": null,
+    "comment": "RAM ",
+    "category": "sRAM",
+    "pack": "DIP"
+  },
+  {
+    "box": "a11",
+    "count": 2,
+    "device": "BS107",
+    "alias": null,
+    "comment": "Small Signal MOSFET 250 mAmps, 200 Volts",
+    "category": "POWERMOS",
+    "pack": "TO92"
+  },
+  {
+    "box": "a11",
+    "count": 5,
+    "device": "LM340T5",
+    "alias": null,
+    "comment": "3-terminal posi0ve regulator",
+    "category": "",
+    "pack": "TO220"
+  },
+  {
+    "box": "a11",
+    "count": 2,
+    "device": "Diodenbruecken",
+    "alias": null,
+    "comment": "Diodenbruecke",
+    "category": "D ",
+    "pack": "Draht"
+  },
+  {
+    "box": "a11",
+    "count": 4,
+    "device": "B82791",
+    "alias": null,
+    "comment": "Chokes for Data and Signal Line",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a11",
+    "count": 5,
+    "device": "MC145406DW",
+    "alias": null,
+    "comment": "Driver\/Receiver(EIA 232-E and CCITT V.28(Formerly RS-232-D)",
+    "category": "RS232",
+    "pack": "SOIC16"
+  },
+  {
+    "box": "a11",
+    "count": 14,
+    "device": "R21-1%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "draht"
+  },
+  {
+    "box": "a11",
+    "count": 10,
+    "device": "R1004",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a11",
+    "count": 1,
+    "device": "p330k",
+    "alias": null,
+    "comment": "",
+    "category": "poti",
+    "pack": "draht"
+  },
+  {
+    "box": "a11",
+    "count": 1,
+    "device": "lm35 cz",
+    "alias": "",
+    "comment": "1wire Tempsensor",
+    "category": "Tempsensor",
+    "pack": "draht"
+  },
+  {
+    "box": "a11",
+    "count": 0,
+    "device": "si9956",
+    "alias": "",
+    "comment": "dual N-channel enhancement mode field-effect transisto",
+    "category": "nmos",
+    "pack": "soic8 "
+  },
+  {
+    "box": "a11",
+    "count": 1,
+    "device": "74",
+    "alias": "",
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a11",
+    "count": 20,
+    "device": "C3,9nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a11",
+    "count": 0,
+    "device": "Sicherung 1A Träge",
+    "alias": "",
+    "comment": "glas",
+    "category": "fuse",
+    "pack": ""
+  },
+  {
+    "box": "a11",
+    "count": 11,
+    "device": "MF-MSMF050-2",
+    "alias": null,
+    "comment": "Resettable Fuses - PPTC 0.50A 15V 0.15ohm  500mA",
+    "category": "fuse",
+    "pack": "smd"
+  },
+  {
+    "created": "2026-09-19T11:06:27.768845+02:00",
+    "modified": "2026-09-19T11:06:27.768845+02:00",
+    "box": "a11",
+    "anzahl": 0,
+    "device": "33uF",
+    "alias": "null",
+    "package": "",
+    "category": "ELKO",
+    "comment": "ELKO"
+  }
+]

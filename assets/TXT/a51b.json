@@ -1,0 +1,92 @@
+[
+  {
+    "box": "a51b",
+    "count": 7,
+    "device": "R91-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a51b",
+    "count": 1,
+    "device": "74hc4075",
+    "alias": null,
+    "comment": "Triple 3-input OR gate",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a51b",
+    "count": 1,
+    "device": "74hc109",
+    "alias": null,
+    "comment": "Dual JK flip-flop with set and reset; positive-edge trigger",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a51b",
+    "count": 1,
+    "device": "h6242b",
+    "alias": null,
+    "comment": "",
+    "category": "sram",
+    "pack": "soic"
+  },
+  {
+    "box": "a51b",
+    "count": 1,
+    "device": "icl232",
+    "alias": null,
+    "comment": "RS-232 Transceiver, 2T/2R,  5V, 120kbps",
+    "category": "",
+    "pack": "dip16"
+  },
+  {
+    "box": "a51b",
+    "count": 10,
+    "device": "R68R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD "
+  },
+  {
+    "box": "a51b",
+    "count": 1,
+    "device": "lm2575",
+    "alias": null,
+    "comment": "SIMPLE SWITCHER(RM) 1A Step-Down Voltage Regulator",
+    "category": "reg",
+    "pack": ""
+  },
+  {
+    "box": "a51b",
+    "count": 4,
+    "device": "SIL-3 A1302",
+    "alias": "",
+    "comment": "Hall sensor",
+    "category": "HALL ",
+    "pack": "Draht"
+  },
+  {
+    "box": "a51b",
+    "count": 2,
+    "device": "LM3886T",
+    "alias": null,
+    "comment": "Verstaerker",
+    "category": "Verstaerker",
+    "pack": "Draht"
+  },
+  {
+    "box": "a51b",
+    "count": 20,
+    "device": "C2,2nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

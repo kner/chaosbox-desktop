@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s4c",
+    "count": 8,
+    "device": "150p keramik",
+    "alias": "",
+    "comment": "",
+    "category": "c keramik",
+    "pack": "draht"
+  },
+  {
+    "box": "s4c",
+    "count": 30,
+    "device": "R470",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s4c",
+    "count": 9,
+    "device": "CL10A106 C CAP 47uF 6.3V",
+    "alias": null,
+    "comment": " C CAP 47uF 6.3V",
+    "category": " C CAP 47uF 6.3V",
+    "pack": "603"
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "box": "k42",
+    "count": 1,
+    "device": "74HC32",
+    "alias": null,
+    "comment": "Quad 2-input OR gate",
+    "category": "DIG",
+    "pack": "dip14"
+  },
+  {
+    "box": "k42",
+    "count": 1,
+    "device": "Attiny 1320PU",
+    "alias": null,
+    "comment": null,
+    "category": "uc",
+    "pack": "Dip8"
+  },
+  {
+    "box": "k42",
+    "count": 3,
+    "device": "1N4148",
+    "alias": null,
+    "comment": "Fast Switching Diodes",
+    "category": "Diode",
+    "pack": "Draht"
+  }
+]

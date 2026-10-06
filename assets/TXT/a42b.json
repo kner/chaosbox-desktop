@@ -1,0 +1,74 @@
+[
+  {
+    "box": "a42b",
+    "count": 8,
+    "device": "74HC00",
+    "alias": "",
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a42b",
+    "count": 1,
+    "device": "74HC4020 ",
+    "alias": null,
+    "comment": "14-stage binary ripple counter",
+    "category": "DIG",
+    "pack": "soic16"
+  },
+  {
+    "box": "a42b",
+    "count": 2,
+    "device": "AD7574jn",
+    "alias": null,
+    "comment": "CMOS uP-COMPATIBLE 8-BIT DAC",
+    "category": "DAC",
+    "pack": "DIP18"
+  },
+  {
+    "box": "a42b",
+    "count": 1,
+    "device": "ad7845",
+    "alias": "",
+    "comment": "LC2MOS Complete 12-Bit Multiplying DAC",
+    "category": "DAC",
+    "pack": "DIP24"
+  },
+  {
+    "box": "a42b",
+    "count": 10,
+    "device": "R5600",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "smd"
+  },
+  {
+    "box": "a42b",
+    "count": 5,
+    "device": "r111",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": "smd"
+  },
+  {
+    "box": "a42b",
+    "count": 1,
+    "device": "ls245",
+    "alias": null,
+    "comment": "",
+    "category": "dig",
+    "pack": "soic"
+  },
+  {
+    "box": "a42b",
+    "count": 7,
+    "device": "TSOP2838",
+    "alias": null,
+    "comment": "IR EmpfÃƒâ‚¬nger 38kHZ",
+    "category": "",
+    "pack": "IR EmpfÃƒâ‚¬nger"
+  }
+]

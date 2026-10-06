@@ -1,0 +1,47 @@
+[
+  {
+    "box": "s3c",
+    "count": 0,
+    "device": "irfr9020",
+    "alias": "",
+    "comment": "REPETITIVE AVALANCHE AND dv/dt RATED HEXFET TRANSISTORS ",
+    "category": "MOSFET POWER MOS MOS",
+    "pack": ""
+  },
+  {
+    "box": "s3c",
+    "count": 0,
+    "device": "ds2401",
+    "alias": "",
+    "comment": "Silicon Serial Number",
+    "category": "1wire onewire",
+    "pack": "smd"
+  },
+  {
+    "box": "s3c",
+    "count": 0,
+    "device": "hc10",
+    "alias": "",
+    "comment": "2.4ghz transceiver",
+    "category": "2.4ghz transceiver",
+    "pack": "soic"
+  },
+  {
+    "box": "s3c",
+    "count": 30,
+    "device": "R1m",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s3c",
+    "count": 20,
+    "device": "C3,3pF",
+    "alias": "",
+    "comment": "",
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

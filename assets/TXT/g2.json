@@ -1,0 +1,20 @@
+[
+  {
+    "box": "g2",
+    "count": 100,
+    "device": "Kuehlkoerper",
+    "alias": null,
+    "comment": "Kuehlkoerper",
+    "category": "Kuehlkoerper",
+    "pack": ""
+  },
+  {
+    "box": "g2",
+    "count": 50,
+    "device": "diverse",
+    "alias": null,
+    "comment": "induktivitaeten induktor",
+    "category": "L induktivitaet",
+    "pack": ""
+  }
+]

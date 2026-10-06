@@ -1,0 +1,29 @@
+[
+  {
+    "box": "a34c",
+    "count": 5,
+    "device": "R20-2% R15 R820",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a34c",
+    "count": 1,
+    "device": "9.6mhZ",
+    "alias": null,
+    "comment": "",
+    "category": "quarz",
+    "pack": ""
+  },
+  {
+    "box": "a34c",
+    "count": 0,
+    "device": "R1803",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  }
+]

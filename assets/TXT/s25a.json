@@ -1,0 +1,29 @@
+[
+  {
+    "box": "s25a",
+    "count": 15,
+    "device": "33k",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "s25a",
+    "count": 4,
+    "device": "430",
+    "alias": null,
+    "comment": "",
+    "category": "2% ",
+    "pack": ""
+  },
+  {
+    "box": "s25a",
+    "count": 9,
+    "device": "lm75 cim3 cim5",
+    "alias": "",
+    "comment": "Digital Temperature Sensor and Thermal watchdog with Two-Wire Interface",
+    "category": "i2c temperatur sensor",
+    "pack": "soic8"
+  }
+]

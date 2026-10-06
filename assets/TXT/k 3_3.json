@@ -1,0 +1,20 @@
+[
+  {
+    "box": "k 3/3",
+    "count": 3,
+    "device": "R474",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "k 3/3",
+    "count": 1,
+    "device": "130",
+    "alias": null,
+    "comment": null,
+    "category": "5%",
+    "pack": null
+  }
+]

@@ -1,0 +1,11 @@
+[
+  {
+    "box": "a44",
+    "count": 1,
+    "device": "7555",
+    "alias": null,
+    "comment": "General purpose CMOS timer 555 Ersatz",
+    "category": null,
+    "pack": "dip8"
+  }
+]

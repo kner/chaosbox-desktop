@@ -1,0 +1,155 @@
+[
+  {
+    "box": "a21",
+    "count": 1,
+    "device": "74F04",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "SOIC "
+  },
+  {
+    "box": "a21",
+    "count": 2,
+    "device": "LM393N",
+    "alias": null,
+    "comment": "LOW POWER DUAL BIPOLAR COMPARATORS",
+    "category": "COMP",
+    "pack": "DIP8"
+  },
+  {
+    "box": "a21",
+    "count": 1,
+    "device": "LM337T",
+    "alias": null,
+    "comment": "3-Terminal 1.5A Negative Adjustable Regulator",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a21",
+    "count": 1,
+    "device": "Quarz",
+    "alias": null,
+    "comment": "",
+    "category": "XTAL quarz",
+    "pack": ""
+  },
+  {
+    "box": "a21",
+    "count": 4,
+    "device": "74HC574",
+    "alias": null,
+    "comment": "Octal D-type flip-flop",
+    "category": "DIG",
+    "pack": "SOIC20"
+  },
+  {
+    "box": "a21",
+    "count": 3,
+    "device": "74HC138",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "SOIC16"
+  },
+  {
+    "box": "a21",
+    "count": 7,
+    "device": "LM393",
+    "alias": null,
+    "comment": "",
+    "category": "comp",
+    "pack": "SOIC8"
+  },
+  {
+    "box": "a21",
+    "count": 1,
+    "device": "74HC4020 ",
+    "alias": null,
+    "comment": "14-stage binary ripple counter",
+    "category": "DIG",
+    "pack": "DIP16"
+  },
+  {
+    "box": "a21",
+    "count": 8,
+    "device": "R10K",
+    "alias": null,
+    "comment": "Potentiometer",
+    "category": "POTI",
+    "pack": "draht"
+  },
+  {
+    "box": "a21",
+    "count": 10,
+    "device": "125mA,40ma,m50,t160mA",
+    "alias": "",
+    "comment": "",
+    "category": "FUSE",
+    "pack": "draht rund schwarz"
+  },
+  {
+    "box": "a21",
+    "count": 1,
+    "device": "12uH 4A Spule",
+    "alias": null,
+    "comment": "",
+    "category": "L",
+    "pack": "draht "
+  },
+  {
+    "box": "a21",
+    "count": 3,
+    "device": "BF981",
+    "alias": null,
+    "comment": "SILICON N-CHANNEL DUAL GATE MOS-FE",
+    "category": "",
+    "pack": "Sackerl"
+  },
+  {
+    "box": "a21",
+    "count": 17,
+    "device": "R3K3-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a21",
+    "count": 1,
+    "device": "R110-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a21",
+    "count": 1,
+    "device": "18,432MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": ""
+  },
+  {
+    "box": "a21",
+    "count": 10,
+    "device": "R3900",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a21",
+    "count": 20,
+    "device": "C2,7nF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

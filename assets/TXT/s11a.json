@@ -1,0 +1,47 @@
+[
+  {
+    "box": "s11a",
+    "count": 1,
+    "device": "hct4066",
+    "alias": "",
+    "comment": "",
+    "category": "dig",
+    "pack": "soic"
+  },
+  {
+    "box": "s11a",
+    "count": 20,
+    "device": "24.9",
+    "alias": "",
+    "comment": "",
+    "category": "1%",
+    "pack": ""
+  },
+  {
+    "box": "s11a",
+    "count": 4,
+    "device": "LM431",
+    "alias": "",
+    "comment": "National SemiconductorAsdjustable Precision Zener Shunt Regulator",
+    "category": "opamp",
+    "pack": "soic8 x        "
+  },
+  {
+    "box": "s11a",
+    "count": 30,
+    "device": "R3k3",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s11a",
+    "count": 10,
+    "device": "4081",
+    "alias": "",
+    "comment": "HEF4081B Quad 2-input AND gate",
+    "category": "",
+    "pack": "dip"
+  }
+]

@@ -1,0 +1,137 @@
+[
+  {
+    "box": "a44a",
+    "count": 2,
+    "device": "HEF4049",
+    "alias": null,
+    "comment": "HEX inverting buffers",
+    "category": "",
+    "pack": "SOIC16 s"
+  },
+  {
+    "box": "a44a",
+    "count": 8,
+    "device": "LM385",
+    "alias": null,
+    "comment": "Adjustable Micropower Voltage Reference",
+    "category": "VREF",
+    "pack": "SOIC8"
+  },
+  {
+    "box": "a44a",
+    "count": 1,
+    "device": "CD22103AE",
+    "alias": null,
+    "comment": "CMOS HDB3 (High Density Bipolar 3)  Transcoder for 2.048/8.448Mb/s",
+    "category": "HDB3 CODE",
+    "pack": "DIP"
+  },
+  {
+    "box": "a44a",
+    "count": 7,
+    "device": "74LS244",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": "DIP"
+  },
+  {
+    "box": "a44a",
+    "count": 1,
+    "device": "74LS32",
+    "alias": null,
+    "comment": "",
+    "category": "DIG",
+    "pack": ""
+  },
+  {
+    "box": "a44a",
+    "count": 3,
+    "device": "R39-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a44a",
+    "count": 3,
+    "device": "r9.1-5%",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a44a",
+    "count": 5,
+    "device": "R47R",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a44a",
+    "count": 2,
+    "device": "zpd 5.1",
+    "alias": null,
+    "comment": "Zenerdiode",
+    "category": "ZENER",
+    "pack": ""
+  },
+  {
+    "box": "a44a",
+    "count": 10,
+    "device": "bd139",
+    "alias": "",
+    "comment": "Power 1.5A 80V NPN",
+    "category": "npn",
+    "pack": "TO220"
+  },
+  {
+    "box": "a44a",
+    "count": 10,
+    "device": "R1500",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a44a",
+    "count": 1,
+    "device": "MBRS240L",
+    "alias": "2BL4",
+    "comment": "MBRS240L: Schottky Power Rectifier, Surface Mount, 2.0 A, 40 V",
+    "category": "Schottky Power Rectifier shottky",
+    "pack": "smd"
+  },
+  {
+    "box": "a44a",
+    "count": 1,
+    "device": "R 4,7 4R7 -5%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": null
+  },
+  {
+    "box": "a44a",
+    "count": 1,
+    "device": "kia78d33f",
+    "alias": null,
+    "comment": "1A ",
+    "category": "ldo 3.3v 1A",
+    "pack": "smd"
+  },
+  {
+    "box": "a44a",
+    "count": 3,
+    "device": "bzv85c 4v7",
+    "alias": "4.7V Z-Diode ",
+    "comment": null,
+    "category": "Z-Diode",
+    "pack": "Draht"
+  }
+]

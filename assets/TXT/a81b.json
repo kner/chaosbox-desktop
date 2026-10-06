@@ -1,0 +1,38 @@
+[
+  {
+    "box": "a81b",
+    "count": 3,
+    "device": "R274",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a81b",
+    "count": 1,
+    "device": "74HCT04",
+    "alias": "",
+    "comment": "",
+    "category": "DIG",
+    "pack": ""
+  },
+  {
+    "box": "a81b",
+    "count": 11,
+    "device": "R200-5%",
+    "alias": "",
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "a81b",
+    "count": 1,
+    "device": "R120k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  }
+]

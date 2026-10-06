@@ -1,0 +1,101 @@
+[
+  {
+    "box": "a62c",
+    "count": 3,
+    "device": "R822",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a62c",
+    "count": 1,
+    "device": "MM74C923N",
+    "alias": null,
+    "comment": "20-Key Encoder",
+    "category": "ENCODER",
+    "pack": ""
+  },
+  {
+    "box": "a62c",
+    "count": 4,
+    "device": "R1K3-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a62c",
+    "count": 1,
+    "device": "r4k7-2%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": ""
+  },
+  {
+    "box": "a62c",
+    "count": 1,
+    "device": "y210s",
+    "alias": null,
+    "comment": "KAQY210S high Voltage, Photo DMos Relay",
+    "category": "opto",
+    "pack": "opto"
+  },
+  {
+    "box": "a62c",
+    "count": 1,
+    "device": "c46u 16v",
+    "alias": null,
+    "comment": "",
+    "category": "C",
+    "pack": "smd"
+  },
+  {
+    "box": "a62c",
+    "count": 4,
+    "device": "LM393M",
+    "alias": null,
+    "comment": "LOW POWER DUAL BIPOLAR COMPARATORS",
+    "category": "COMP",
+    "pack": "soic8"
+  },
+  {
+    "box": "a62c",
+    "count": 5,
+    "device": "c945",
+    "alias": null,
+    "comment": "TO-92 Plastic-Encapsulate Transistors",
+    "category": "",
+    "pack": "to92"
+  },
+  {
+    "box": "a62c",
+    "count": 10,
+    "device": "R2200",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a62c",
+    "count": 12,
+    "device": "bcx-55c 3v3 2v4",
+    "alias": null,
+    "comment": "3.3v",
+    "category": "zenerdiode",
+    "pack": ""
+  },
+  {
+    "box": "a62c",
+    "count": 20,
+    "device": "C200pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  }
+]

@@ -1,0 +1,83 @@
+[
+  {
+    "box": "a64b",
+    "count": 2,
+    "device": "R39R0",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a64b",
+    "count": 5,
+    "device": "R47-2% R75",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a64b",
+    "count": 3,
+    "device": "74hc259",
+    "alias": null,
+    "comment": "8-bit addressable latch",
+    "category": "",
+    "pack": "dip16"
+  },
+  {
+    "box": "a64b",
+    "count": 10,
+    "device": "R330R",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a64b",
+    "count": 16,
+    "device": "1n5819",
+    "alias": "",
+    "comment": "SCHOTTKY BARRIER RECTIFIER Reverse Voltage - 20 to 40 Volts, Forward Current - 1.0Ampere",
+    "category": "shottky schottky",
+    "pack": "draht"
+  },
+  {
+    "box": "a64b",
+    "count": 1,
+    "device": "2sb891",
+    "alias": null,
+    "comment": "PNP 2A",
+    "category": "PNP",
+    "pack": "to220"
+  },
+  {
+    "box": "a64b",
+    "count": 1,
+    "device": "74ls245",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "a64b",
+    "count": 10,
+    "device": "22nF 10nF",
+    "alias": null,
+    "comment": null,
+    "category": "C KERAMI",
+    "pack": "smd805"
+  },
+  {
+    "box": "a64b",
+    "count": 1,
+    "device": "2sk3569 2sk3568",
+    "alias": null,
+    "comment": "Silicon N Channel MOS Type",
+    "category": "Power  N  MOS",
+    "pack": "TO-220"
+  }
+]

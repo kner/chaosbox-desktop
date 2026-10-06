@@ -1,0 +1,164 @@
+[
+  {
+    "box": "a53b",
+    "count": 8,
+    "device": "CD4066BE",
+    "alias": null,
+    "comment": "Quad Bilateral Switch",
+    "category": "DIGITAL",
+    "pack": "DIP"
+  },
+  {
+    "box": "a53b",
+    "count": 0,
+    "device": "R33-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a53b",
+    "count": 7,
+    "device": "R56K-5%",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a53b",
+    "count": 5,
+    "device": "R68-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a53b",
+    "count": 1,
+    "device": "tl7705acp",
+    "alias": null,
+    "comment": "Single Supply Voltage Supervisor for 5V Systems with Programmable Time Delay",
+    "category": "PROTECTION",
+    "pack": "dip8"
+  },
+  {
+    "box": "a53b",
+    "count": 1,
+    "device": "tl7712acp",
+    "alias": null,
+    "comment": "Single Supply Voltage Supervisor for 12V Systems with Programmable Time Delay",
+    "category": "PROTECTION",
+    "pack": "dip8"
+  },
+  {
+    "box": "a53b",
+    "count": 3,
+    "device": "lf353",
+    "alias": null,
+    "comment": "Wide Bandwidth Dual JFET Input Operational Amplifier",
+    "category": "",
+    "pack": "soic8"
+  },
+  {
+    "box": "a53b",
+    "count": 3,
+    "device": "74hct541",
+    "alias": "",
+    "comment": "CMOS Logic Octal Non-Inverting Buffers and Line Drivers with 3-State Outputs",
+    "category": "buffer",
+    "pack": "soic20"
+  },
+  {
+    "box": "a53b",
+    "count": 10,
+    "device": "R5602",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a53b",
+    "count": 1,
+    "device": "c225",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": "smd"
+  },
+  {
+    "box": "a53b",
+    "count": 1,
+    "device": "mb84256",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  },
+  {
+    "box": "a53b",
+    "count": 1,
+    "device": "LED gelb 3mm",
+    "alias": "",
+    "comment": "",
+    "category": "led",
+    "pack": "draht"
+  },
+  {
+    "box": "a53b",
+    "count": 1,
+    "device": "LED grün 3mm",
+    "alias": null,
+    "comment": null,
+    "category": "led",
+    "pack": "draht"
+  },
+  {
+    "box": "a53b",
+    "count": 20,
+    "device": "jumper",
+    "alias": null,
+    "comment": null,
+    "category": "jumper",
+    "pack": "jumper"
+  },
+  {
+    "box": "a53b",
+    "count": 2,
+    "device": "R 10k 1%",
+    "alias": null,
+    "comment": null,
+    "category": "R",
+    "pack": "draht"
+  },
+  {
+    "box": "a53b",
+    "count": 3,
+    "device": "x0403de",
+    "alias": "BT148-400R",
+    "comment": "thyristor",
+    "category": "thyristor",
+    "pack": "draht"
+  },
+  {
+    "box": "a53b",
+    "count": 5,
+    "device": "r 1.8k 1k8",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": "draht"
+  },
+  {
+    "box": "a53b",
+    "count": 5,
+    "device": "r  47k",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": "draht"
+  }
+]

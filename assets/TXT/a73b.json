@@ -1,0 +1,155 @@
+[
+  {
+    "box": "a73b",
+    "count": 1,
+    "device": "R122",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a73b",
+    "count": 1,
+    "device": "R6K8-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a73b",
+    "count": 1,
+    "device": "R910-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a73b",
+    "count": 1,
+    "device": "R82K-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a73b",
+    "count": 0,
+    "device": "R33 5x SIP getrennt",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": "sip10"
+  },
+  {
+    "box": "a73b",
+    "count": 0,
+    "device": "1N4004",
+    "alias": null,
+    "comment": "",
+    "category": "Diode",
+    "pack": ""
+  },
+  {
+    "box": "a73b",
+    "count": 23,
+    "device": "C10u 25V",
+    "alias": null,
+    "comment": "",
+    "category": "C",
+    "pack": ""
+  },
+  {
+    "box": "a73b",
+    "count": 1,
+    "device": "cnx83a",
+    "alias": null,
+    "comment": "6-pin phototransistor optocouplers",
+    "category": "",
+    "pack": "dip6"
+  },
+  {
+    "box": "a73b",
+    "count": 1,
+    "device": "2n2222a",
+    "alias": null,
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "a73b",
+    "count": 1,
+    "device": "4.096m",
+    "alias": null,
+    "comment": "",
+    "category": "osz ",
+    "pack": "smd"
+  },
+  {
+    "box": "a73b",
+    "count": 10,
+    "device": "r1503",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a73b",
+    "count": 6,
+    "device": "byv27-100",
+    "alias": null,
+    "comment": "schnelle diode Ultra fast low-loss controlled avalanche rectifiers",
+    "category": "DIODE ",
+    "pack": ""
+  },
+  {
+    "box": "a73b",
+    "count": 1,
+    "device": "r4.1 ",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": "dra"
+  },
+  {
+    "box": "a73b",
+    "count": 1,
+    "device": "r4.1 r420 1%",
+    "alias": null,
+    "comment": "",
+    "category": "r",
+    "pack": "dra"
+  },
+  {
+    "box": "a73b",
+    "count": 20,
+    "device": "470n",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "a73b",
+    "count": 3,
+    "device": "TL431",
+    "alias": null,
+    "comment": "Adjustable Precision Shunt Regulator ",
+    "category": "shunt regulator",
+    "pack": "sot23"
+  },
+  {
+    "box": "a73b",
+    "count": 2,
+    "device": "STPS40H100CW",
+    "alias": "Schottky 40A Power Rectifier",
+    "comment": "2x20A   100V Sperrspannung",
+    "category": "Schottky",
+    "pack": "Draht sot-93"
+  }
+]

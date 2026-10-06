@@ -1,0 +1,92 @@
+[
+  {
+    "box": "s3a",
+    "count": 0,
+    "device": "widerst. röllchen",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "smd"
+  },
+  {
+    "box": "s3a",
+    "count": 0,
+    "device": "us1261",
+    "alias": "",
+    "comment": "1.5V und 2.5V Regler (3.3V UND 5V Versorgg.)",
+    "category": "spannungsregler laengsregler",
+    "pack": "to??"
+  },
+  {
+    "box": "s3a",
+    "count": 2,
+    "device": "l3103",
+    "alias": "",
+    "comment": " HEXFET   Power MOSFETs  12mOhm",
+    "category": "MOSFET POWER MOS MOS",
+    "pack": ""
+  },
+  {
+    "box": "s3a",
+    "count": 1,
+    "device": "bsp315",
+    "alias": "",
+    "comment": "SIPMOS Ã‚Â® Small-Signal Transistor",
+    "category": "leistungstr",
+    "pack": "smd"
+  },
+  {
+    "box": "s3a",
+    "count": 1,
+    "device": "ptc c975",
+    "alias": "",
+    "comment": "Thermistor PTC overcurrent protetion",
+    "category": "PTC",
+    "pack": "draht"
+  },
+  {
+    "box": "s3a",
+    "count": 2,
+    "device": "hct174",
+    "alias": "",
+    "comment": "",
+    "category": "",
+    "pack": "soic"
+  },
+  {
+    "box": "s3a",
+    "count": 15,
+    "device": "r220 sip",
+    "alias": "",
+    "comment": "220",
+    "category": "sip r",
+    "pack": "sip"
+  },
+  {
+    "box": "s3a",
+    "count": 30,
+    "device": "R680k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s3a",
+    "count": 20,
+    "device": "C22pF",
+    "alias": null,
+    "comment": null,
+    "category": "c Keramik",
+    "pack": "smd 805"
+  },
+  {
+    "box": "s3a",
+    "count": 20,
+    "device": "C2,2pF",
+    "alias": "",
+    "comment": "",
+    "category": "C Keramik",
+    "pack": "smd 805"
+  }
+]

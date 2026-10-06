@@ -1,0 +1,56 @@
+[
+  {
+    "box": "a63c",
+    "count": 2,
+    "device": "R4701",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a63c",
+    "count": 6,
+    "device": "TC4013BP",
+    "alias": null,
+    "comment": "D Flipflop",
+    "category": "",
+    "pack": "DIP14"
+  },
+  {
+    "box": "a63c",
+    "count": 20,
+    "device": "R3k9-2%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a63c",
+    "count": 1,
+    "device": "R3k9-1%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a63c",
+    "count": 1,
+    "device": "74hc541d",
+    "alias": null,
+    "comment": "Octal buffer/line driver; 3-state",
+    "category": "",
+    "pack": "SOIC20"
+  },
+  {
+    "box": "a63c",
+    "count": 2,
+    "device": "74hc4049",
+    "alias": null,
+    "comment": "Hex inverting high-to-low level shifter",
+    "category": "",
+    "pack": "soic16"
+  }
+]

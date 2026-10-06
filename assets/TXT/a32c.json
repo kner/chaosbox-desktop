@@ -1,0 +1,20 @@
+[
+  {
+    "box": "a32c",
+    "count": 1,
+    "device": "44,9MHz Oszillator",
+    "alias": "",
+    "comment": "",
+    "category": "OSZILLATOR",
+    "pack": ""
+  },
+  {
+    "box": "a32c",
+    "count": 10,
+    "device": "R1800",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  }
+]

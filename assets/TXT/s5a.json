@@ -1,0 +1,65 @@
+[
+  {
+    "box": "s5a",
+    "count": 47,
+    "device": "Elkos divers uF",
+    "alias": "",
+    "comment": "elkos",
+    "category": "elkos",
+    "pack": "draht und smd"
+  },
+  {
+    "box": "s5a",
+    "count": 1,
+    "device": "lm393",
+    "alias": null,
+    "comment": "",
+    "category": "COMP",
+    "pack": "soic8"
+  },
+  {
+    "box": "s5a",
+    "count": 3,
+    "device": "R100k 10x SIP",
+    "alias": "",
+    "comment": "",
+    "category": "sip",
+    "pack": "SIP10"
+  },
+  {
+    "box": "s5a",
+    "count": 11,
+    "device": "330 100 221 220j 1r0m 4rj7",
+    "alias": "",
+    "comment": "L Induktor 330=33 uH 221 1r0 = 1uH",
+    "category": "L Induktivitaet",
+    "pack": "smd"
+  },
+  {
+    "box": "s5a",
+    "count": 3,
+    "device": "100k SIP10",
+    "alias": "",
+    "comment": "9x100k SIP",
+    "category": "",
+    "pack": "SIP10"
+  },
+  {
+    "box": "s5a",
+    "count": 30,
+    "device": "R4m7",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  },
+  {
+    "box": "s5a",
+    "count": 1,
+    "device": "elko 1000uF 16V  und 25V 2200uF",
+    "alias": null,
+    "comment": null,
+    "category": "elko",
+    "pack": "draht"
+  }
+]

@@ -1,0 +1,83 @@
+[
+  {
+    "box": "a63b",
+    "count": 4,
+    "device": "R3001",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a63b",
+    "count": 2,
+    "device": "TC4049",
+    "alias": "",
+    "comment": "HEX BUFFER/CONVERTER",
+    "category": "",
+    "pack": "DIP16"
+  },
+  {
+    "box": "a63b",
+    "count": 4,
+    "device": "74HC74",
+    "alias": "",
+    "comment": "Dual D-type flip-flop with set and reset",
+    "category": "DIG",
+    "pack": "soic"
+  },
+  {
+    "box": "a63b",
+    "count": 4,
+    "device": "R56k",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a63b",
+    "count": 1,
+    "device": "SA2 9a,s9 6a, s4 2j,GS1G",
+    "alias": "",
+    "comment": "Diode diverse (schottky ?)",
+    "category": "D",
+    "pack": "smd"
+  },
+  {
+    "box": "a63b",
+    "count": 1,
+    "device": "74HC373",
+    "alias": null,
+    "comment": "Octal D-type transparent latch; 3-state",
+    "category": "DIG",
+    "pack": "DIP20"
+  },
+  {
+    "box": "a63b",
+    "count": 7,
+    "device": "NJM2068",
+    "alias": null,
+    "comment": "LOW-NOISE DUAL OPERATIONAL AMPLIFIER  ±4V~±18V",
+    "category": "opamp",
+    "pack": "ssop8"
+  },
+  {
+    "box": "a63b",
+    "count": 1,
+    "device": "24C32wp",
+    "alias": null,
+    "comment": "2-Wire Serial EEPROM 32K (4096 x 8)",
+    "category": "SERIAL EEPROM",
+    "pack": "soic"
+  },
+  {
+    "box": "a63b",
+    "count": 8,
+    "device": "buz104l",
+    "alias": null,
+    "comment": "SIPMOS Power Transistor (N channe",
+    "category": null,
+    "pack": "to220"
+  }
+]

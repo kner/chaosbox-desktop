@@ -1,0 +1,38 @@
+[
+  {
+    "box": "k 2/3",
+    "count": 1,
+    "device": "AD9696KN",
+    "alias": "",
+    "comment": "Ultrafast TTL Comparator",
+    "category": "COMP DIGITAL",
+    "pack": "DIP8"
+  },
+  {
+    "box": "k 2/3",
+    "count": 1,
+    "device": "AT28C16",
+    "alias": "",
+    "comment": "",
+    "category": "",
+    "pack": ""
+  },
+  {
+    "box": "k 2/3",
+    "count": 1,
+    "device": "R150-5%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "k 2/3",
+    "count": 2,
+    "device": "741CN",
+    "alias": null,
+    "comment": null,
+    "category": null,
+    "pack": null
+  }
+]

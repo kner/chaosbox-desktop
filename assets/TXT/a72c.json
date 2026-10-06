@@ -1,0 +1,74 @@
+[
+  {
+    "box": "a72c",
+    "count": 7,
+    "device": "R152",
+    "alias": null,
+    "comment": "1500 Ohm",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a72c",
+    "count": 3,
+    "device": "R22k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a72c",
+    "count": 1,
+    "device": "R330k-5%",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": ""
+  },
+  {
+    "box": "a72c",
+    "count": 5,
+    "device": "ds75150n",
+    "alias": null,
+    "comment": "Dual Line Driver",
+    "category": "",
+    "pack": "dip8"
+  },
+  {
+    "box": "a72c",
+    "count": 10,
+    "device": "r1203",
+    "alias": null,
+    "comment": "",
+    "category": "R",
+    "pack": "SMD"
+  },
+  {
+    "box": "a72c",
+    "count": 10,
+    "device": "33",
+    "alias": null,
+    "comment": "",
+    "category": "5%",
+    "pack": ""
+  },
+  {
+    "box": "a72c",
+    "count": 10,
+    "device": "47n  680p  68p 47p",
+    "alias": null,
+    "comment": null,
+    "category": "C KERAMI",
+    "pack": "smd805"
+  },
+  {
+    "box": "a72c",
+    "count": 5,
+    "device": "spule 100uh",
+    "alias": null,
+    "comment": null,
+    "category": "l spule",
+    "pack": "smd "
+  }
+]

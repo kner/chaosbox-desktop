@@ -1,0 +1,38 @@
+[
+  {
+    "box": "s8a",
+    "count": 2,
+    "device": "c keramik hochspannung",
+    "alias": null,
+    "comment": "",
+    "category": "c keraisch hochspannung",
+    "pack": ""
+  },
+  {
+    "box": "s8a",
+    "count": 12,
+    "device": "93",
+    "alias": "",
+    "comment": "",
+    "category": "10%",
+    "pack": ""
+  },
+  {
+    "box": "s8a",
+    "count": 50,
+    "device": "R330-1%",
+    "alias": "",
+    "comment": "",
+    "category": "R",
+    "pack": "Draht"
+  },
+  {
+    "box": "s8a",
+    "count": 30,
+    "device": "R470k",
+    "alias": null,
+    "comment": null,
+    "category": "r",
+    "pack": "SMD (Papierstreifen)"
+  }
+]
