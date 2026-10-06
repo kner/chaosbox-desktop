@@ -52,6 +52,19 @@ each box's setup and data. Existing per-box launchers are migrated automatically
 All boxes use the new version on their next launch; reopen any running windows.
 No administrator privileges are needed when dependencies are already present.
 
+To uninstall a per-user installation, close its windows and run:
+
+```bash
+./uninstall-desktop.sh --installdir=~/cb1
+```
+
+Without `--installdir`, this selects `~/ChaosBox`. The script removes that
+installation's launcher and application menu entry. Shared application files
+are removed after the last installation's launcher is removed. All directories,
+box data, `setup.ini`, indexes, UI state and SSH credentials remain intact.
+Run it once for each installation you want to uninstall. Repeated runs are safe.
+For a Debian installation, use `sudo apt remove chaosbox-desktop` instead.
+
 ## Debian package (Ubuntu 24.04)
 
 Build an architecture-independent installer using the system Python and dpkg:
