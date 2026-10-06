@@ -40,6 +40,17 @@ class InstallationCliTests(unittest.TestCase):
 
 
 class SharedIndexTests(unittest.TestCase):
+    def test_hit_path_is_relative_to_owning_box(self):
+        app = App.__new__(App)
+        app.settings = SimpleNamespace(profiles=[
+            SimpleNamespace(images=Path("/boxes/First/JPG"), data=Path("/boxes/First/TXT"),
+                            legacy_data=Path("/boxes/First/TXT")),
+            SimpleNamespace(images=Path("/boxes/Second/JPG"), data=Path("/boxes/Second/TXT"),
+                            legacy_data=Path("/boxes/Second/TXT"))])
+        for source, expected in (("/boxes/Second/JPG/nested/photo.jpg", "JPG/nested/photo.jpg"),
+                                 ("/boxes/First/TXT/box.json", "TXT/box.json")):
+            self.assertEqual(app.search_hit_path(core.Entry(Path(source), {}, True)), expected)
+
     def test_switch_does_not_initialize_or_rebuild(self):
         app = App.__new__(App)
         app.busy = False
@@ -172,6 +183,23 @@ class UserCommentTests(unittest.TestCase):
 
 
 class MediaFolderTests(unittest.TestCase):
+    def test_thumbnail_double_click_opens_only_clicked_file(self):
+        grid = MediaGrid.__new__(MediaGrid)
+        grid.paths = [Path("first.jpg"), Path("second.jpg"), Path("third.jpg")]
+        grid.selected = {0: None, 2: None}
+        grid.columns = 2
+        grid.cell_width = grid.cell_height = 100
+        grid.canvas = Mock()
+        grid.canvas.canvasy.side_effect = lambda y: y
+        grid.changed = Mock()
+        confirm = Mock()
+        self.assertEqual(grid.double_click(SimpleNamespace(x=150, y=50), confirm), "break")
+        self.assertEqual(grid.selection(), [Path("second.jpg")])
+        confirm.assert_called_once_with()
+        confirm.reset_mock()
+        grid.double_click(SimpleNamespace(x=150, y=150), confirm)
+        confirm.assert_not_called()
+
     def test_double_click_confirms_clicked_folder(self):
         dialog = MediaFolderDialog.__new__(MediaFolderDialog)
         dialog.listing = Mock()

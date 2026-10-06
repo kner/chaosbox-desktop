@@ -298,6 +298,17 @@ class MediaGrid(ttk.Frame):
         self.changed()
         self.redraw()
 
+    def double_click(self, event, confirm):
+        column = int(event.x // self.cell_width)
+        row = int(self.canvas.canvasy(event.y) // self.cell_height)
+        index = row * self.columns + column
+        if 0 <= column < self.columns and row >= 0 and 0 <= index < len(self.paths):
+            self.selected = {index: None}
+            self.anchor = index
+            self.changed()
+            confirm()
+        return "break"
+
     def redraw(self):
         canvas = self.canvas
         width = max(1, canvas.winfo_width())
@@ -713,7 +724,8 @@ class App:
         if self.busy or self.search_mode:
             return
         folder = self.media_folder()
-        self.task(lambda: core.files(folder, core.MEDIA, recursive=False),
+        self.task(lambda: sorted(core.files(folder, core.MEDIA, recursive=False),
+                                 key=lambda path: path.stat().st_mtime_ns, reverse=True),
                   lambda paths: self.media_dialog(paths, folder))
 
     def media_dialog(self, paths, folder=None):
@@ -739,7 +751,7 @@ class App:
         ttk.Label(navigation, text=str(folder), wraplength=750).pack(side="left", padx=12)
         toolbar = ttk.Frame(dialog, padding=12)
         toolbar.pack(fill="x")
-        ttk.Label(toolbar, text="Click to select multiple files · Shift-click selects a range").pack(side="left")
+        ttk.Label(toolbar, text="Click to select · Shift-click for a range · Double-click to open one file").pack(side="left")
         columns = tk.StringVar(value=str(getattr(self, "media_columns", 4)))
         picker = ttk.Combobox(toolbar, textvariable=columns, values=list(range(1, 11)),
                               state="readonly", width=3)
@@ -786,6 +798,7 @@ class App:
         open_button = ttk.Button(buttons, text="Open", command=open_selected, state="disabled")
         open_button.pack(side="right", padx=8)
         dialog.bind("<Return>", open_selected)
+        grid.canvas.bind("<Double-Button-1>", lambda event: grid.double_click(event, open_selected))
         dialog.bind("<Escape>", lambda e: dialog.destroy())
         grid.canvas.focus_set()
 
@@ -1087,6 +1100,13 @@ class App:
         else:
             self.load_json(hit.source, hit.index)
 
+    def search_hit_path(self, hit):
+        for profile in self.settings.profiles:
+            if any(core.within(hit.source, folder) for folder in
+                   (profile.images, profile.data, profile.legacy_data)):
+                return str(hit.source.resolve().relative_to(profile.images.parent.resolve()))
+        return str(hit.source)
+
     def results_dialog(self, hits):
         dialog = tk.Toplevel(self.root)
         dialog.title(f"{len(hits)} matches")
@@ -1102,7 +1122,7 @@ class App:
         table.pack(fill="both", expand=True, padx=12, pady=12)
         for i, hit in enumerate(hits):
             table.insert("", "end", iid=str(i),
-                         values=tuple(hit.data.get(key, "") for key, _ in fields) + (str(hit.source),))
+                         values=tuple(hit.data.get(key, "") for key, _ in fields) + (self.search_hit_path(hit),))
         def select(event=None):
             if table.selection():
                 hit = hits[int(table.selection()[0])]
