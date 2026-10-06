@@ -1,0 +1,13 @@
+Analysiere die technischen Bauteile auf dem Bild. Fasse gleiche Bauteile zusammen und gib pro Bauteiltyp genau eine Zeile aus:
+Anzahl | Bauteil | Kategorie | Kurzbeschreibung und am Ende der Zeile ein Zeilenumbruch
+Vorgaben:
+- Benenne das Bauteil möglichst genau anhand sichtbarer Merkmale und Beschriftungen.
+- Wähle eine Kategorie
+- Zähle nur sichtbare, eindeutig unterscheidbare Stücke. Bei Unsicherheit schreibe  "?"
+- Beschreibe Bauform, lesbare Kennzeichnung und erkennbare Eigenschaften in höchstens 12 Wörtern.
+- Erfinde keine Typnummern, technischen Werte oder Funktionen. Kennzeichne unsichere Zuordnungen mit „???“.
+- Gib ausschließlich die Ergebniszeilen aus, ohne Einleitung
+- keine metainformationen wie z.B. handschriftlich überklebt, oder Beschriftung:
+- keine Beschreibung der Gehäuseform wo es irrelevant ist
+- keine Überprüfung des Ergebnisses
+- Sicherung des Originals mit Extension .jpg_original

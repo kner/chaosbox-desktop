@@ -454,8 +454,15 @@ class DesktopTests(unittest.TestCase):
         settings = core.Settings(home / "ChaosBox")
         settings.reload()
         settings.remember_category(settings.profile("Chaosbox"), "Keep this")
-        with self.assertRaises(FileExistsError):
-            install.install(home, credentials=False)
+        asset = next(path for path in settings.profiles[0].data.rglob("*") if path.is_file())
+        asset.write_text("User content")
+        setup_before = setup.read_bytes()
+        shared_app = home / ".local/share/chaosbox/desktop/app.py"
+        shared_app.write_text("old version")
+        self.assertEqual(install.install(home, credentials=False), (target, setup, launcher))
+        self.assertEqual(asset.read_text(), "User content")
+        self.assertEqual(setup.read_bytes(), setup_before)
+        self.assertEqual(shared_app.read_bytes(), Path(install.__file__).with_name("app.py").read_bytes())
         settings.reload()
         self.assertIn("Keep this", settings.profile(settings.default).categories)
         self.assertFalse((home / ".config/chaosbox/credentials/android_copy").exists())
@@ -499,13 +506,22 @@ class DesktopTests(unittest.TestCase):
         self.assertIn("[SSH]", setup.read_text())
         self.assertFalse((settings.root / "JPG").exists())
 
-    def test_installer_rejects_existing_empty_directory_before_writing(self):
+    def test_installer_accepts_existing_empty_directory(self):
         home = self.root / "existing-home"
         destination = home / "existing-box"
         destination.mkdir(parents=True)
+        _, setup, desktop = install.install(home, credentials=False, installdir=destination)
+        self.assertTrue(setup.is_file())
+        self.assertTrue(desktop.is_file())
+
+    def test_installer_rejects_file_as_installation_directory(self):
+        home = self.root / "file-home"
+        home.mkdir()
+        destination = home / "box"
+        destination.write_text("Keep")
         with self.assertRaises(FileExistsError):
             install.install(home, credentials=False, installdir=destination)
-        self.assertEqual(list(destination.iterdir()), [])
+        self.assertEqual(destination.read_text(), "Keep")
         self.assertFalse((home / ".local").exists())
 
     def test_installer_creates_independent_apps_and_no_root_media_folders(self):
@@ -528,8 +544,7 @@ class DesktopTests(unittest.TestCase):
             self.assertFalse((setup.parent / "JPG").exists())
             self.assertFalse((setup.parent / "TXT").exists())
             self.assertTrue(all(profile.images.is_dir() and profile.data.is_dir() for profile in settings.profiles))
-        with self.assertRaises(FileExistsError):
-            install.install(home, credentials=False, installdir=first_dir)
+        self.assertEqual(install.install(home, credentials=False, installdir=first_dir), first)
         self.assertEqual(first[1].read_bytes(), first_setup)
         self.assertTrue(second[2].is_file())
 

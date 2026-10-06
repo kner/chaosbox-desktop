@@ -13,8 +13,8 @@ def install(home=None, credentials=True, installdir=None):
     home = Path.home() if home is None else Path(home)
     source = Path(__file__).resolve().parent
     settings = core.Settings(installdir if installdir is not None else home / "ChaosBox")
-    # Reserve a new installation directory before changing any installed files.
-    settings.root.mkdir(parents=True, exist_ok=False)
+    seed_assets = not settings.path.exists()
+    settings.root.mkdir(parents=True, exist_ok=True)
     settings.ensure(default_box="ChaosBox")
     shared = home / ".local/share/chaosbox/desktop"
     shared.mkdir(parents=True, exist_ok=True)
@@ -45,8 +45,14 @@ def install(home=None, credentials=True, installdir=None):
         for directory in (profile.images, profile.data, profile.index):
             directory.mkdir(parents=True, exist_ok=True)
     first = settings.profiles[0]
-    for name, destination in (("JPG", first.images), ("TXT", first.data)):
-        shutil.copytree(source / "assets" / name, destination, dirs_exist_ok=True)
+    if seed_assets:
+        def copy_missing(source_file, destination_file):
+            if not Path(destination_file).exists():
+                shutil.copy2(source_file, destination_file)
+            return destination_file
+        for name, destination in (("JPG", first.images), ("TXT", first.data)):
+            shutil.copytree(source / "assets" / name, destination, dirs_exist_ok=True,
+                            copy_function=copy_missing)
     if credentials:
         credential_dir = state / "credentials"
         credential_dir.mkdir(mode=0o700, exist_ok=True)
@@ -76,7 +82,7 @@ if __name__ == "__main__":
     try:
         target, setup, desktop = install(installdir=args.installdir)
     except FileExistsError as error:
-        parser.exit(1, f"Installation aborted: target already exists: {error.filename}\n")
+        parser.exit(1, f"Installation aborted: a required directory is occupied by a file: {error.filename}\n")
     print(f"Updated shared app for all boxes: {target.parent.parent / 'desktop'}\n"
           f"Setup: {setup}\nApplication menu: {desktop}\n"
           "Reopen running boxes to use the new version.")

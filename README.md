@@ -33,9 +33,10 @@ Each installation gets its own application menu entry; all boxes use one shared 
 ./install-desktop.sh --installdir=~/cb2
 ```
 
-The installer aborts with an error message if the target installation directory
-already exists, including an empty directory. Existing files remain unchanged.
-Only the first box in the setup receives the contents of `assets/JPG` and
+The installer can be run again with an existing installation directory to update
+the application and launchers while preserving setup, media and records.
+An existing empty directory is also accepted. When creating a new setup,
+only the first box receives missing files from `assets/JPG` and
 `assets/TXT` in its respective folders, including subdirectories. Other boxes
 start empty. If the setup contains no `[Box]` section, the installer adds
 `[Box]` with `Titel=ChaosBox` and copies the assets there.
@@ -47,7 +48,7 @@ are stored under `~/.local/share/chaosbox/desktop`; box launchers are stored und
 menu entries are `~/.local/share/applications/<installation-id>.desktop`.
 The ID and window class depend on the full installation path, so directories
 with the same final name still have distinct launchers. Run the installer once
-with a new box path to update the application for **all installed boxes**, preserving
+with an existing or new box path to update the application for **all installed boxes**, preserving
 each box's setup and data. Existing per-box launchers are migrated automatically.
 All boxes use the new version on their next launch; reopen any running windows.
 No administrator privileges are needed when dependencies are already present.
