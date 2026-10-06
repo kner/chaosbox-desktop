@@ -206,6 +206,9 @@ names are retained without overwriting files.
 - JPG metadata uses EXIF `UserComment`. MP4 metadata uses ItemList `Comment`;
   existing Keys comments are synchronized. JSON strings use the Android field
   names, including `anzahl` and `package`.
+- Legacy text comments recognize `Kategorie:` or the second `|`-separated
+  field (`Anzahl | Kategorie | ...`). JPG comments are read with ExifTool `-b`
+  to preserve line breaks.
 - JSON records omit `modified`. Media `created` uses EXIF DateTimeOriginal,
   then CreateDate (also for MP4), then a date in the filename (for example
   `IMG_20240102_030405.jpg` or `2024-01-02_03-04-05.png`). Invalid dates are

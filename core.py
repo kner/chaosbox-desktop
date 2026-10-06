@@ -641,7 +641,11 @@ def parse_metadata(raw):
             raise ValueError("Not an object")
         return normalized(data)
     except (ValueError, TypeError):
-        return normalized({"comment": raw})
+        # Legacy comments use Anzahl | Kategorie | ... or a labelled category.
+        labelled = re.search(r"(?:^|[|\r\n])[^\S\r\n]*Kategorie:[^\S\r\n]*([^|\r\n]*)", raw, re.IGNORECASE)
+        fields = raw.split("|")
+        category = labelled.group(1).strip() if labelled else fields[1].strip() if len(fields) > 1 else ""
+        return normalized({"comment": raw, "category": category})
 
 
 def run_tool(*arguments, timeout=300):
@@ -660,7 +664,7 @@ def read_user_comment(path):
         item = tags[0]
         raw = next((item[key] for key in ("ItemList:Comment", "Keys:Comment", "UserData:Comment") if key in item), "")
     else:
-        raw = run_tool("exiftool", "-s3", "-EXIF:UserComment", str(path)).decode("utf-8").rstrip("\r\n")
+        raw = run_tool("exiftool", "-b", "-EXIF:UserComment", str(path)).decode("utf-8")
     return raw
 
 

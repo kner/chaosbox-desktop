@@ -17,6 +17,26 @@ import core
 import install
 
 
+class LegacyMetadataTests(unittest.TestCase):
+    def test_category_from_label_or_second_pipe_field(self):
+        for raw, expected in (("3 | Elektronik | Sensor", "Elektronik"),
+                              ("Anzahl: 3\nKategorie: Mechanik\nKommentar: Test", "Mechanik"),
+                              ("3 | Kategorie: Dichtung | Test", "Dichtung"),
+                              ("3 | Ersatz | Kategorie: Pneumatik\nTest", "Pneumatik"),
+                              ("Kategorie:\nKommentar: Test", ""),
+                              ("Freier\nKommentar", "")):
+            with self.subTest(raw=raw):
+                data = core.parse_metadata(raw)
+                self.assertEqual(data["category"], expected)
+                self.assertEqual(data["comment"], raw)
+
+    def test_binary_comment_preserves_line_breaks(self):
+        path = Path("photo.jpg").resolve()
+        with patch("core.run_tool", return_value=b"3 | Tools | First\nsecond\n") as run:
+            self.assertEqual(core.read_user_comment(path), "3 | Tools | First\nsecond\n")
+        run.assert_called_once_with("exiftool", "-b", "-EXIF:UserComment", str(path))
+
+
 class DesktopTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="chaosbox-desktop-test-")
