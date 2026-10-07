@@ -18,6 +18,14 @@ import install
 
 
 class LegacyMetadataTests(unittest.TestCase):
+    def test_category_search_is_literal_case_insensitive_prefix(self):
+        entries = [core.Entry(Path(str(i)), {"category": category, "comment": "Rotor"}, False)
+                   for i, category in enumerate(("Relais", "TRANSISTOR", "r[ot", "Sensor"))]
+        self.assertEqual(core.search(entries, core.compile_query({"category": "r"})),
+                         [entries[0], entries[2]])
+        self.assertEqual(core.search(entries, core.compile_query({"category": "R["})), [entries[2]])
+        self.assertEqual(core.search(entries, core.compile_query({"category": ".*"})), [])
+
     def test_category_from_label_or_second_pipe_field(self):
         for raw, expected in (("3 | Elektronik | Sensor", "Elektronik"),
                               ("Anzahl: 3\nKategorie: Mechanik\nKommentar: Test", "Mechanik"),
@@ -27,7 +35,7 @@ class LegacyMetadataTests(unittest.TestCase):
                               ("Freier\nKommentar", "")):
             with self.subTest(raw=raw):
                 data = core.parse_metadata(raw)
-                self.assertEqual(data["category"], expected)
+                self.assertEqual(data["category"], expected.upper())
                 self.assertEqual(data["comment"], raw)
 
     def test_binary_comment_preserves_line_breaks(self):
@@ -67,8 +75,8 @@ class DesktopTests(unittest.TestCase):
         self.assertIn("Analysiere", self.settings.snippets["chatgpt"])
         before = self.settings.path.read_text()
         self.settings.remember_category(self.profile, "New category, HEIZUNG, new CATEGORY")
-        self.assertEqual(self.settings.profile("Chaosbox").categories.count("New category"), 1)
-        self.assertNotIn("New category", self.settings.profile("Bilderbox").categories)
+        self.assertEqual(self.settings.profile("Chaosbox").categories.count("NEW CATEGORY"), 1)
+        self.assertNotIn("NEW CATEGORY", self.settings.profile("Bilderbox").categories)
         self.assertEqual(self.settings.snippets["chatgpt"], core.Settings(self.root, self.root / "unused").parse(before)[3]["chatgpt"])
         unchanged = self.settings.path.read_text()
         self.settings.remember_category(self.profile, "NEW CATEGORY")
@@ -108,7 +116,7 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(grandchild.labels, child.labels)
         self.assertEqual(self.settings.image_width, 800)
         sibling = self.settings.profile("Bilderbox/Familie")
-        self.assertEqual(sibling.categories, ["Local"])
+        self.assertEqual(sibling.categories, ["LOCAL"])
         self.assertEqual(self.settings.image_width, 1200)
         self.assertEqual(self.settings.snippets["Local"], "parent")
         self.settings.profile("Chaosbox")
@@ -127,10 +135,10 @@ class DesktopTests(unittest.TestCase):
         self.settings.remember_category(profile, "New local")
         self.assertEqual(self.settings.path.read_bytes(), original)
         self.assertEqual(set(core.sections(local.read_text())["App"]), {"kategorie", "imagewidth"})
-        self.assertIn("New local", self.settings.profile("Bilderbox/Child").categories)
+        self.assertIn("NEW LOCAL", self.settings.profile("Bilderbox/Child").categories)
         self.settings.remember_category(self.settings.profile("Bilderbox/Child"), "Child only")
-        self.assertNotIn("Child only", self.settings.profile("Bilderbox").categories)
-        self.assertIn("Child only", self.settings.profile("Bilderbox/Child").categories)
+        self.assertNotIn("CHILD ONLY", self.settings.profile("Bilderbox").categories)
+        self.assertIn("CHILD ONLY", self.settings.profile("Bilderbox/Child").categories)
         before = local.read_bytes()
         with self.assertRaises(ValueError):
             self.settings.save_text('[Poster]\nPOSTER-COLS=0\n', local)
@@ -288,7 +296,7 @@ class DesktopTests(unittest.TestCase):
         moved = core.save_media(source, self.profile, self.record, 3000)
         self.assertEqual(moved, self.profile.images / "elektronik" / source.name)
         self.assertFalse(source.exists())
-        self.assertEqual(core.read_metadata(moved)["category"], "Elektronik")
+        self.assertEqual(core.read_metadata(moved)["category"], "ELEKTRONIK")
         entries = core.update_index(self.profile, [source, moved])
         self.assertEqual([entry.source for entry in entries], [moved])
         cleared = core.save_media(moved, self.profile, dict(self.record, category=""), 3000)
@@ -335,7 +343,7 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(result[0], failure.selection[0])
         self.assertEqual(len(core.files(self.profile.images, core.MEDIA)), 2)
         entries = core.build_index(self.profile)
-        self.assertEqual(len(core.search(entries, core.compile_query({"category": "grüße", "device": "sensor"}))), 2)
+        self.assertEqual(len(core.search(entries, core.compile_query({"category": "elek", "device": "sensor"}))), 2)
         self.assertFalse(core.search(entries, core.compile_query({"comment": "absent"})))
         self.assertEqual(len(core.search(entries, core.compile_query({"comment": "ALIAS"}))), 2)
         index = self.profile.index / "records.json"
@@ -484,7 +492,7 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(setup.read_bytes(), setup_before)
         self.assertEqual(shared_app.read_bytes(), Path(install.__file__).with_name("app.py").read_bytes())
         settings.reload()
-        self.assertIn("Keep this", settings.profile(settings.default).categories)
+        self.assertIn("KEEP THIS", settings.profile(settings.default).categories)
         self.assertFalse((home / ".config/chaosbox/credentials/android_copy").exists())
         self.assertIn("Exec=\"", launcher.read_text())
 
@@ -520,7 +528,7 @@ class DesktopTests(unittest.TestCase):
         settings.reload()
         self.assertEqual([profile.id for profile in settings.profiles], ["ChaosBox"])
         self.assertEqual(settings.image_width, 2048)
-        self.assertEqual(settings.profiles[0].categories, ["Example"])
+        self.assertEqual(settings.profiles[0].categories, ["EXAMPLE"])
         self.assertTrue(list(settings.profiles[0].images.iterdir()))
         self.assertTrue(list(settings.profiles[0].data.iterdir()))
         self.assertIn("[SSH]", setup.read_text())

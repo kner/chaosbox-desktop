@@ -17,6 +17,41 @@ import core
 import app as desktop_app
 
 
+class FieldNavigationTests(unittest.TestCase):
+    def test_category_enter_accepts_prefix_and_moves_to_package(self):
+        app = App.__new__(App)
+        category = Mock()
+        category.get.return_value = "r"
+        category.cget.return_value = ("TRANSISTOR", "RELAIS", "ROTOR")
+        app.field_widgets = {"category": category}
+        app.next_field = Mock()
+        self.assertEqual(app.field_enter("category"), "break")
+        category.current.assert_called_once_with(1)
+        app.next_field.assert_called_once_with("category")
+
+    def test_category_enter_keeps_unmatched_new_category(self):
+        app = App.__new__(App)
+        category = Mock()
+        category.get.return_value = "R["
+        category.cget.return_value = ("RELAIS",)
+        app.field_widgets = {"category": category}
+        app.next_field = Mock()
+        app.field_enter("category")
+        category.current.assert_not_called()
+        app.next_field.assert_called_once_with("category")
+
+    def test_navigation_skips_hidden_fields(self):
+        app = App.__new__(App)
+        package, comment = Mock(), Mock()
+        package.winfo_viewable.return_value = False
+        comment.winfo_viewable.return_value = True
+        comment.cget.return_value = "normal"
+        app.field_widgets = {"package": package, "comment": comment}
+        app.next_field("category")
+        package.focus_set.assert_not_called()
+        comment.focus_set.assert_called_once_with()
+
+
 class InstallationCliTests(unittest.TestCase):
     def test_default_and_explicit_installations(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -198,12 +233,12 @@ class UserCommentTests(unittest.TestCase):
                           "device": "Not displayed"}, ensure_ascii=False)
         with patch("core.run_tool", return_value=raw.encode("utf-8")):
             caption = user_comment_preview(Path("photo.jpg"))
-            self.assertEqual(caption, ("A11 | Elektronik | Grüße 🎬 " + "ä" * 70)[:60])
+            self.assertEqual(caption, ("A11 | ELEKTRONIK | Grüße 🎬 " + "ä" * 70)[:60])
             self.assertEqual(len(caption), 60)
 
     def test_empty_and_multiline_comments(self):
         for raw, expected in (("", ""), ("First\nsecond\tthird", " |  | First second third"),
-                              ('{"box":"A11","category":"Tools"}', "A11 | Tools | "),
+                              ('{"box":"A11","category":"Tools"}', "A11 | TOOLS | "),
                               ('{"box":"A11","comment":"Note"}', "A11 |  | Note")):
             with self.subTest(raw=raw), patch("core.read_user_comment", return_value=raw):
                 self.assertEqual(user_comment_preview(Path("photo.jpg")), expected)

@@ -432,6 +432,8 @@ class MediaGrid(ttk.Frame):
 
 
 class App:
+    FORM_FIELDS = ("box", "anzahl", "device", "alias", "category", "package", "comment")
+
     def __init__(self, root, settings, newindex=False):
         self.root, self.settings = root, settings
         self.newindex = newindex
@@ -453,6 +455,7 @@ class App:
         self.upload_window, self.upload_text = None, None
         self.controls, self.field_widgets, self.rows = [], {}, []
         self.variables = {key: tk.StringVar() for key in core.FIELDS if key != "comment"}
+        self.variables["category"].trace_add("write", self.uppercase_category)
         self.state_file = settings.state_dir / "desktop-state.json"
         try:
             state = json.loads(self.state_file.read_text())
@@ -484,6 +487,12 @@ class App:
         self.root.after(80, self.drain)
         self.root.after(150, self.initialize)
 
+    def uppercase_category(self, *_):
+        variable = self.variables["category"]
+        value = variable.get()
+        if value != value.upper():
+            variable.set(value.upper())
+
     @staticmethod
     def select_all_text(event):
         widget = event.widget
@@ -500,6 +509,58 @@ class App:
         button.pack(**pack)
         self.controls.append(button)
         return button
+
+    @staticmethod
+    def combobox_match(widget, prefix=False):
+        query = widget.get().casefold()
+        values = widget.cget("values")
+        if not query:
+            return
+        index = next((i for i, value in enumerate(values) if str(value).casefold() == query), None)
+        if index is None:
+            index = next((i for i, value in enumerate(values)
+                          if (str(value).casefold().startswith(query) if prefix else
+                              query in str(value).casefold())), None)
+        if index is None:
+            return
+        return index
+
+    @staticmethod
+    def find_combobox_entry(widget, prefix=False):
+        index = App.combobox_match(widget, prefix)
+        if index is None:
+            return
+
+        def highlight():
+            if not widget.winfo_exists():
+                return
+            popdown = widget.tk.call("ttk::combobox::PopdownWindow", str(widget))
+            listing = f"{popdown}.f.l"
+            widget.tk.call(listing, "selection", "clear", 0, "end")
+            widget.tk.call(listing, "selection", "set", index)
+            widget.tk.call(listing, "activate", index)
+            widget.tk.call(listing, "see", index)
+
+        # Tk fills the dropdown after postcommand; select after that step.
+        widget.after_idle(highlight)
+
+    def next_field(self, key):
+        position = self.FORM_FIELDS.index(key)
+        for next_key in self.FORM_FIELDS[position + 1:]:
+            widget = self.field_widgets[next_key]
+            if widget.winfo_viewable() and str(widget.cget("state")) != "disabled":
+                widget.focus_set()
+                return
+        self.field_widgets[key].tk_focusNext().focus_set()
+
+    def field_enter(self, key):
+        if key == "category":
+            widget = self.field_widgets[key]
+            index = self.combobox_match(widget, prefix=True)
+            if index is not None:
+                widget.current(index)
+        self.next_field(key)
+        return "break"
 
     def build_ui(self):
         header = ttk.Frame(self.root, padding=(18, 14))
@@ -536,7 +597,8 @@ class App:
         form_id = form_canvas.create_window(0, 0, window=form, anchor="nw")
         form.bind("<Configure>", lambda e: form_canvas.configure(scrollregion=form_canvas.bbox("all")))
         form_canvas.bind("<Configure>", lambda e: form_canvas.itemconfigure(form_id, width=e.width))
-        for position, key in enumerate(core.FIELDS):
+        for key in self.FORM_FIELDS:
+            position = core.FIELDS.index(key)
             row = ttk.Frame(form)
             row.pack(fill="x", pady=(0, 13))
             label = ttk.Label(row, text=core.LABELS[position])
@@ -546,9 +608,13 @@ class App:
                 widget.pack(fill="both", expand=True)
             elif key in ("category", "device"):
                 widget = ttk.Combobox(row, textvariable=self.variables[key], font=("Sans", 11))
+                widget.configure(postcommand=lambda widget=widget, key=key:
+                                 self.find_combobox_entry(widget, prefix=key == "category"))
                 widget.pack(fill="x", ipady=4)
                 if key == "device":
                     widget.bind("<<ComboboxSelected>>", self.device_selected)
+                else:
+                    widget.bind("<<ComboboxSelected>>", lambda e: self.next_field("category"))
             elif key == "anzahl":
                 quantity = ttk.Frame(row)
                 quantity.pack(fill="x")
@@ -561,6 +627,10 @@ class App:
                 widget.pack(fill="x", ipady=4)
             self.rows.append((row, label))
             self.field_widgets[key] = widget
+            widget.bind("<Return>", lambda e, key=key: self.field_enter(key))
+            widget.bind("<KP_Enter>", lambda e, key=key: self.field_enter(key))
+            if key == "comment":
+                widget.bind("<Shift-Return>", lambda e: None)
         right = ttk.Frame(pane)
         pane.add(right, weight=1)
         self.selected = tk.StringVar(value="No media or record selected")
@@ -591,12 +661,13 @@ class App:
         self.profile_picker.configure(values=[p.id for p in self.settings.profiles])
         self.profile_var.set(self.profile.id)
         self.root.title(self.settings.title)
-        for i, (row, label) in enumerate(self.rows):
+        for key, (row, label) in zip(self.FORM_FIELDS, self.rows):
+            i = core.FIELDS.index(key)
             label.configure(text=self.profile.labels[i])
             row.pack_forget()
             if self.profile.labels[i]:
                 row.pack(fill="x", pady=(0, 13))
-        self.field_widgets["category"].configure(values=[] if self.search_mode else self.profile.categories)
+        self.field_widgets["category"].configure(values=sorted(self.profile.categories, key=str.casefold))
         self.update_controls()
 
     def update_controls(self):
@@ -695,7 +766,8 @@ class App:
 
     def fill(self, values):
         for key, variable in self.variables.items():
-            variable.set(str(values.get(key, "")))
+            value = str(values.get(key, ""))
+            variable.set(value.upper() if key == "category" else value)
         self.field_widgets["comment"].delete("1.0", "end")
         self.field_widgets["comment"].insert("1.0", str(values.get("comment", "")))
         self.created = values.get("created", "")
@@ -1083,10 +1155,9 @@ class App:
             self.before_search = self.values()
             self.search_mode = True
             self.fill({})
-            self.field_widgets["category"].configure(values=[])
             self.field_widgets["device"].configure(values=[])
             self.update_controls()
-            self.status.set("Enter regular expressions; fields are combined with AND. Escape cancels.")
+            self.status.set("Category: literal prefix; other fields: regular expressions. AND combined. Escape cancels.")
             return
         self.run_search()
 
@@ -1160,7 +1231,8 @@ class App:
         dialog.geometry("1050x500")
         dialog.transient(self.root)
         dialog.grab_set()
-        fields = [(key, label) for key, label in zip(core.FIELDS, self.profile.labels) if label][:3]
+        fields = [("anzahl", "Quantity"), ("device", "Device"), ("category", "Category"),
+                  ("package", "Package")]
         columns = [key for key, _ in fields] + ["path"]
         table = ttk.Treeview(dialog, columns=columns, show="headings", selectmode="browse")
         for key, label in fields + [("path", "Path")]:

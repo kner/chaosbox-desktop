@@ -222,8 +222,9 @@ names are retained without overwriting files.
   record through Device; profiles with hidden Device use a record chooser.
   Saving a selected record preserves unknown fields and its creation date.
 - **Search** first enters search mode; pressing it again runs the query. Queries
-  use case-insensitive Python regular expressions. Nonempty fields are combined
-  with AND. Category and Device also search Comment; Comment and Alias search
+  match Category by a case-insensitive literal prefix; other fields use
+  case-insensitive Python regular expressions. Categories are stored in uppercase.
+  Nonempty fields are combined with AND. Device also searches Comment; Comment and Alias search
   Device, Alias and Comment. Python-specific regex syntax can differ from Java.
   **Clear all** clears the form and exits search mode; Escape restores the form.
   **Repeat search** reuses the last query.

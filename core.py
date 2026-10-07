@@ -95,7 +95,7 @@ def sections(text):
 def unique_categories(text):
     seen, result = set(), []
     for item in text.split(","):
-        item = item.strip()
+        item = item.strip().upper()
         if item and item.casefold() not in seen:
             seen.add(item.casefold())
             result.append(item)
@@ -618,7 +618,7 @@ def normalized(record):
     category = next((v for k, v in data.items() if k.casefold() in ("category", "kategorie")), "")
     if isinstance(category, list):
         category = ", ".join(str(v) for v in category)
-    data["category"] = str(category or "")
+    data["category"] = str(category or "").upper()
     for field in FIELDS:
         data.setdefault(field, "")
     return data
@@ -706,6 +706,7 @@ def media_created(path, existing=None):
 
 def validate_record(values):
     data = dict(values)
+    data["category"] = str(data.get("category", "") or "").upper()
     try:
         quantity = str(data.get("anzahl", "")).strip() or "0"
         if not re.fullmatch(r"[0-9]+", quantity) or int(quantity) > 2147483647:
@@ -740,6 +741,7 @@ def save_media(source, profile, metadata, image_width):
     video = source.suffix.lower() == ".mp4"
     original = source.resolve()
     metadata = dict(metadata)
+    metadata["category"] = str(metadata.get("category", "") or "").upper()
     metadata.pop("modified", None)
     metadata["created"] = read_metadata(original)["created"]
     editing = within(original, profile.images) and source.suffix.lower() in MEDIA
@@ -1003,6 +1005,9 @@ def compile_query(values):
     result = {}
     for key, value in values.items():
         if value:
+            if key == "category":
+                result[key] = str(value).casefold()
+                continue
             try:
                 result[key] = re.compile(value, re.IGNORECASE)
             except re.error as error:
@@ -1013,7 +1018,11 @@ def compile_query(values):
 def search(entries, patterns):
     def match(entry):
         for field, pattern in patterns.items():
-            targets = ("device", "alias", "comment") if field in ("alias", "comment") else (field, "comment") if field in ("category", "device") else (field,)
+            if field == "category":
+                if not str(entry.data.get(field, "")).casefold().startswith(pattern):
+                    return False
+                continue
+            targets = ("device", "alias", "comment") if field in ("alias", "comment") else (field, "comment") if field == "device" else (field,)
             if not any(pattern.search(str(entry.data.get(key, ""))) for key in targets):
                 return False
         return True
