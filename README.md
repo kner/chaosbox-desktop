@@ -295,9 +295,11 @@ names are retained without overwriting files.
 
 **Upload saved files** sends saved data; it never runs automatically. Host, port,
 user, destinations, key file and known-hosts file are configured in `[SSH]`.
-The local installer reuses the project's existing Android key and known-hosts
-files when available, placing private copies in the credentials directory.
-Existing credential files are retained. Keys are never included in desktop source
+The local installer generates a separate Ed25519 key pair for each installation
+in `.state/credentials/id_ed25519` and preserves it during updates. It migrates
+the default Android key path to this installation's new key, retaining the old file.
+Authorize `id_ed25519.pub` on the SSH server before uploading. The installer
+copies the project's known-hosts file when available. Keys are never included in desktop source
 packages. Connections require a known host key and public-key authentication.
 
 As with Android, only profile paths inside `ChaosBox` are eligible for upload;

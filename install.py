@@ -4,6 +4,7 @@ import argparse
 import os
 import shlex
 import shutil
+import subprocess
 from pathlib import Path
 
 import core
@@ -57,9 +58,20 @@ def install(home=None, credentials=True, installdir=None):
         credential_dir = state / "credentials"
         credential_dir.mkdir(mode=0o700, exist_ok=True)
         os.chmod(credential_dir, 0o700)
-        # Reuse the same local SSH credentials as Android; never include them in desktop packages.
+        # Each installation owns its key; upgrades keep the existing key pair.
+        key = credential_dir / "id_ed25519"
+        if not key.exists():
+            subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "",
+                            "-C", settings.app_id, "-f", str(key)], check=True)
+        os.chmod(key, 0o600)
+        setup_text = settings.path.read_text(encoding="utf-8")
+        legacy_key = str(credential_dir / "android_copy")
+        if legacy_key in setup_text:
+            core.atomic_write(settings.path, setup_text.replace(legacy_key, str(key)))
+            settings.reload()
+        # Host identities may be shared; private authentication keys may not.
         assets = source.parent / "app/src/main/assets"
-        for name in ("android_copy", "known_hosts"):
+        for name in ("known_hosts",):
             destination = credential_dir / name
             if not destination.exists() and (assets / name).is_file():
                 core.atomic_write(destination, (assets / name).read_bytes(), mode=0o600)

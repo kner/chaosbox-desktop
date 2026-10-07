@@ -465,6 +465,11 @@ class App:
         style.configure("TButton", padding=(10, 7))
         style.configure("Title.TLabel", font=("Sans", 18, "bold"))
         style.configure("TLabel", font=("Sans", 11))
+        for widget_class in ("TEntry", "TCombobox"):
+            search_style = f"Search.{widget_class}"
+            style.configure(search_style, fieldbackground="#eeedda")
+            style.map(search_style, fieldbackground=[("disabled", "#eeedda"),
+                                                     ("readonly", "#eeedda")])
         self.build_ui()
         self.refresh_profile()
         self.clear()
@@ -599,8 +604,13 @@ class App:
             control.configure(state="disabled" if self.busy else "normal")
         if not self.busy:
             self.profile_picker.configure(state="readonly")
-        for widget in self.field_widgets.values():
+        for key, widget in self.field_widgets.items():
             widget.configure(state="disabled" if self.busy else "normal")
+            if key == "comment":
+                widget.configure(background="#eeedda" if self.search_mode else "#ffffff")
+            else:
+                widget_class = "TCombobox" if key in ("category", "device") else "TEntry"
+                widget.configure(style=f"Search.{widget_class}" if self.search_mode else widget_class)
         if self.search_mode:
             for button in (self.save_button, self.open_json_button, self.open_media_button):
                 button.configure(state="disabled")

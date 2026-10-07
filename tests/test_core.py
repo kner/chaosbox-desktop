@@ -446,6 +446,26 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(core.related_media(entries[0], entries), saved)
         self.assertIsNotNone(core.load_preview(saved))
 
+    def test_install_uses_separate_keys_and_preserves_them_on_update(self):
+        home = self.root / "key-home"
+        keys = []
+        for name in ("first", "second"):
+            destination = home / name
+            install.install(home, installdir=destination)
+            settings = core.Settings(destination)
+            settings.reload()
+            key = destination / ".state/credentials/id_ed25519"
+            self.assertEqual(settings.ssh["keyfile"], str(key))
+            self.assertEqual(key.stat().st_mode & 0o777, 0o600)
+            public = key.with_suffix(".pub").read_bytes()
+            self.assertTrue(public.startswith(b"ssh-ed25519 "))
+            original = key.read_bytes()
+            install.install(home, installdir=destination)
+            self.assertEqual(key.read_bytes(), original)
+            self.assertEqual(key.with_suffix(".pub").read_bytes(), public)
+            keys.append(public.split()[1])
+        self.assertNotEqual(*keys)
+
     def test_install_preserves_data_and_excludes_credentials(self):
         home = self.root / "home"
         target, setup, launcher = install.install(home, credentials=False)

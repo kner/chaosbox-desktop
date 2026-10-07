@@ -163,7 +163,7 @@ class Settings:
                 text += f"\n[Box]\nTitel={default_box}\n"
             text += ("\n[SSH]\nHost=access983197478.webspace-data.io\nPort=22\nUser=u114229695\n"
                      "ImageDestination=l1/storage/app/exif/jpg\nDataDestination=l1/storage/app/exif/data\n"
-                     f"KeyFile={self.state_dir / 'credentials/android_copy'}\n"
+                     f"KeyFile={self.state_dir / 'credentials/id_ed25519'}\n"
                      f"KnownHosts={self.state_dir / 'credentials/known_hosts'}\n")
             atomic_write(self.path, text)
         self.reload()
@@ -241,7 +241,7 @@ class Settings:
             ssh = dict(effective.get("ssh", {}))
             for key, value in dict(host="access983197478.webspace-data.io", port="22", user="u114229695",
                                    imagedestination="l1/storage/app/exif/jpg", datadestination="l1/storage/app/exif/data",
-                                   keyfile=str(self.state_dir / "credentials/android_copy"),
+                                   keyfile=str(self.state_dir / "credentials/id_ed25519"),
                                    knownhosts=str(self.state_dir / "credentials/known_hosts")).items():
                 ssh.setdefault(key, value)
             if not 1 <= int(ssh["port"]) <= 65535:
