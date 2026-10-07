@@ -70,7 +70,7 @@ For a Debian installation, use `sudo apt remove chaosbox-desktop` instead.
 
 Build an architecture-independent installer using the system Python and dpkg:
 
-```bash
+```bashssh-copy-id -i ~/ChaosBox/.state/credentials/id_ed25519.pub kner
 cd desktop
 /usr/bin/python3 build_deb.py
 sudo apt install ./dist/chaosbox-desktop_1.0.2_all.deb
@@ -303,6 +303,8 @@ Authorize `id_ed25519.pub` on the SSH server before uploading. The installer
 copies the project's known-hosts file when available. Keys are never included in desktop source
 packages. Connections require a known host key and public-key authentication.
 
+ssh-copy-id -i ~/ChaosBox/.state/credentials/id_ed25519.pub kner
+
 As with Android, only profile paths inside `ChaosBox` are eligible for upload;
 the default Bilderbox profile is excluded. Relative subdirectories are retained.
 Files are sent when missing remotely or locally newer, using a temporary remote
@@ -324,3 +326,4 @@ They do not connect to the live SSH server.
 # chaosboxDesktop
 # chaosboxDesktop
 # chaosbox-desktop
+===
