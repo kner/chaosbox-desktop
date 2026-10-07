@@ -1,13 +1,22 @@
 Analysiere die technischen Bauteile auf dem Bild. Fasse gleiche Bauteile zusammen und gib pro Bauteiltyp genau eine Zeile aus:
-Anzahl | Bauteil | Kategorie | Kurzbeschreibung und am Ende der Zeile ein Zeilenumbruch
+Anzahl | Kategorie | Bauteil | Kurzbeschreibung und am Ende der Zeile ein Zeilenumbruch
 Vorgaben:
 - Benenne das Bauteil möglichst genau anhand sichtbarer Merkmale und Beschriftungen.
-- Wähle eine Kategorie
+- Wähle eine Kategorie Stufe1/Stufe2 z.B: Speicher/SSD
 - Zähle nur sichtbare, eindeutig unterscheidbare Stücke. Bei Unsicherheit schreibe  "?"
 - Beschreibe Bauform, lesbare Kennzeichnung und erkennbare Eigenschaften in höchstens 12 Wörtern.
 - Erfinde keine Typnummern, technischen Werte oder Funktionen. Kennzeichne unsichere Zuordnungen mit „???“.
 - Gib ausschließlich die Ergebniszeilen aus, ohne Einleitung
 - keine metainformationen wie z.B. handschriftlich überklebt, oder Beschriftung:
 - keine Beschreibung der Gehäuseform wo es irrelevant ist
+- Zeilenumbruch für exiftool maskieren
+- zeige auch die Dimensionen, wenn ein Maßstab abgebildet ist
+- Die gewonnenen Informationen sollen in den Exif UserComment gespeichert werden.
 - keine Überprüfung des Ergebnisses
+- das Bild mit dem UserCommnet abspeichern
 - Sicherung des Originals mit Extension .jpg_original
+
+
+
+Pfad in der Anzeige kürzen
+BIldauswahl für Einzelbilder auch durch Doppelklick

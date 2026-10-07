@@ -471,10 +471,24 @@ class App:
         self.root.bind("<Control-s>", lambda e: self.save())
         self.root.bind("<Control-o>", lambda e: self.choose_media())
         self.root.bind("<Control-f>", lambda e: self.search_clicked())
+        for widget_class in ("Text", "Entry", "TEntry", "TCombobox", "Spinbox", "TSpinbox"):
+            for shortcut in ("<Control-a>", "<Control-A>"):
+                self.root.bind_class(widget_class, shortcut, self.select_all_text)
         self.root.bind("<Escape>", lambda e: self.cancel_search())
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.after(80, self.drain)
         self.root.after(150, self.initialize)
+
+    @staticmethod
+    def select_all_text(event):
+        widget = event.widget
+        if isinstance(widget, tk.Text):
+            widget.tag_add("sel", "1.0", "end-1c")
+            widget.mark_set("insert", "end-1c")
+        else:
+            widget.selection_range(0, "end")
+            widget.icursor("end")
+        return "break"
 
     def button(self, parent, text, command, **pack):
         button = ttk.Button(parent, text=text, command=command)
