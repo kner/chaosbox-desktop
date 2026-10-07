@@ -503,7 +503,7 @@ class App:
         self.repeat_button = self.button(actions, "Repeat search", self.repeat_search, side="left", padx=6)
         self.button(actions, "Clear all", self.clear, side="left", padx=6)
         self.button(actions, "TXT", self.snippets_dialog, side="left", padx=6)
-        self.cancel_search_button = self.button(actions, "Cancel search", self.cancel_search, side="left", padx=6)
+        self.delete_button = self.button(actions, "Del", self.delete_current, side="left", padx=6)
         pane = ttk.Panedwindow(self.root, orient="horizontal")
         pane.pack(fill="both", expand=True, padx=18, pady=(0, 10))
         left = ttk.Frame(pane, width=380)
@@ -590,7 +590,8 @@ class App:
         if self.search_mode:
             for button in (self.save_button, self.open_json_button, self.open_media_button):
                 button.configure(state="disabled")
-        self.cancel_search_button.configure(state="normal" if self.search_mode and not self.busy else "disabled")
+        self.delete_button.configure(state="normal" if not self.busy and not self.search_mode
+                                     and (self.media or self.record_index is not None) else "disabled")
         self.repeat_button.configure(state="normal" if self.last_search is not None and not self.busy else "disabled")
         self.search_button.configure(text="Run search" if self.search_mode else "Search")
 
@@ -1028,6 +1029,28 @@ class App:
             self.refresh_profile()
             self.error(error)
         self.task(work, done, failed)
+
+    def delete_current(self):
+        if self.busy or self.search_mode:
+            return
+        path = self.box_path if self.box_path else self.preview_path if self.media else None
+        if path is None:
+            return
+        selected = self.record_index if self.box_path else None
+        if self.box_path and selected is None:
+            return
+        def work():
+            core.delete_entry(path, selected)
+            warning = ""
+            try:
+                core.update_index(self.settings, [path], self.log)
+            except Exception as error:
+                warning = f" Search index update failed: {error}"
+            return warning
+        def done(warning):
+            self.clear()
+            self.status.set(f"Deleted: {path}" + warning)
+        self.task(work, done)
 
     def search_clicked(self):
         if self.busy:

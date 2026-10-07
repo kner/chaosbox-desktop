@@ -225,7 +225,10 @@ names are retained without overwriting files.
   use case-insensitive Python regular expressions. Nonempty fields are combined
   with AND. Category and Device also search Comment; Comment and Alias search
   Device, Alias and Comment. Python-specific regex syntax can differ from Java.
-  **Cancel search** restores the form; **Repeat search** reuses the last query.
+  **Clear all** clears the form and exits search mode; Escape restores the form.
+  **Repeat search** reuses the last query.
+- **Del** deletes the displayed media file or the current record in a JSON file
+  and updates the search index. Other JSON records are retained.
 - Double-click an image preview for full-screen viewing. Zoom using the mouse
   wheel or +/−, drag to pan, double-click for 2.5×/reset, and press Escape to close.
   Zoom reaches 8×; full-screen images are loaded up to 12000 pixels per side.

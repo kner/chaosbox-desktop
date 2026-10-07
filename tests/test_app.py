@@ -148,6 +148,50 @@ class BatchSaveConfirmationTests(unittest.TestCase):
         self.app.task.assert_called_once()
 
 
+class DeleteEntryTests(unittest.TestCase):
+    def test_json_deletes_only_selected_record(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "box.json"
+            records = [{"device": "first", "extra": 1}, {"device": "second"}, {"device": "third"}]
+            path.write_text(json.dumps(records))
+            core.delete_entry(path, 1)
+            self.assertEqual(core.load_box(path), [records[0], records[2]])
+            core.delete_entry(path, 1)
+            core.delete_entry(path, 0)
+            self.assertEqual(core.load_box(path), [])
+
+    def test_invalid_selection_preserves_json(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "box.json"
+            path.write_text('[{"device":"first"}]')
+            original = path.read_bytes()
+            with self.assertRaises(ValueError):
+                core.delete_entry(path, 2)
+            self.assertEqual(path.read_bytes(), original)
+
+    def test_deletes_displayed_media_only_and_updates_index(self):
+        with tempfile.TemporaryDirectory() as directory:
+            first, second = [Path(directory) / name for name in ("first.jpg", "second.jpg")]
+            first.touch()
+            second.touch()
+            app = App.__new__(App)
+            app.busy = app.search_mode = False
+            app.media = [first, second]
+            app.preview_path = first
+            app.box_path = app.record_index = None
+            app.settings = Mock()
+            app.log = Mock()
+            app.clear = Mock()
+            app.status = Mock()
+            app.task = lambda work, done: done(work())
+            with patch("core.update_index") as update:
+                app.delete_current()
+            self.assertFalse(first.exists())
+            self.assertTrue(second.exists())
+            update.assert_called_once_with(app.settings, [first], app.log)
+            app.clear.assert_called_once()
+
+
 class UserCommentTests(unittest.TestCase):
     def test_caption_shows_fields_in_order_and_limits_unicode_to_60_characters(self):
         raw = json.dumps({"box": "A11", "category": "Elektronik", "comment": "Grüße 🎬 " + "ä" * 70,

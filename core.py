@@ -880,6 +880,23 @@ def save_box(path, record, selected=None):
     return records, selected
 
 
+def delete_entry(path, selected=None):
+    """Delete one media file or the selected record in a JSON box."""
+    path = Path(path)
+    if path.is_symlink():
+        raise ValueError("Entry must not be a symbolic link.")
+    if selected is None:
+        if path.suffix.lower() not in IMPORTS:
+            raise ValueError("Select a media file or a JSON record.")
+        path.unlink()
+        return
+    records = load_box(path)
+    if not 0 <= selected < len(records):
+        raise ValueError("The selected record no longer exists. Reopen the box.")
+    del records[selected]
+    atomic_write(path, json.dumps(records, ensure_ascii=False, indent=2) + "\n", newer=True)
+
+
 @dataclass
 class Entry:
     source: Path
