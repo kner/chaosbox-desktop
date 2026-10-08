@@ -14,6 +14,29 @@ from app import App, MediaGrid
 
 
 class BatchMetadataTests(unittest.TestCase):
+    def test_explicit_extend_and_replace_modes(self):
+        originals = [core.normalized(dict(box=box, anzahl=count, comment=comment, device="shared"))
+                     for box, count, comment in [("A", 2, "first"), ("B", 4, "second")]]
+        baseline = core.common_metadata(originals)
+        differing = core.differing_metadata_fields(originals)
+        self.assertEqual(set(differing), {"box", "anzahl", "comment"})
+        values = dict(baseline, box="new", anzahl="3", comment="added", device="extra")
+        for original in originals:
+            extended = core.edited_metadata(original, values, baseline, mode="extend")
+            self.assertEqual(extended["box"], original["box"] + ", new")
+            self.assertEqual(extended["comment"], original["comment"] + "\nadded")
+            self.assertEqual(extended["device"], "shared, extra")
+            self.assertEqual(extended["anzahl"], original["anzahl"] + 3)
+            replaced = core.edited_metadata(original, values, baseline, mode="replace", differing_fields=differing)
+            self.assertEqual([replaced[field] for field in ("box", "anzahl", "comment", "device")],
+                             ["new", 3, "added", "extra"])
+            cleared = core.edited_metadata(original, baseline, baseline, mode="replace", differing_fields=differing)
+            self.assertEqual([cleared[field] for field in ("box", "anzahl", "comment", "device")],
+                             ["", 0, "", "shared"])
+            kept = core.edited_metadata(original, dict(baseline, device=""), baseline, mode="extend")
+            self.assertEqual(kept["device"], "shared")
+            self.assertEqual(kept["comment"], original["comment"])
+
     def test_common_values_and_append_preserve_each_record(self):
         originals = [core.normalized(dict(box=box, anzahl=count, comment=comment,
                                          device="shared", created="original", extra="keep"))
@@ -138,7 +161,7 @@ class PosterTests(unittest.TestCase):
         self.assertEqual(core.poster_caption(record), "Original")
         self.assertEqual(core.poster_caption({"box": "Title"}), "")
         before = [path.read_bytes() for path in self.paths]
-        with patch("core.read_metadata", return_value=record), \
+        with patch("core.read_metadata_batch", return_value=[record] * 3), \
              patch("core.poster_draw_text", wraps=core.poster_draw_text) as draw:
             core.create_posters(self.paths, self.profile, core.PosterSettings(1000, 200, 200, 3, 1))
         self.assertEqual(draw.call_args_list[0].args[1], ["Title"])
@@ -147,25 +170,25 @@ class PosterTests(unittest.TestCase):
 
     def test_portrait_spans_and_deferral(self):
         self.assertEqual(core.poster_pages([False, False, True, False, True], 2, 2),
-                         [[(0, 0, 0, 1), (1, 0, 1, 1), (3, 1, 0, 1)],
-                          [(2, 0, 0, 2), (4, 0, 1, 2)]])
-        cells = core.poster_grid_cells([(0, 0, 2), (0, 1, 1)], 2, 2, (0, 0, 200, 200), 10)
+                         [[(0, 0, 0, 1, 1), (1, 0, 1, 1, 1), (3, 1, 0, 1, 1)],
+                          [(2, 0, 0, 2, 1), (4, 0, 1, 2, 1)]])
+        cells = core.poster_grid_cells([(0, 0, 2, 1), (0, 1, 1, 1)], 2, 2, (0, 0, 200, 200), 10)
         self.assertEqual(cells, [(0, 0, 95, 200), (105, 0, 200, 95)])
         with self.assertRaisesRegex(ValueError, "at least 2"):
             core.poster_pages([True], 2, 1)
 
     def test_flexible_grid_expands_partial_rows_and_portrait_neighbors(self):
         bounds = (0, 0, 200, 200)
-        self.assertEqual(core.poster_flexible_cells([(0, 0, 1)], bounds, 10), [bounds])
-        self.assertEqual(core.poster_flexible_cells([(0, 0, 2)], bounds, 10), [bounds])
-        self.assertEqual(core.poster_flexible_cells([(0, 0, 1), (0, 1, 1), (1, 0, 1)], bounds, 10),
+        self.assertEqual(core.poster_flexible_cells([(0, 0, 1, 1)], bounds, 10), [bounds])
+        self.assertEqual(core.poster_flexible_cells([(0, 0, 2, 1)], bounds, 10), [bounds])
+        self.assertEqual(core.poster_flexible_cells([(0, 0, 1, 1), (0, 1, 1, 1), (1, 0, 1, 1)], bounds, 10),
                          [(0, 0, 95, 95), (105, 0, 200, 95), (0, 105, 200, 200)])
-        self.assertEqual(core.poster_flexible_cells([(0, 0, 2), (0, 1, 1)], bounds, 10),
+        self.assertEqual(core.poster_flexible_cells([(0, 0, 2, 1), (0, 1, 1, 1)], bounds, 10),
                          [(0, 0, 95, 200), (105, 0, 200, 200)])
 
     def test_flexible_final_poster_single_photo_uses_whole_area(self):
         for fixed in (True, False):
-            with self.subTest(fixed=fixed), patch("core.read_metadata", return_value={"box": "Title"}):
+            with self.subTest(fixed=fixed), patch("core.read_metadata_batch", return_value=[{"box": "Title"}] * 5):
                 outputs = core.create_posters([self.paths[0]] * 5, self.profile,
                                              core.PosterSettings(400, 100, 100, 2, 2, fixed))
             self.assertEqual(len(outputs), 2)
@@ -182,28 +205,74 @@ class PosterTests(unittest.TestCase):
         Image.new("RGB", (40, 80), "yellow").save(portrait)
         paths = self.paths[:2] + [portrait, self.paths[2]]
         records = [{"box": str(i), "comment": "Photo " + str(i)} for i in range(4)]
-        with patch("core.read_metadata", side_effect=records), \
+        with patch("core.read_metadata_batch", return_value=records), \
              patch("core.create_poster", wraps=core.create_poster) as create:
             outputs = core.create_posters(paths, self.profile, core.PosterSettings(600, 200, 100, 2, 2, False))
         self.assertEqual(len(outputs), 2)
         self.assertEqual(create.call_args_list[0].args[0], [paths[0], paths[1], paths[3]])
         self.assertEqual(create.call_args_list[1].args[0], [portrait])
         self.assertEqual([call.kwargs["title"] for call in create.call_args_list], ["0", "2"])
-        self.assertEqual(create.call_args_list[1].kwargs["placements"], [(0, 0, 2)])
+        self.assertEqual(create.call_args_list[1].kwargs["placements"], [(0, 0, 2, 1)])
         self.assertEqual(create.call_args_list[1].kwargs["metadata"][0]["comment"], "Photo 2")
 
     def test_fixed_portraits_use_one_cell_and_allow_single_row(self):
         portrait = self.root / "portrait.png"
         Image.new("RGB", (40, 80), "yellow").save(portrait)
         settings = core.PosterSettings(600, 100, 200, 2, 1, True)
-        with patch("core.read_metadata", side_effect=[{"box": str(i)} for i in range(3)]), \
+        with patch("core.read_metadata_batch", return_value=[{"box": str(i)} for i in range(3)]), \
              patch("core.create_poster", wraps=core.create_poster) as create:
             outputs = core.create_posters([portrait] * 3, self.profile, settings)
         self.assertEqual(len(outputs), 2)
-        self.assertEqual(create.call_args_list[0].kwargs["placements"], [(0, 0, 1), (0, 1, 1)])
-        self.assertEqual(create.call_args_list[1].kwargs["placements"], [(0, 0, 1)])
+        self.assertEqual(create.call_args_list[0].kwargs["placements"], [(0, 0, 1, 1), (0, 1, 1, 1)])
+        self.assertEqual(create.call_args_list[1].kwargs["placements"], [(0, 0, 1, 1)])
         self.assertEqual([call.kwargs["title"] for call in create.call_args_list], ["0", "2"])
         self.assertTrue(core.create_poster([portrait] * 2, self.profile, settings).is_file())
+
+    def test_zoom_parsing_and_grid_reservations(self):
+        for value in ("", "0", "Z=0", "1", "0.5"):
+            self.assertEqual(core.poster_zoom({"anzahl": value}), 1)
+        self.assertEqual(core.poster_zoom({"anzahl": "Z=2,5"}), 2.5)
+        for value in ("bad", "-1", "nan", "inf"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                core.poster_zoom({"anzahl": value})
+        pages = core.poster_pages([False] * 4, 3, 2, zooms=[3, 1, 1, 1],
+                                  aspect_ratios=[3, 1, 1, 1])
+        self.assertEqual(pages, [[(0, 0, 0, 1, 3), (1, 1, 0, 1, 1),
+                                  (2, 1, 1, 1, 1), (3, 1, 2, 1, 1)]])
+        pages = core.poster_pages([True, False], 2, 2, zooms=[2, 1])
+        self.assertEqual(pages, [[(0, 0, 0, 2, 2)], [(1, 0, 0, 1, 1)]])
+        with self.assertRaisesRegex(ValueError, "capacity"):
+            core.poster_pages([False], 2, 2, zooms=[5])
+
+    def test_zoom_deferral_leaves_free_cells_for_following_photos(self):
+        pages = core.poster_pages([False] * 4, 3, 1, zooms=[1, 3, 1, 1],
+                                  aspect_ratios=[1, 3, 1, 1])
+        self.assertEqual(pages, [[(0, 0, 0, 1, 1), (2, 0, 1, 1, 1), (3, 0, 2, 1, 1)],
+                                 [(1, 0, 0, 1, 3)]])
+
+    def test_zoom_exports_more_space_only_in_flexible_mode(self):
+        for fixed in (False, True):
+            records = [{"box": str(i), "anzahl": "Z=2" if i == 0 else "0", "comment": "Caption"}
+                       for i in range(3)]
+            with patch("core.read_metadata_batch", return_value=records), \
+                 patch("core.create_poster", wraps=core.create_poster) as create:
+                outputs = core.create_posters(self.paths, self.profile,
+                                             core.PosterSettings(600, 100, 200, 2, 1, fixed))
+            self.assertEqual(len(outputs), 2)
+            placements = create.call_args_list[0].kwargs["placements"]
+            if fixed:
+                self.assertEqual(placements, [(0, 0, 1, 1), (0, 1, 1, 1)])
+            else:
+                self.assertEqual(placements, [(0, 0, 1, 2)])
+            self.assertEqual(create.call_args_list[1].kwargs["title"], "2" if fixed else "1")
+        with patch("core.read_metadata", return_value={"anzahl": "invalid"}):
+            self.assertTrue(core.create_poster([self.paths[0]], self.profile,
+                                              core.PosterSettings(400, 100, 100, 1, 1, True)).is_file())
+        with patch("core.read_metadata", return_value={"anzahl": "2"}), \
+             patch("core.poster_flexible_cells", wraps=core.poster_flexible_cells) as cells:
+            core.create_poster([self.paths[0]], self.profile,
+                               core.PosterSettings(400, 100, 100, 2, 1, False))
+        self.assertEqual(cells.call_args.args[0], [(0, 0, 1, 2)])
 
     def test_ui_passes_title_and_only_new_additions(self):
         app = App.__new__(App)
@@ -219,11 +288,26 @@ class PosterTests(unittest.TestCase):
         self.assertEqual(create.call_args.kwargs,
                          {"field_overrides": {"category": "Different category", "comment": "Added"}, "setup_dir": self.root})
 
+    def test_poster_obeys_selected_metadata_mode(self):
+        originals = [core.normalized({"box": "A", "comment": "first"}),
+                     core.normalized({"box": "B", "comment": "second"})]
+        baseline = core.common_metadata(originals)
+        values = dict(baseline, comment="new")
+        for mode in ("extend", "replace"):
+            with self.subTest(mode=mode), patch("core.read_metadata_batch", return_value=originals), \
+                 patch("core.poster_draw_text", wraps=core.poster_draw_text) as draw:
+                core.create_posters(self.paths[:2], self.profile, core.PosterSettings(600, 200, 200, 2, 1),
+                                    field_overrides=values, field_baseline=baseline, edit_mode=mode,
+                                    differing_fields=core.differing_metadata_fields(originals))
+            self.assertEqual(draw.call_args_list[0].args[1], ["A"] if mode == "extend" else [])
+            self.assertEqual(draw.call_args_list[1].args[1], ["first", "new"] if mode == "extend" else ["new"])
+            self.assertEqual(draw.call_args_list[2].args[1], ["second", "new"] if mode == "extend" else ["new"])
+
     def test_multiple_posters_preserve_order_and_title(self):
         paths = self.paths * 3
         settings = core.PosterSettings(600, 200, 100, 2, 2)
         with patch("core.create_poster", wraps=core.create_poster) as create:
-            with patch("core.read_metadata", side_effect=[{"box": str(i)} for i in range(9)]):
+            with patch("core.read_metadata_batch", return_value=[{"box": str(i)} for i in range(9)]):
                 outputs = core.create_posters(paths, self.profile, settings)
         self.assertEqual(len(outputs), 3)
         self.assertEqual(len(set(outputs)), 3)

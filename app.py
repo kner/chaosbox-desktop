@@ -153,6 +153,31 @@ class ImageCanvas(tk.Canvas):
             self.create_text(18, 18, anchor="nw", text=f"{self.zoom:.1f}×", fill="white", font=("Sans", 12, "bold"))
 
 
+class MetadataModeDialog(simpledialog.Dialog):
+    def __init__(self, parent, labels):
+        self.labels = labels
+        super().__init__(parent, title="Mehrfachauswahl")
+
+    def body(self, master):
+        ttk.Label(master, text="Achtung, bestehende Inhalte in folgenden Feldern sind unterschiedlich:\n\n"
+                  + ", ".join(self.labels) + "\n\nSollen bestehende Inhalte gelöscht oder erweitert werden?",
+                  wraplength=520, justify="left").pack(padx=12, pady=12)
+
+    def buttonbox(self):
+        buttons = ttk.Frame(self)
+        buttons.pack(padx=12, pady=12)
+        def choose(mode):
+            self.result = mode
+            self.cancel()
+        ttk.Button(buttons, text="Erweitert – neue Inhalte anhängen",
+                   command=lambda: choose("extend")).pack(side="left", padx=4)
+        ttk.Button(buttons, text="Gelöscht – durch neue Eingaben ersetzen",
+                   command=lambda: choose("replace")).pack(side="left", padx=4)
+        ttk.Button(buttons, text="Abbrechen", command=self.cancel).pack(side="left", padx=4)
+        self.bind("<Return>", lambda event: choose("extend"))
+        self.bind("<Escape>", self.cancel)
+
+
 class MediaFolderDialog(simpledialog.Dialog):
     """Folder picker where a double-click confirms the folder immediately."""
 
@@ -236,7 +261,9 @@ class MediaGrid(ttk.Frame):
         self.comments = {}
         self.comment_future = None
         self.photos = []
+        self.photo_cache = {}
         self.worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="thumbnails")
+        self.comment_worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="thumbnail-comments")
         self.future = None
         self.pending = None
         self.canvas = tk.Canvas(self, background="#f1f5f9", highlightthickness=0,
@@ -326,6 +353,7 @@ class MediaGrid(ttk.Frame):
         top = max(0, int(canvas.canvasy(0) // self.cell_height))
         bottom = int((canvas.canvasy(0) + canvas.winfo_height()) // self.cell_height) + 1
         self.visible = list(range(top * self.columns, min(len(self.paths), bottom * self.columns)))
+        self.photo_cache = {index: cached for index, cached in self.photo_cache.items() if index in self.visible}
         if not self.paths:
             canvas.create_text(width / 2, 60, text="No media found. Use Other files … to import images.",
                                width=max(100, width - 40), fill="#475569")
@@ -341,10 +369,15 @@ class MediaGrid(ttk.Frame):
                 image = self.cache[index]
                 self.cache.move_to_end(index)
                 if image is not None:
-                    scale = self.thumb_size / max(image.size)
-                    thumbnail = image.resize((max(1, round(image.width * scale)),
-                                              max(1, round(image.height * scale))), Image.Resampling.LANCZOS)
-                    photo = ImageTk.PhotoImage(thumbnail, master=canvas)
+                    cached = self.photo_cache.get(index)
+                    if cached is not None and cached[0] is image and cached[1] == self.thumb_size:
+                        photo = cached[2]
+                    else:
+                        scale = self.thumb_size / max(image.size)
+                        thumbnail = image.resize((max(1, round(image.width * scale)),
+                                                  max(1, round(image.height * scale))), Image.Resampling.LANCZOS)
+                        photo = ImageTk.PhotoImage(thumbnail, master=canvas)
+                        self.photo_cache[index] = (image, self.thumb_size, photo)
                     self.photos.append(photo)
                     canvas.create_image(x + self.cell_width / 2, y + 8 + self.thumb_size / 2, image=photo)
                 else:
@@ -407,7 +440,7 @@ class MediaGrid(ttk.Frame):
             for index in getattr(self, "visible", []):
                 if index not in self.comments:
                     self.comment_loading = index
-                    self.comment_future = self.worker.submit(user_comment_preview, self.paths[index])
+                    self.comment_future = self.comment_worker.submit(user_comment_preview, self.paths[index])
                     break
         self.pending = self.after(60, self.poll)
 
@@ -420,10 +453,12 @@ class MediaGrid(ttk.Frame):
         # run Tk destructors there (potentially while holding executor locks).
         self.changed = None
         self.photos.clear()
+        self.photo_cache.clear()
         self.cache.clear()
         self.cache_sizes.clear()
         self.comments.clear()
         self.worker.shutdown(wait=False, cancel_futures=True)
+        self.comment_worker.shutdown(wait=False, cancel_futures=True)
         self.future = None
         self.comment_future = None
         super().destroy()
@@ -834,7 +869,12 @@ class App:
         # Keep normal window decorations: transient dialogs can lose their
         # maximize button under the Linux window manager.
         dialog.resizable(True, True)
-        dialog.grab_set()
+        # The window manager may not have mapped this Toplevel yet. Grabbing
+        # immediately can abort construction with "window not viewable".
+        def grab_when_mapped(event):
+            if event.widget is dialog and dialog.winfo_viewable():
+                dialog.grab_set()
+        dialog.bind("<Map>", grab_when_mapped)
         navigation = ttk.Frame(dialog, padding=12)
         navigation.pack(fill="x")
         def change_folder():
@@ -939,11 +979,20 @@ class App:
             self.error("Select JPG, PNG or MP4 files.")
             return
         def work():
-            records = [core.read_metadata(path) for path in dict.fromkeys(paths)]
+            records = core.read_metadata_batch(list(dict.fromkeys(paths)), self.log)
             return records, self.preview_result(paths[0])
         def done(result):
             records, (image, warning) = result
+            differing = core.differing_metadata_fields(records)
+            mode = "replace"
+            if differing:
+                labels = [self.profile.labels[core.FIELDS.index(field)] or core.LABELS[core.FIELDS.index(field)]
+                          for field in differing]
+                mode = MetadataModeDialog(self.root, labels).result
+                if mode is None:
+                    return
             self.media_records = records
+            self.media_edit_mode, self.media_differing_fields = mode, differing
             values = records[0] if len(records) == 1 else core.common_metadata(records)
             self.media_baseline = dict(values)
             self.media, self.box_path, self.records, self.record_index = list(dict.fromkeys(paths)), None, [], None
@@ -964,11 +1013,17 @@ class App:
         baseline = getattr(self, "media_baseline", {})
         overrides = {field: value for field, value in values.items()
                      if value != str(baseline.get(field, ""))}
+        edit_options = {}
+        if len(paths) > 1 and hasattr(self, "media_edit_mode"):
+            overrides = values
+            edit_options = dict(field_baseline=baseline, edit_mode=self.media_edit_mode,
+                                differing_fields=self.media_differing_fields)
         def done(outputs):
             self.status.set(f"{len(outputs)} poster(s) saved: {outputs[0].parent}")
             messagebox.showinfo("Poster", "Posters saved:\n" + "\n".join(map(str, outputs)), parent=self.root)
         self.task(lambda: core.create_posters(paths, profile, settings, self.log,
                                             field_overrides=overrides,
+                                            **edit_options,
                                             setup_dir=getattr(self.settings, "active_path", self.settings.path).parent), done)
 
     def choose_json(self):
@@ -1072,7 +1127,9 @@ class App:
                     return
                 values["box"] = name
                 self.variables["box"].set(name)
-            batch_records = ([core.edited_metadata(original, values, self.media_baseline)
+            batch_records = ([core.edited_metadata(original, values, self.media_baseline,
+                              mode=getattr(self, "media_edit_mode", "auto"),
+                              differing_fields=getattr(self, "media_differing_fields", ()))
                               for original in self.media_records] if len(self.media) > 1 else None)
             record = core.validate_record(values)
             path = self.box_path if self.box_path else self.profile.data / core.box_filename(record["box"]) if not self.media else None
@@ -1099,7 +1156,7 @@ class App:
                             self.log(f"Search index update failed: {index_error}")
                     raise
                 result = ("media", saved, self.preview_result(saved[0]),
-                          [core.read_metadata(path) for path in saved])
+                          core.read_metadata_batch(saved, self.log))
             else:
                 records, index = core.save_box(path, record, selected)
                 result = ("json", records, index)

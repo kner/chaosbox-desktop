@@ -8,7 +8,7 @@ import weakref
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from PIL import Image
+from PIL import Image, ImageTk
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import core
@@ -76,6 +76,11 @@ def main():
             assert grid.photos[0].width() == grid.thumb_size > 320
             assert abs(grid.photos[0].height() / grid.photos[0].width() - .75) < .01
             grid.set_columns(4)
+            # Toggling comments/redrawing must reuse existing Tk images.
+            with patch("app.ImageTk.PhotoImage", wraps=ImageTk.PhotoImage) as photo:
+                grid.redraw()
+                grid.redraw()
+                assert photo.call_count == 0
             grid.select_all()
             assert grid.selection() == gallery_paths
             grid.clear_selection()
@@ -123,9 +128,10 @@ def main():
             app.fill(dict(zip(core.FIELDS, ["A11", "2", "Camera", "Test alias", "Desktop test", "Grüße", "P1"])))
             app.save()
             settle()
-            saved = app.media[0]
+            assert not app.media
+            saved = core.files(app.profile.images, core.MEDIA)[0]
             assert saved != source and saved.is_file()
-            assert "Desktop test" in app.profile.categories
+            assert "DESKTOP TEST" in app.profile.categories
             assert core.read_metadata(saved)["comment"] == "Grüße"
             app.search_clicked()
             app.fill({"comment": "Camera"})
@@ -140,13 +146,18 @@ def main():
             app.fill(dict(zip(core.FIELDS, ["NewBox", "4", "New device", "", "Desktop test", "JSON", ""])))
             app.save()
             settle()
-            assert app.box_path.name == "newbox.json"
-            assert core.load_box(app.box_path)[0]["anzahl"] == 4
+            box_path = app.profile.data / "newbox.json"
+            assert app.box_path is None
+            assert core.load_box(box_path)[0]["anzahl"] == 4
+            app.load_json(box_path)
+            settle()
             app.variables["anzahl"].set("7")
             app.save()
             settle()
-            assert len(core.load_box(app.box_path)) == 1
-            assert core.load_box(app.box_path)[0]["anzahl"] == 7
+            assert len(core.load_box(box_path)) == 1
+            assert core.load_box(box_path)[0]["anzahl"] == 7
+            app.load_json(box_path)
+            settle()
             app.search_clicked()
             app.fill({"comment": "temporary search"})
             app.cancel_search()

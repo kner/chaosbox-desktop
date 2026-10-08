@@ -405,14 +405,23 @@ def common_metadata(records):
             str(records[0].get(field, "")) for record in records) else "" for field in FIELDS}
 
 
-def edited_metadata(original, values, baseline):
+def differing_metadata_fields(records):
+    return [field for field in FIELDS if records and any(
+        str(record.get(field, "")) != str(records[0].get(field, "")) for record in records[1:])]
+
+
+def edited_metadata(original, values, baseline, *, mode="auto", differing_fields=(), validate=True):
     result = dict(original)
     for field in FIELDS:
         value = values.get(field, "")
-        if str(value) == str(baseline.get(field, "")):
+        if str(value) == str(baseline.get(field, "")) and not (
+                mode == "replace" and field in differing_fields):
             continue
         old = original.get(field, "")
-        if baseline.get(field, "") == "" and str(value).strip():
+        append = mode == "extend" or (mode == "auto" and baseline.get(field, "") == "")
+        if mode == "extend" and not str(value).strip():
+            continue
+        if append and str(value).strip():
             if field == "anzahl":
                 result[field] = int(old or 0) + int(value)
             else:
@@ -420,7 +429,7 @@ def edited_metadata(original, values, baseline):
                 result[field] = separator.join(str(part) for part in (old, value) if str(part))
         else:
             result[field] = value
-    return validate_record(result)
+    return validate_record(result) if validate else result
 
 
 def poster_font(size, bold=False):
@@ -479,32 +488,77 @@ def poster_caption(record):
     return str(record.get("comment", "")).strip()
 
 
-def poster_pages(portraits, cols, rows, *, fixed=False):
-    """Use one cell per photo in fixed mode, two for portraits in flexible mode."""
+def poster_zoom(record):
+    value = str(record.get("anzahl", "")).strip()
+    if not value:
+        return 1
+    value = re.sub(r"^Z\s*=\s*", "", value, flags=re.IGNORECASE)
+    try:
+        zoom = float(value.replace(",", "."))
+    except ValueError as error:
+        raise ValueError(f"Invalid poster zoom in field 2: {value!r}.") from error
+    if not math.isfinite(zoom) or zoom < 0:
+        raise ValueError("Poster zoom in field 2 must be a finite, non-negative number.")
+    return max(1, zoom)
+
+
+def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
+                 aspect_ratios=None, cell_aspect=1):
+    """Reserve rectangular photo areas; defer photos that cannot fit this page."""
     if not fixed and rows < 2 and any(portraits):
         raise ValueError("Portrait photos require POSTER-ROWS of at least 2.")
+    shapes = []
+    for index, portrait in enumerate(portraits):
+        base_rows = 2 if portrait and not fixed else 1
+        zoom = zooms[index] if zooms is not None and not fixed else 1
+        if zoom <= 1:
+            shapes.append((base_rows, 1))
+            continue
+        if zoom > cols * rows / base_rows:
+            raise ValueError(f"Poster zoom for photo {index + 1} exceeds the configured grid capacity.")
+        required = math.ceil(base_rows * zoom)
+        aspect = aspect_ratios[index] if aspect_ratios is not None else (.5 if portrait else 1)
+        candidates = [(height, width) for height in range(base_rows, rows + 1)
+                      for width in range(1, cols + 1) if height * width >= required]
+        shapes.append(min(candidates, key=lambda shape:
+                          (shape[0] * shape[1] - required,
+                           abs(math.log(shape[1] * cell_aspect / shape[0] / aspect)),
+                           -shape[1])))
     pending = list(range(len(portraits)))
     pages = []
     while pending:
         occupied = set()
         page, deferred = [], []
         for index in pending:
-            slot = next((slot for slot in range(cols * rows) if slot not in occupied), None)
+            slot = next((slot for slot in range(cols * rows) if divmod(slot, cols) not in occupied), None)
             if slot is None:
                 deferred.append(index)
                 continue
             row, col = divmod(slot, cols)
-            span = 2 if portraits[index] and not fixed else 1
-            if span == 2 and (row + 1 == rows or slot + cols in occupied):
+            row_span, col_span = shapes[index]
+            area = {(r, c) for r in range(row, row + row_span)
+                    for c in range(col, col + col_span)}
+            if row + row_span > rows or col + col_span > cols or area & occupied:
                 deferred.append(index)
                 continue
-            occupied.add(slot)
-            if span == 2:
-                occupied.add(slot + cols)
-            page.append((index, row, col, span))
+            occupied.update(area)
+            page.append((index, row, col, row_span, col_span))
         pages.append(page)
         pending = deferred
     return pages
+
+
+def poster_photo_pages(paths, metadata, settings):
+    portraits, aspects = [], []
+    for path in paths:
+        with Image.open(path) as source:
+            photo = ImageOps.exif_transpose(source)
+            portraits.append(photo.width < photo.height)
+            aspects.append(photo.width / photo.height)
+    zooms = None if settings.fixed else [poster_zoom(record) for record in metadata]
+    return poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed,
+                        zooms=zooms, aspect_ratios=aspects,
+                        cell_aspect=settings.width * settings.rows / (settings.height * settings.cols))
 
 
 def poster_grid_cells(placements, cols, rows, bounds, gap):
@@ -513,17 +567,18 @@ def poster_grid_cells(placements, cols, rows, bounds, gap):
     height = (bottom - top - gap * (rows - 1)) / rows
     return [tuple(round(value) for value in
                   (left + col * (width + gap), top + row * (height + gap),
-                   left + col * (width + gap) + width,
+                   left + col * (width + gap) + width * col_span + gap * (col_span - 1),
                    top + row * (height + gap) + height * span + gap * (span - 1)))
-            for row, col, span in placements]
+            for row, col, span, col_span in placements]
 
 
 def poster_flexible_cells(placements, bounds, gap):
     """Trim empty outer rows/columns and grow panels into adjacent empty cells."""
-    cols = max(col + 1 for row, col, span in placements)
-    rows = max(row + span for row, col, span in placements)
-    occupied = {(r, col) for row, col, span in placements for r in range(row, row + span)}
-    panels = [[row, col, span, 1] for row, col, span in placements]
+    cols = max(col + col_span for row, col, span, col_span in placements)
+    rows = max(row + span for row, col, span, col_span in placements)
+    occupied = {(r, c) for row, col, span, col_span in placements
+                for r in range(row, row + span) for c in range(col, col + col_span)}
+    panels = [list(placement) for placement in placements]
     # Fill partial rows first, then extend panels into unused space below.
     for panel in panels:
         row, col, panel_rows, panel_cols = panel
@@ -550,20 +605,19 @@ def poster_flexible_cells(placements, bounds, gap):
 
 
 def create_posters(paths, profile, settings, progress=lambda _: None, *,
-                   field_overrides=None, setup_dir=None):
+                   field_overrides=None, field_baseline=None, edit_mode="replace",
+                   differing_fields=(), setup_dir=None):
     paths = list(paths)
     if not paths:
         raise ValueError("Select at least 1 image.")
     if any(path.suffix.lower() not in {".jpg", ".jpeg", ".png"} for path in paths):
         raise ValueError("Posters require JPG or PNG images.")
-    metadata, portraits = [], []
-    for index, path in enumerate(paths):
-        progress(f"Reading poster metadata: {index + 1}/{len(paths)}")
-        metadata.append({**read_metadata(path), **(field_overrides or {})})
-        with Image.open(path) as source:
-            photo = ImageOps.exif_transpose(source)
-            portraits.append(photo.width < photo.height)
-    pages = poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed)
+    metadata = []
+    for record in read_metadata_batch(paths, progress):
+        metadata.append({**record, **(field_overrides or {})} if field_baseline is None else
+                        edited_metadata(record, field_overrides or {}, field_baseline,
+                                        mode=edit_mode, differing_fields=differing_fields, validate=False))
+    pages = poster_photo_pages(paths, metadata, settings)
     outputs = []
     for number, page in enumerate(pages, 1):
         progress(f"Poster page: {number}/{len(pages)}")
@@ -602,12 +656,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
     grid_top = top_edge + title_height + (gap if title_height else 0)
     bounds = (left_edge, grid_top, right_edge, bottom_edge)
     if placements is None:
-        portraits = []
-        for path in paths:
-            with Image.open(path) as source:
-                photo = ImageOps.exif_transpose(source)
-                portraits.append(photo.width < photo.height)
-        pages = poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed)
+        pages = poster_photo_pages(paths, metadata, settings)
         if len(pages) != 1:
             raise ValueError("Selection needs multiple posters; use create_posters.")
         placements = [item[1:] for item in pages[0]]
@@ -753,16 +802,49 @@ def read_user_comment(path):
 
 
 def read_metadata(path):
-    data = parse_metadata(read_user_comment(path))
-    data["created"] = media_created(path, data.get("created"))
-    return data
+    return read_metadata_batch([path])[0]
 
 
-def media_created(path, existing=None):
+def read_metadata_batch(paths, progress=lambda _: None):
+    """Read comments and capture dates together, retaining input order and duplicates."""
+    paths = [Path(path).resolve() for path in paths]
+    unique = list(dict.fromkeys(paths))
+    records = {}
+    # Bound command-line size and memory even for very large selections.
+    for start in range(0, len(unique), 128):
+        batch = unique[start:start + 128]
+        progress(f"Reading metadata: {start + len(batch)}/{len(unique)}")
+        items = json.loads(run_tool("exiftool", "-q", "-j", "-G1", "-s",
+                                   "-EXIF:UserComment", "-ItemList:Comment", "-Keys:Comment", "-UserData:Comment",
+                                   "-DateTimeOriginal", "-CreateDate", "-OffsetTimeOriginal", "-OffsetTimeDigitized",
+                                   "--", *(str(path) for path in batch)))
+        for item in items:
+            path = Path(item["SourceFile"]).resolve()
+            error = next((value for key, value in item.items() if key.rsplit(":", 1)[-1] == "Error"), None)
+            if error:
+                raise ValueError(f"{path}: {error}")
+            if path.suffix.lower() == ".mp4":
+                raw = next((item[key] for key in ("ItemList:Comment", "Keys:Comment", "UserData:Comment")
+                            if key in item), "")
+            else:
+                raw = next((value for key, value in item.items()
+                            if key.rsplit(":", 1)[-1] == "UserComment"), "")
+            record = parse_metadata(raw)
+            tags = {key.rsplit(":", 1)[-1]: value for key, value in item.items()}
+            record["created"] = media_created(path, record.get("created"), tags=tags)
+            records[path] = record
+        for path in batch:
+            if path not in records:
+                raise ValueError(f"{path}: ExifTool returned no metadata.")
+    return [dict(records[path]) for path in paths]
+
+
+def media_created(path, existing=None, *, tags=None):
     """Prefer capture metadata, then filename, saved creation date, and source mtime."""
     path = Path(path)
-    tags = json.loads(run_tool("exiftool", "-j", "-DateTimeOriginal", "-CreateDate",
-                               "-OffsetTimeOriginal", "-OffsetTimeDigitized", str(path)))[0]
+    if tags is None:
+        tags = json.loads(run_tool("exiftool", "-j", "-DateTimeOriginal", "-CreateDate",
+                                   "-OffsetTimeOriginal", "-OffsetTimeDigitized", str(path)))[0]
     for key, offset in (("DateTimeOriginal", "OffsetTimeOriginal"),
                         ("CreateDate", "OffsetTimeDigitized")):
         value = str(tags.get(key, ""))
@@ -1019,22 +1101,29 @@ def write_index(profile, entries):
     atomic_write(profile.index / "desktop-index.json", json.dumps(cache, ensure_ascii=False) + "\n")
 
 
-def build_index(target, progress=lambda _: None):
+def build_index(target, progress=lambda _: None, *, metadata_cache=None):
     """Build one index over all configured profiles (or a standalone profile)."""
     entries = []
     profiles = target.profiles if isinstance(target, Settings) else [target]
     seen = set()
+    sources = []
     for profile in profiles:
         for media, paths in ((True, files(profile.images, MEDIA)), (False, json_files(profile))):
             for path in paths:
                 if path in seen:
                     continue
                 seen.add(path)
-                progress(f"Reading {path.name}")
-                try:
-                    entries.extend(index_entries(path, media))
-                except Exception as error:
-                    raise ValueError(f"{path}: {error}") from error
+                sources.append((path, media))
+    metadata = dict(metadata_cache or {})
+    unread = [path for path, media in sources if media and path not in metadata]
+    if unread:
+        metadata.update(zip(unread, read_metadata_batch(unread, progress)))
+    for path, media in sources:
+        progress(f"Reading {path.name}")
+        try:
+            entries.extend([Entry(path, metadata[path], True)] if media else index_entries(path, False))
+        except Exception as error:
+            raise ValueError(f"{path}: {error}") from error
     write_index(target, entries)
     return entries
 
@@ -1062,10 +1151,11 @@ def ensure_index(settings, progress=lambda _: None, newindex=False):
             directory.mkdir(parents=True, exist_ok=True)
     if not newindex and (settings.index / "desktop-index.json").exists():
         return load_index(settings)
+    metadata = {}
     for profile in settings.profiles:
-        for warning in migrate_media(profile, progress):
+        for warning in migrate_media(profile, progress, metadata_cache=metadata):
             progress(warning)
-    return build_index(settings, progress)
+    return build_index(settings, progress, metadata_cache=metadata)
 
 
 def update_index(target, changed, progress=lambda _: None):
@@ -1076,10 +1166,12 @@ def update_index(target, changed, progress=lambda _: None):
         return build_index(target, progress)
     paths = set(map(Path, changed))
     entries = [entry for entry in entries if entry.source not in paths]
+    media_paths = sorted(path for path in paths if path.exists() and path.suffix.lower() in MEDIA)
+    metadata = dict(zip(media_paths, read_metadata_batch(media_paths, progress))) if media_paths else {}
     for path in sorted(paths):
         progress(f"Updating index: {path.name}")
         if path.exists():
-            entries.extend(index_entries(path, path.suffix.lower() in MEDIA))
+            entries.extend([Entry(path, metadata[path], True)] if path in metadata else index_entries(path, False))
     entries.sort(key=lambda entry: (not entry.media, entry.source, entry.index or 0))
     write_index(target, entries)
     return entries
@@ -1121,14 +1213,19 @@ def related_media(hit, entries):
                  and entry.data.get("device", "") == hit.data.get("device", "")), None)
 
 
-def migrate_media(profile, progress=lambda _: None):
+def migrate_media(profile, progress=lambda _: None, *, metadata_cache=None):
     warnings = []
-    for source in files(profile.images, MEDIA):
-        if source.parent != profile.images:
-            continue
+    sources = [source for source in files(profile.images, MEDIA) if source.parent == profile.images]
+    try:
+        metadata = dict(zip(sources, read_metadata_batch(sources, progress))) if sources else {}
+    except Exception:
+        # Keep migration's per-file warnings and continue with readable files.
+        metadata = {}
+    for source in sources:
         try:
             progress(f"Organizing {source.name}")
-            directory = profile.images / category_folder(read_metadata(source).get("category", ""))
+            record = metadata[source] if source in metadata else read_metadata(source)
+            directory = profile.images / category_folder(record.get("category", ""))
             if directory.is_symlink():
                 raise ValueError("Category directory is a symbolic link.")
             directory.mkdir(parents=True, exist_ok=True)
@@ -1136,6 +1233,8 @@ def migrate_media(profile, progress=lambda _: None):
             # An exclusive hard link makes collisions safe; no existing file is overwritten.
             os.link(source, target)
             source.unlink()
+            if metadata_cache is not None:
+                metadata_cache[target] = record
         except Exception as error:
             warnings.append(f"{source.name}: {error}")
     return warnings
@@ -1151,8 +1250,11 @@ def load_preview(path, maximum=(1600, 1200)):
     else:
         image = Image.open(path)
     with image:
+        # Resize before transposing/converting: JPEG thumbnail() can use decoder
+        # downsampling, avoiding multiple full-resolution image buffers.
+        target = maximum[::-1] if image.getexif().get(274) in (5, 6, 7, 8) else maximum
+        image.thumbnail(target, Image.Resampling.LANCZOS)
         result = ImageOps.exif_transpose(image).convert("RGB")
-        result.thumbnail(maximum, Image.Resampling.LANCZOS)
         return result.copy()
 
 

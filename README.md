@@ -190,15 +190,22 @@ names are retained without overwriting files.
   order is preserved; deselecting and reselecting a tile moves it to the end.
   Select all appends unselected tiles in display order.
   Multiple files show only identical metadata values. Mixed values appear blank.
+  If fields differ, a warning names their labels from setup.ini and offers
+  **Erweitert** (append new content) or **Gelöscht** (replace with new input).
+  Cancelling leaves the previous selection unchanged. The selected mode applies
+  to Save and Poster. Extend appends text with commas (newlines for Comment)
+  and adds Quantity; blank inputs preserve existing content. Replace overwrites
+  differing fields with the new inputs, clearing them if left blank.
   **Save** asks “Attention! All selected Images get this texts” for multiple
   selected files. OK proceeds; Cancel leaves files and form inputs untouched.
-  **Save** preserves unchanged fields independently for each file. Entering a value
-  in an initially blank field appends it to each file (comma separator, newline
-  for Comment); Quantity adds the entered number. Editing a shared nonempty field
-  replaces that field. Other metadata and each file's creation date are retained.
+  **Save** preserves unchanged common fields independently for each file.
+  Other metadata and each file's creation date are retained.
   After a successful **Save**, all form fields and the selection reset just as
   with **Clear all**. Cancelled or failed saves keep the inputs.
   Local saves refresh only the search index entries of the saved files.
+  Metadata for selections, poster exports and index updates is read with one
+  ExifTool call per batch of up to 128 files, including comments and capture dates.
+  Initial index creation reuses metadata already read while organizing files.
   Startup loads the shared index, building it only when absent or with `--newindex`.
   Searches and profile switches reuse it. Run with `--newindex` after external
   changes or profile configuration changes, or to replace a damaged cache.
@@ -277,9 +284,9 @@ names are retained without overwriting files.
   without a usable image, BACKGROUND-COLOR is used. Transparent backgrounds are
   composited over that color. Individual source images are never cropped.
   Each poster's title is the first field (Box) of its first photo. Only each
-  photo's Comment appears below it; other fields are not shown. Changed form
-  fields apply to all selected photos for the export, replacing those values;
-  unchanged fields retain each photo's metadata. Source files stay intact.
+  photo's Comment appears below it; other fields are not shown. Form edits
+  apply according to the append/replace mode chosen for the selection;
+  unchanged common fields retain each photo's metadata. Source files stay intact.
   Photos fill the configured grid in selection order with 3 mm gutters.
   With POSTER-FIX=false, portrait photos (after EXIF rotation) occupy two vertically adjacent cells.
   A portrait that cannot fit below the current cell moves to the next poster;
@@ -290,7 +297,15 @@ names are retained without overwriting files.
   text that cannot fit produces an error. Print resolution follows SIZE/LIMIT.
   POSTER-FIX=true keeps the configured grid dimensions and assigns exactly one
   cell to each photo, including portraits; a single configured row is allowed.
-  With POSTER-FIX=false,
+  With POSTER-FIX=false, field 2 (`anzahl`) supplies a zoom factor, as a number
+  or `Z=number` (decimal dot or comma accepted). Blank, zero and values up to 1
+  use the normal footprint. Values above 1 multiply the reserved cell count:
+  e.g. Z=2 reserves two cells for a landscape photo or four for a portrait.
+  Cell counts round up, with a rectangular footprint chosen to suit the photo;
+  a rectangle may require additional cells. Photos that cannot fit move to the
+  next page, leaving free cells for following photos. A zoom larger than the
+  whole configured grid produces an error. Fixed grids ignore field 2.
+  In flexible mode,
   empty outer rows and columns are removed and panels expand into adjacent
   free cells. A single photo on a poster uses the whole image area below its
   title, within the configured margins, while keeping its aspect ratio.

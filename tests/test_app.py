@@ -115,6 +115,48 @@ class SharedIndexTests(unittest.TestCase):
         app.open_media.assert_called_once_with([hit.source])
 
 
+class BatchSelectionTests(unittest.TestCase):
+    def test_differences_prompt_with_setup_labels_and_cancel_preserves_selection(self):
+        originals = [core.normalized({"box": "A", "comment": "first", "device": "same"}),
+                     core.normalized({"box": "B", "comment": "second", "device": "same"})]
+        for mode in ("extend", "replace", None):
+            app = App.__new__(App)
+            app.root = Mock()
+            app.profile = SimpleNamespace(labels=["Meine Box", "Anzahl", "Gerät", "Alias", "Kategorie", "Notiz", "Packung"])
+            app.media = [Path("previous.jpg")]
+            app.preview_result = Mock(return_value=(None, ""))
+            app.log = Mock()
+            app.task = lambda work, done: done(work())
+            app.field_widgets = {"device": Mock()}
+            app.fill = app.set_preview_path = Mock()
+            app.preview = app.selected = Mock()
+            with patch("core.read_metadata_batch", return_value=originals), \
+                 patch("app.MetadataModeDialog", return_value=SimpleNamespace(result=mode)) as dialog:
+                app.open_media([Path("a.jpg"), Path("b.jpg")])
+            dialog.assert_called_once_with(app.root, ["Meine Box", "Notiz"])
+            if mode is None:
+                self.assertEqual(app.media, [Path("previous.jpg")])
+                app.fill.assert_not_called()
+            else:
+                self.assertEqual(app.media_edit_mode, mode)
+                self.assertEqual(app.media_baseline["box"], "")
+                self.assertEqual(app.media_baseline["device"], "same")
+
+    def test_equal_metadata_opens_without_warning(self):
+        app = App.__new__(App)
+        app.preview_result = Mock(return_value=(None, ""))
+        app.log = Mock()
+        app.task = lambda work, done: done(work())
+        app.field_widgets = {"device": Mock()}
+        app.fill = app.set_preview_path = Mock()
+        app.preview = app.selected = Mock()
+        record = core.normalized({"box": "same"})
+        with patch("core.read_metadata_batch", return_value=[record, record]), patch("app.MetadataModeDialog") as dialog:
+            app.open_media([Path("a.jpg"), Path("b.jpg")])
+        dialog.assert_not_called()
+        self.assertEqual(app.media_baseline["box"], "same")
+
+
 class BatchSaveConfirmationTests(unittest.TestCase):
     def setUp(self):
         self.app = App.__new__(App)
@@ -150,7 +192,7 @@ class BatchSaveConfirmationTests(unittest.TestCase):
         self.app.task.side_effect = lambda work, done, failed: work()
         with patch("app.messagebox.askokcancel", return_value=True), \
              patch("core.save_batch", return_value=self.app.media) as save, \
-             patch("core.read_metadata", return_value=core.normalized({})), \
+             patch("core.read_metadata_batch", return_value=[core.normalized({})] * 2), \
              patch("core.update_index"):
             self.app.save()
         records = save.call_args.kwargs["records"]
@@ -262,6 +304,48 @@ class UserCommentTests(unittest.TestCase):
 
 
 class MediaFolderTests(unittest.TestCase):
+    def test_redraw_reuses_tk_images_until_size_or_image_changes(self):
+        from collections import OrderedDict
+        grid = MediaGrid.__new__(MediaGrid)
+        grid.paths = [Path("/tmp/photo.jpg")]
+        grid.base = Path("/tmp")
+        grid.columns = 4
+        grid.canvas = Mock()
+        grid.canvas.winfo_width.return_value = 400
+        grid.canvas.winfo_height.return_value = 300
+        grid.canvas.canvasy.return_value = 0
+        grid.show_user_comment = False
+        grid.selected = {}
+        grid.cache = OrderedDict({0: Image.new("RGB", (80, 40), "red")})
+        grid.photo_cache = {}
+        grid.photos = []
+        with patch("app.ImageTk.PhotoImage") as photo:
+            grid.redraw()
+            grid.redraw()
+            self.assertEqual(photo.call_count, 1)
+            grid.columns = 2
+            grid.redraw()
+            self.assertEqual(photo.call_count, 2)
+            grid.cache[0] = Image.new("RGB", (80, 40), "blue")
+            grid.redraw()
+            self.assertEqual(photo.call_count, 3)
+
+    def test_comment_reads_do_not_queue_behind_thumbnail_decode(self):
+        grid = MediaGrid.__new__(MediaGrid)
+        grid.future = Future()  # A thumbnail is still being decoded.
+        grid.comment_future = None
+        grid.visible = [0]
+        grid.paths = [Path("photo.jpg")]
+        grid.comments = {}
+        grid.show_user_comment = True
+        grid.worker = Mock()
+        grid.comment_worker = Mock()
+        grid.after = Mock()
+        grid.poll()
+        grid.worker.submit.assert_not_called()
+        grid.comment_worker.submit.assert_called_once_with(user_comment_preview, Path("photo.jpg"))
+        grid.after.assert_called_once_with(60, grid.poll)
+
     def test_thumbnail_double_click_opens_only_clicked_file(self):
         grid = MediaGrid.__new__(MediaGrid)
         grid.paths = [Path("first.jpg"), Path("second.jpg"), Path("third.jpg")]

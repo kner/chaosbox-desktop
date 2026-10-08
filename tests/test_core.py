@@ -45,6 +45,48 @@ class LegacyMetadataTests(unittest.TestCase):
         run.assert_called_once_with("exiftool", "-b", "-EXIF:UserComment", str(path))
 
 
+class MetadataBatchTests(unittest.TestCase):
+    def test_grouped_comments_dates_and_shuffled_output_preserve_selection_order(self):
+        image, video = Path("/tmp/unicode 東京.jpg"), Path("/tmp/movie.mp4")
+        image_record = {"box": "A", "comment": "Grüße\n東京", "created": "old"}
+        response = [{"SourceFile": str(video), "ItemList:Comment": '{"comment":"preferred"}',
+                     "Keys:Comment": '{"comment":"other"}', "QuickTime:CreateDate": "2024:01:02 03:04:05"},
+                    {"SourceFile": str(image), "ExifIFD:UserComment": json.dumps(image_record),
+                     "ExifIFD:DateTimeOriginal": "2020:05:06 07:08:09", "ExifIFD:OffsetTimeOriginal": "+02:00"}]
+        with patch("core.run_tool", return_value=json.dumps(response).encode()) as tool:
+            records = core.read_metadata_batch([image, video, image])
+        self.assertEqual(tool.call_count, 1)
+        self.assertEqual(tool.call_args.args[-2:], (str(image), str(video)))
+        self.assertEqual([record["comment"] for record in records], ["Grüße\n東京", "preferred", "Grüße\n東京"])
+        self.assertEqual(records[0]["created"], "2020-05-06T07:08:09+02:00")
+        self.assertEqual(records[1]["created"], "2024-01-02T03:04:05")
+        records[0]["comment"] = "changed"
+        self.assertEqual(records[2]["comment"], "Grüße\n東京")
+
+    def test_large_selection_uses_bounded_batches_and_empty_selection_runs_no_tool(self):
+        paths = [Path(f"/tmp/image-{i}.jpg") for i in range(130)]
+        def response(*args):
+            selected = args[args.index("--") + 1:]
+            return json.dumps([{"SourceFile": path, "ExifIFD:DateTimeOriginal": "2024:01:02 03:04:05"}
+                               for path in selected]).encode()
+        with patch("core.run_tool", side_effect=response) as tool:
+            records = core.read_metadata_batch(paths)
+            self.assertEqual(len(records), 130)
+            self.assertEqual(tool.call_count, 2)
+            counts = [len(call.args) - call.args.index("--") - 1 for call in tool.call_args_list]
+            self.assertEqual(counts, [128, 2])
+            tool.reset_mock()
+            self.assertEqual(core.read_metadata_batch([]), [])
+            tool.assert_not_called()
+
+    def test_missing_or_failed_metadata_is_not_silently_dropped(self):
+        path = Path("/tmp/missing.jpg")
+        for response in ([], [{"SourceFile": str(path), "ExifTool:Error": "Unreadable image"}]):
+            with self.subTest(response=response), patch("core.run_tool", return_value=json.dumps(response).encode()):
+                with self.assertRaisesRegex(ValueError, "missing.jpg"):
+                    core.read_metadata_batch([path])
+
+
 class DesktopTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="chaosbox-desktop-test-")
@@ -236,6 +278,53 @@ class DesktopTests(unittest.TestCase):
         self.assertNotIn("modified", raw)
         self.assertEqual(core.read_metadata(saved)["created"], raw["created"])
 
+    def test_real_batch_matches_original_reader_for_jpeg_and_png(self):
+        paths = [self.picture("Grüße 東京.jpg"), self.picture("IMG_20240102_030405.png")]
+        comment = self.root / "comment.txt"
+        comment.write_text(json.dumps(self.record, ensure_ascii=False), encoding="utf-8")
+        for path in paths:
+            core.run_tool("exiftool", "-overwrite_original", f"-EXIF:UserComment<={comment}", str(path))
+        core.run_tool("exiftool", "-overwrite_original", "-DateTimeOriginal=2020:05:06 07:08:09",
+                      "-OffsetTimeOriginal=+02:00", str(paths[0]))
+        original_read = []
+        for path in paths:
+            record = core.parse_metadata(core.read_user_comment(path))
+            record["created"] = core.media_created(path, record.get("created"))
+            original_read.append(record)
+        with patch("core.run_tool", wraps=core.run_tool) as tool:
+            records = core.read_metadata_batch(paths)
+        self.assertEqual(tool.call_count, 1)
+        self.assertEqual(records, original_read)
+
+    def test_large_preview_is_reduced_before_rotation_and_rgb_conversion(self):
+        path = self.picture("large.jpg", size=(3200, 1600))
+        exif = Image.Exif()
+        exif[274] = 6
+        Image.new("RGB", (3200, 1600), "red").save(path, exif=exif)
+        dimensions = []
+        transpose = core.ImageOps.exif_transpose
+        def check_size(image):
+            dimensions.append(image.size)
+            return transpose(image)
+        with patch("core.ImageOps.exif_transpose", side_effect=check_size):
+            preview = core.load_preview(path, (120, 80))
+        self.assertEqual(preview.size, (40, 80))
+        self.assertEqual(dimensions, [(80, 40)])
+        self.assertEqual(preview.mode, "RGB")
+        with Image.open(path) as source:
+            self.assertEqual(source.size, (3200, 1600))
+            self.assertEqual(source.getexif()[274], 6)
+
+    def test_initial_index_reuses_metadata_from_category_organization(self):
+        sources = [self.picture("JPG/a.jpg"), self.picture("JPG/b.jpg")]
+        with patch("core.read_metadata_batch", return_value=[core.normalized(self.record)] * 2) as read:
+            entries = core.ensure_index(self.settings, newindex=True)
+        self.assertEqual(read.call_count, 1)
+        self.assertEqual(read.call_args.args[0], sources)
+        self.assertEqual({entry.source for entry in entries},
+                         {self.profile.images / "elektronik" / source.name for source in sources})
+        self.assertTrue(all(entry.data["comment"] == self.record["comment"] for entry in entries))
+
     def test_filename_dates_and_invalid_exif(self):
         for name, expected in (("IMG_20240102_030405_cb_2.jpg", "2024-01-02T03:04:05"),
                                ("2024-01-02_03-04-05.png", "2024-01-02T03:04:05"),
@@ -358,20 +447,21 @@ class DesktopTests(unittest.TestCase):
         second = self.picture("JPG/two/same.jpg")
         box = self.profile.data / "a11.json"
         box.write_text('[{"device":"first"},{"device":"second"}]')
-        with patch("core.read_metadata", return_value=core.normalized(self.record)):
+        with patch("core.read_metadata_batch", return_value=[core.normalized(self.record)] * 2):
             core.build_index(self.profile)
         imported = self.picture("JPG/new/import_cb.jpg")
         with patch("core.files", side_effect=AssertionError("Unexpected directory scan")), \
              patch("core.load_box", side_effect=AssertionError("Unchanged JSON read")), \
-             patch("core.read_metadata", return_value=core.normalized(dict(self.record, comment="changed"))) as read:
+             patch("core.read_metadata_batch", return_value=[core.normalized(dict(self.record, comment="changed"))] * 2) as read:
             entries = core.update_index(self.profile, [first, imported])
-            self.assertEqual({call.args[0] for call in read.call_args_list}, {first, imported})
+            self.assertEqual(set(read.call_args.args[0]), {first, imported})
+            self.assertEqual(read.call_count, 1)
         by_path = {entry.source: entry for entry in entries if entry.media}
         self.assertEqual(by_path[first].data["comment"], "changed")
         self.assertEqual(by_path[second].data["comment"], self.record["comment"])
         self.assertIn(imported, by_path)
         box.write_text('[{"device":"replacement"}]')
-        with patch("core.read_metadata", side_effect=AssertionError("Unchanged image read")), \
+        with patch("core.read_metadata_batch", side_effect=AssertionError("Unchanged image read")), \
              patch("core.load_box", wraps=core.load_box) as read_box:
             entries = core.update_index(self.profile, [box])
             read_box.assert_called_once_with(box)
@@ -386,9 +476,10 @@ class DesktopTests(unittest.TestCase):
 
     def test_incremental_index_recovers_missing_cache(self):
         path = self.picture("JPG/sample.jpg")
-        with patch("core.read_metadata", return_value=core.normalized(self.record)) as read:
+        with patch("core.read_metadata_batch", return_value=[core.normalized(self.record)]) as read:
             entries = core.update_index(self.settings, [path])
-        read.assert_called_once_with(path)
+        self.assertEqual(read.call_count, 1)
+        self.assertEqual(read.call_args.args[0], [path])
         self.assertEqual(len(entries), 1)
 
     def test_broken_cache_requires_explicit_rebuild(self):
@@ -400,11 +491,11 @@ class DesktopTests(unittest.TestCase):
 
     def test_failed_incremental_read_preserves_cache(self):
         path = self.picture("JPG/sample.jpg")
-        with patch("core.read_metadata", return_value=core.normalized(self.record)):
+        with patch("core.read_metadata_batch", return_value=[core.normalized(self.record)]):
             core.build_index(self.settings)
         cache = self.settings.index / "desktop-index.json"
         before = cache.read_bytes()
-        with patch("core.read_metadata", side_effect=ValueError("unreadable")):
+        with patch("core.read_metadata_batch", side_effect=ValueError("unreadable")):
             with self.assertRaises(ValueError):
                 core.update_index(self.settings, [path])
         self.assertEqual(cache.read_bytes(), before)
