@@ -286,7 +286,10 @@ names are retained without overwriting files.
   all photos are placed, each with the title of its first photo.
   Text space is reserved before resizing images. Long text uses a smaller font;
   text that cannot fit produces an error. Print resolution follows SIZE/LIMIT.
-  POSTER-FIX remains accepted for compatibility.
+  POSTER-FIX=true keeps the configured grid dimensions. With POSTER-FIX=false,
+  empty outer rows and columns are removed and panels expand into adjacent
+  free cells. A single photo on a poster uses the whole image area below its
+  title, within the configured margins, while keeping its aspect ratio.
 - **TXT** opens configured text snippets and copies the selection to the clipboard.
 - Keyboard shortcuts: Ctrl+O opens media, Ctrl+S saves, Ctrl+F enters/runs search.
 

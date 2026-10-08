@@ -518,6 +518,37 @@ def poster_grid_cells(placements, cols, rows, bounds, gap):
             for row, col, span in placements]
 
 
+def poster_flexible_cells(placements, bounds, gap):
+    """Trim empty outer rows/columns and grow panels into adjacent empty cells."""
+    cols = max(col + 1 for row, col, span in placements)
+    rows = max(row + span for row, col, span in placements)
+    occupied = {(r, col) for row, col, span in placements for r in range(row, row + span)}
+    panels = [[row, col, span, 1] for row, col, span in placements]
+    # Fill partial rows first, then extend panels into unused space below.
+    for panel in panels:
+        row, col, panel_rows, panel_cols = panel
+        while col + panel_cols < cols and all(
+                (r, col + panel_cols) not in occupied for r in range(row, row + panel_rows)):
+            occupied.update((r, col + panel_cols) for r in range(row, row + panel_rows))
+            panel_cols += 1
+        panel[3] = panel_cols
+    for panel in panels:
+        row, col, panel_rows, panel_cols = panel
+        while row + panel_rows < rows and all(
+                (row + panel_rows, c) not in occupied for c in range(col, col + panel_cols)):
+            occupied.update((row + panel_rows, c) for c in range(col, col + panel_cols))
+            panel_rows += 1
+        panel[2] = panel_rows
+    left, top, right, bottom = bounds
+    width = (right - left - gap * (cols - 1)) / cols
+    height = (bottom - top - gap * (rows - 1)) / rows
+    return [tuple(round(value) for value in
+                  (left + col * (width + gap), top + row * (height + gap),
+                   left + col * (width + gap) + width * col_span + gap * (col_span - 1),
+                   top + row * (height + gap) + height * row_span + gap * (row_span - 1)))
+            for row, col, row_span, col_span in panels]
+
+
 def create_posters(paths, profile, settings, progress=lambda _: None, *,
                    field_overrides=None, setup_dir=None):
     paths = list(paths)
@@ -580,7 +611,8 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
         if len(pages) != 1:
             raise ValueError("Selection needs multiple posters; use create_posters.")
         placements = [item[1:] for item in pages[0]]
-    cells = poster_grid_cells(placements, settings.cols, settings.rows, bounds, gap)
+    cells = (poster_grid_cells(placements, settings.cols, settings.rows, bounds, gap)
+             if settings.fixed else poster_flexible_cells(placements, bounds, gap))
     cell_width = min(right - left for left, top, right, bottom in cells)
     cell_height = min(bottom - top for left, top, right, bottom in cells)
     if min(cell_width, cell_height) < 2:

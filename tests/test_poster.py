@@ -154,6 +154,29 @@ class PosterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "at least 2"):
             core.poster_pages([True], 2, 1)
 
+    def test_flexible_grid_expands_partial_rows_and_portrait_neighbors(self):
+        bounds = (0, 0, 200, 200)
+        self.assertEqual(core.poster_flexible_cells([(0, 0, 1)], bounds, 10), [bounds])
+        self.assertEqual(core.poster_flexible_cells([(0, 0, 2)], bounds, 10), [bounds])
+        self.assertEqual(core.poster_flexible_cells([(0, 0, 1), (0, 1, 1), (1, 0, 1)], bounds, 10),
+                         [(0, 0, 95, 95), (105, 0, 200, 95), (0, 105, 200, 200)])
+        self.assertEqual(core.poster_flexible_cells([(0, 0, 2), (0, 1, 1)], bounds, 10),
+                         [(0, 0, 95, 200), (105, 0, 200, 200)])
+
+    def test_flexible_final_poster_single_photo_uses_whole_area(self):
+        for fixed in (True, False):
+            with self.subTest(fixed=fixed), patch("core.read_metadata", return_value={"box": "Title"}):
+                outputs = core.create_posters([self.paths[0]] * 5, self.profile,
+                                             core.PosterSettings(400, 100, 100, 2, 2, fixed))
+            self.assertEqual(len(outputs), 2)
+            with Image.open(outputs[-1]) as image:
+                pixel = image.getpixel((300, 280))
+                if fixed:
+                    self.assertLess(max(abs(a - b) for a, b in zip(pixel, (155, 177, 149))), 4)
+                else:
+                    self.assertGreater(pixel[0], 240)
+                    self.assertLess(pixel[1], 20)
+
     def test_portrait_export_uses_first_photo_of_each_page(self):
         portrait = self.root / "portrait.png"
         Image.new("RGB", (40, 80), "yellow").save(portrait)
