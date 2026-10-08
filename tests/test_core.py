@@ -474,6 +474,27 @@ class DesktopTests(unittest.TestCase):
             keys.append(public.split()[1])
         self.assertNotEqual(*keys)
 
+    def test_install_keeps_existing_setup_unchanged_including_legacy_key(self):
+        home = self.root / "preserved setup home"
+        destination = home / "custom box"
+        settings = core.Settings(destination)
+        settings.ensure(default_box="ChaosBox")
+        legacy_key = destination / ".state/credentials/android_copy"
+        text = settings.path.read_text().replace(str(destination / ".state/credentials/id_ed25519"),
+                                                 str(legacy_key))
+        settings.path.write_text("# User configuration: keep formatting\n" + text)
+        original = settings.path.read_bytes()
+        before = settings.path.stat()
+        install.install(home, installdir=destination)
+        install.install_all(home)
+        after = settings.path.stat()
+        self.assertEqual(settings.path.read_bytes(), original)
+        self.assertEqual(after.st_mtime_ns, before.st_mtime_ns)
+        self.assertEqual(after.st_ino, before.st_ino)
+        settings.reload()
+        self.assertEqual(settings.ssh["keyfile"], str(legacy_key))
+        self.assertTrue((destination / ".state/credentials/id_ed25519").is_file())
+
     def test_install_preserves_data_and_excludes_credentials(self):
         home = self.root / "home"
         target, setup, launcher = install.install(home, credentials=False)

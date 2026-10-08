@@ -50,7 +50,10 @@ def install(home=None, credentials=True, installdir=None):
     settings = core.Settings(installdir if installdir is not None else home / "ChaosBox")
     seed_assets = not settings.path.exists()
     settings.root.mkdir(parents=True, exist_ok=True)
-    settings.ensure(default_box="ChaosBox")
+    if seed_assets:
+        settings.ensure(default_box="ChaosBox")
+    else:
+        settings.reload()
     shared = home / ".local/share/chaosbox/desktop"
     shared.mkdir(parents=True, exist_ok=True)
     for name in ("app.py", "core.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
@@ -98,11 +101,6 @@ def install(home=None, credentials=True, installdir=None):
             subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "",
                             "-C", settings.app_id, "-f", str(key)], check=True)
         os.chmod(key, 0o600)
-        setup_text = settings.path.read_text(encoding="utf-8")
-        legacy_key = str(credential_dir / "android_copy")
-        if legacy_key in setup_text:
-            core.atomic_write(settings.path, setup_text.replace(legacy_key, str(key)))
-            settings.reload()
         # Host identities may be shared; private authentication keys may not.
         assets = source.parent / "app/src/main/assets"
         for name in ("known_hosts",):

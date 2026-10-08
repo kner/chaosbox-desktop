@@ -37,6 +37,8 @@ Without `--installdir`, the installer detects all registered installations and
 updates their application and launchers while preserving setup, media and records.
 It creates `~/ChaosBox` only when no existing installation is found. Use
 `--installdir` to add a new installation or explicitly update a particular one.
+An existing `setup.ini` in the installation directory is kept unchanged,
+including its SSH settings. A default setup is created only if the file is missing.
 An existing empty directory is also accepted. When creating a new setup,
 only the first box receives missing files from `assets/JPG` and
 `assets/TXT` in its respective folders, including subdirectories. Other boxes
@@ -279,14 +281,16 @@ names are retained without overwriting files.
   fields apply to all selected photos for the export, replacing those values;
   unchanged fields retain each photo's metadata. Source files stay intact.
   Photos fill the configured grid in selection order with 3 mm gutters.
-  Portrait photos (after EXIF rotation) occupy two vertically adjacent cells.
+  With POSTER-FIX=false, portrait photos (after EXIF rotation) occupy two vertically adjacent cells.
   A portrait that cannot fit below the current cell moves to the next poster;
   following photos can fill the space left on the current poster. Portraits
   require at least two configured rows. Additional posters are created until
   all photos are placed, each with the title of its first photo.
   Text space is reserved before resizing images. Long text uses a smaller font;
   text that cannot fit produces an error. Print resolution follows SIZE/LIMIT.
-  POSTER-FIX=true keeps the configured grid dimensions. With POSTER-FIX=false,
+  POSTER-FIX=true keeps the configured grid dimensions and assigns exactly one
+  cell to each photo, including portraits; a single configured row is allowed.
+  With POSTER-FIX=false,
   empty outer rows and columns are removed and panels expand into adjacent
   free cells. A single photo on a poster uses the whole image area below its
   title, within the configured margins, while keeping its aspect ratio.
@@ -298,8 +302,8 @@ names are retained without overwriting files.
 **Upload saved files** sends saved data; it never runs automatically. Host, port,
 user, destinations, key file and known-hosts file are configured in `[SSH]`.
 The local installer generates a separate Ed25519 key pair for each installation
-in `.state/credentials/id_ed25519` and preserves it during updates. It migrates
-the default Android key path to this installation's new key, retaining the old file.
+in `.state/credentials/id_ed25519` and preserves it during updates. New setups
+use this key path; existing setups retain their configured key path.
 Authorize `id_ed25519.pub` on the SSH server before uploading. The installer
 copies the project's known-hosts file when available. Keys are never included in desktop source
 packages. Connections require a known host key and public-key authentication.

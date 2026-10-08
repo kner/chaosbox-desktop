@@ -479,9 +479,9 @@ def poster_caption(record):
     return str(record.get("comment", "")).strip()
 
 
-def poster_pages(portraits, cols, rows):
-    """Place photos row by row, deferring portraits that cannot span two rows."""
-    if rows < 2 and any(portraits):
+def poster_pages(portraits, cols, rows, *, fixed=False):
+    """Use one cell per photo in fixed mode, two for portraits in flexible mode."""
+    if not fixed and rows < 2 and any(portraits):
         raise ValueError("Portrait photos require POSTER-ROWS of at least 2.")
     pending = list(range(len(portraits)))
     pages = []
@@ -494,7 +494,7 @@ def poster_pages(portraits, cols, rows):
                 deferred.append(index)
                 continue
             row, col = divmod(slot, cols)
-            span = 2 if portraits[index] else 1
+            span = 2 if portraits[index] and not fixed else 1
             if span == 2 and (row + 1 == rows or slot + cols in occupied):
                 deferred.append(index)
                 continue
@@ -563,7 +563,7 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
         with Image.open(path) as source:
             photo = ImageOps.exif_transpose(source)
             portraits.append(photo.width < photo.height)
-    pages = poster_pages(portraits, settings.cols, settings.rows)
+    pages = poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed)
     outputs = []
     for number, page in enumerate(pages, 1):
         progress(f"Poster page: {number}/{len(pages)}")
@@ -607,7 +607,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
             with Image.open(path) as source:
                 photo = ImageOps.exif_transpose(source)
                 portraits.append(photo.width < photo.height)
-        pages = poster_pages(portraits, settings.cols, settings.rows)
+        pages = poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed)
         if len(pages) != 1:
             raise ValueError("Selection needs multiple posters; use create_posters.")
         placements = [item[1:] for item in pages[0]]

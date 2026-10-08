@@ -95,7 +95,7 @@ class PosterTests(unittest.TestCase):
         exif[274] = 6
         Image.new("RGB", (80, 40), "red").save(path, exif=exif)
         output = core.create_poster([path], self.profile,
-                                    core.PosterSettings(400, 100, 100, 1, 2, True))
+                                    core.PosterSettings(400, 100, 100, 1, 1, True))
         with Image.open(output) as image:
             # EXIF rotation makes this a 1:2 portrait, centered with white sides.
             pixels = [(x, y) for y in range(image.height) for x in range(image.width)
@@ -184,13 +184,26 @@ class PosterTests(unittest.TestCase):
         records = [{"box": str(i), "comment": "Photo " + str(i)} for i in range(4)]
         with patch("core.read_metadata", side_effect=records), \
              patch("core.create_poster", wraps=core.create_poster) as create:
-            outputs = core.create_posters(paths, self.profile, core.PosterSettings(600, 200, 100, 2, 2))
+            outputs = core.create_posters(paths, self.profile, core.PosterSettings(600, 200, 100, 2, 2, False))
         self.assertEqual(len(outputs), 2)
         self.assertEqual(create.call_args_list[0].args[0], [paths[0], paths[1], paths[3]])
         self.assertEqual(create.call_args_list[1].args[0], [portrait])
         self.assertEqual([call.kwargs["title"] for call in create.call_args_list], ["0", "2"])
         self.assertEqual(create.call_args_list[1].kwargs["placements"], [(0, 0, 2)])
         self.assertEqual(create.call_args_list[1].kwargs["metadata"][0]["comment"], "Photo 2")
+
+    def test_fixed_portraits_use_one_cell_and_allow_single_row(self):
+        portrait = self.root / "portrait.png"
+        Image.new("RGB", (40, 80), "yellow").save(portrait)
+        settings = core.PosterSettings(600, 100, 200, 2, 1, True)
+        with patch("core.read_metadata", side_effect=[{"box": str(i)} for i in range(3)]), \
+             patch("core.create_poster", wraps=core.create_poster) as create:
+            outputs = core.create_posters([portrait] * 3, self.profile, settings)
+        self.assertEqual(len(outputs), 2)
+        self.assertEqual(create.call_args_list[0].kwargs["placements"], [(0, 0, 1), (0, 1, 1)])
+        self.assertEqual(create.call_args_list[1].kwargs["placements"], [(0, 0, 1)])
+        self.assertEqual([call.kwargs["title"] for call in create.call_args_list], ["0", "2"])
+        self.assertTrue(core.create_poster([portrait] * 2, self.profile, settings).is_file())
 
     def test_ui_passes_title_and_only_new_additions(self):
         app = App.__new__(App)
