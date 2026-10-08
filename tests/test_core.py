@@ -600,6 +600,51 @@ class DesktopTests(unittest.TestCase):
             self.assertEqual(first[1].read_bytes(), original_setup)
             self.assertEqual(first[2].read_bytes(), original_menu)
 
+    def test_installer_without_directory_updates_all_registered_boxes(self):
+        import shlex
+        home = self.root / "automatic update home"
+        roots = [home / "first ' box", self.root / "external box"]
+        installed = [install.install(home, installdir=root) for root in roots]
+        preserved = {path: path.read_bytes() for _, setup, _ in installed
+                     for path in (setup, setup.parent / ".state/credentials/id_ed25519")}
+        shared = home / ".local/share/chaosbox/desktop/app.py"
+        shared.write_text("old version")
+        for target, _, desktop in installed:
+            launcher = target / "run-desktop.sh"
+            launcher.write_text(launcher.read_text().replace(
+                shlex.quote(str(shared)), shlex.quote(str(target / "desktop/app.py"))))
+            desktop.write_text("old menu entry")
+        results = install.install_all(home)
+        self.assertEqual(set(results), set(installed))
+        self.assertFalse((home / "ChaosBox").exists())
+        self.assertEqual(shared.read_bytes(), Path(install.__file__).with_name("app.py").read_bytes())
+        for target, setup, desktop in results:
+            command = shlex.split((target / "run-desktop.sh").read_text().splitlines()[-1])
+            self.assertEqual(command[2], str(shared))
+            self.assertEqual(command[command.index("--installdir") + 1], str(setup.parent))
+            self.assertIn("[Desktop Entry]", desktop.read_text())
+        for path, contents in preserved.items():
+            self.assertEqual(path.read_bytes(), contents)
+
+    def test_installer_auto_first_install_and_explicit_new_box(self):
+        home = self.root / "automatic first install"
+        first = install.install_all(home, credentials=False)
+        self.assertEqual(len(first), 1)
+        self.assertEqual(first[0][1], home / "ChaosBox/setup.ini")
+        second = install.install_all(home, credentials=False, installdir=home / "second")
+        self.assertEqual(len(second), 1)
+        self.assertEqual(second[0][1], home / "second/setup.ini")
+        self.assertEqual(set(install.install_all(home, credentials=False)), set(first + second))
+
+    def test_installer_discovery_skips_stale_launchers(self):
+        home = self.root / "stale home"
+        existing = install.install(home, credentials=False, installdir=home / "existing")
+        stale = home / ".local/share/chaosbox/installations/stale/run-desktop.sh"
+        core.atomic_write(stale, f'exec /usr/bin/python3 app.py --installdir="{home / "removed"}" "$@"\n')
+        self.assertEqual(install.installed_roots(home), [existing[1].parent])
+        self.assertEqual(install.install_all(home, credentials=False), [existing])
+        self.assertFalse((home / "removed").exists())
+
     def test_installation_is_not_a_box_or_indexed(self):
         core.atomic_write(self.root / "TXT/ignored.json", '[{"box":"ignored"}]')
         entries = core.ensure_index(self.settings)

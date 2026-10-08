@@ -962,15 +962,13 @@ class App:
         paths, profile, settings = list(self.media), self.profile, self.settings.poster
         values = self.values()
         baseline = getattr(self, "media_baseline", {})
-        additions = {field: values.get(field, "") if values.get(field, "") != str(baseline.get(field, ""))
-                     else "" for field in ("box", "comment")}
-        def done(path):
-            self.status.set(f"Poster saved: {path}")
-            messagebox.showinfo("Poster", f"Poster saved:\n{path}", parent=self.root)
-        self.task(lambda: core.create_poster(paths, profile, settings, self.log,
-                                            title=values.get("category", ""),
-                                            box_addition=additions["box"],
-                                            comment_addition=additions["comment"],
+        overrides = {field: value for field, value in values.items()
+                     if value != str(baseline.get(field, ""))}
+        def done(outputs):
+            self.status.set(f"{len(outputs)} poster(s) saved: {outputs[0].parent}")
+            messagebox.showinfo("Poster", "Posters saved:\n" + "\n".join(map(str, outputs)), parent=self.root)
+        self.task(lambda: core.create_posters(paths, profile, settings, self.log,
+                                            field_overrides=overrides,
                                             setup_dir=getattr(self.settings, "active_path", self.settings.path).parent), done)
 
     def choose_json(self):

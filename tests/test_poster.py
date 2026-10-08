@@ -85,16 +85,9 @@ class PosterTests(unittest.TestCase):
             self.assertGreater(image.getpixel((75, 150))[1], 100)
             self.assertGreater(image.getpixel((225, 150))[2], 240)
             self.assertGreater(image.getpixel((75, 450))[0], 240)
-            self.assertGreater(image.getpixel((175, 450))[0], 240)
+            self.assertLess(max(abs(a - b) for a, b in zip(image.getpixel((225, 450)), (155, 177, 149))), 4)
         second = core.create_poster(self.paths, self.profile, settings)
         self.assertNotEqual(path, second)
-
-    def test_flexible_last_image_uses_remaining_row(self):
-        path = core.create_poster(self.paths, self.profile, core.PosterSettings(400, 100, 100, 2, 2, False))
-        with Image.open(path) as image:
-            self.assertGreater(image.getpixel((200, 300))[1], 100)
-            self.assertLess(image.getpixel((200, 300))[0], 10)
-            self.assertLess(max(abs(a-b) for a,b in zip(image.getpixel((25, 300)), (155, 177, 149))), 4)
 
     def test_aspect_ratio_and_orientation_are_preserved(self):
         path = self.root / "wide.jpg"
@@ -102,7 +95,7 @@ class PosterTests(unittest.TestCase):
         exif[274] = 6
         Image.new("RGB", (80, 40), "red").save(path, exif=exif)
         output = core.create_poster([path], self.profile,
-                                    core.PosterSettings(400, 100, 100, 1, 1, True))
+                                    core.PosterSettings(400, 100, 100, 1, 2, True))
         with Image.open(output) as image:
             # EXIF rotation makes this a 1:2 portrait, centered with white sides.
             pixels = [(x, y) for y in range(image.height) for x in range(image.width)
@@ -140,44 +133,41 @@ class PosterTests(unittest.TestCase):
                 centers.append((min(x for x, y in points) + max(x for x, y in points)) / 2)
             self.assertAlmostEqual(centers[1] - centers[0], centers[2] - centers[1], delta=2)
 
-    def test_poster_caption_appends_form_values_without_changing_metadata(self):
-        record = {"box": "Box1", "comment": "Original", "category": "Saved category"}
-        self.assertEqual(core.poster_caption(record, "Extra box", "Extra comment"),
-                         "Box1: Original\nExtra box\nExtra comment")
-        self.assertEqual(record["comment"], "Original")
-        self.assertEqual(core.poster_caption({"comment": "Only comment"}), "Only comment")
-        self.assertEqual(core.poster_caption({"box": "Box1"}), "Box1")
+    def test_only_comment_is_caption(self):
+        record = {"box": "Title", "comment": "Original", "category": "Category"}
+        self.assertEqual(core.poster_caption(record), "Original")
+        self.assertEqual(core.poster_caption({"box": "Title"}), "")
         before = [path.read_bytes() for path in self.paths]
         with patch("core.read_metadata", return_value=record), \
              patch("core.poster_draw_text", wraps=core.poster_draw_text) as draw:
-            core.create_poster(self.paths, self.profile, core.PosterSettings(1000, 200, 200, 3, 1),
-                               title="Form title", box_addition="Extra box", comment_addition="Extra comment")
-        self.assertEqual(draw.call_args_list[0].args[1], ["Form title"])
-        self.assertEqual(draw.call_args_list[1].args[1], ["Box1: Original", "Extra box", "Extra comment"])
+            core.create_posters(self.paths, self.profile, core.PosterSettings(1000, 200, 200, 3, 1))
+        self.assertEqual(draw.call_args_list[0].args[1], ["Title"])
+        self.assertEqual(draw.call_args_list[1].args[1], ["Original"])
         self.assertEqual([path.read_bytes() for path in self.paths], before)
 
-    def test_last_photo_uses_remaining_rows_and_preceding_row_spreads_evenly(self):
-        bounds = (15, 5, 315, 305)
-        self.assertEqual(core.poster_cells(3, 3, 3, bounds, 0),
-                         [(15, 5, 165, 105), (165, 5, 315, 105), (15, 105, 315, 305)])
-        self.assertEqual(core.poster_cells(1, 3, 3, bounds, 0), [bounds])
-        cells = core.poster_cells(5, 3, 3, bounds, 0)
-        self.assertEqual(cells[-2:], [(15, 105, 315, 205), (15, 205, 315, 305)])
-        full = core.poster_cells(9, 3, 3, bounds, 0)
-        self.assertEqual(len(full), 9)
-        self.assertTrue(all(right - left == 100 and bottom - top == 100
-                            for left, top, right, bottom in full))
-        self.assertEqual(core.poster_cells(8, 3, 3, bounds, 0)[-2:],
-                         [(15, 205, 165, 305), (165, 205, 315, 305)])
-        with patch("core.read_metadata", return_value={}), \
-             patch("core.poster_draw_text", wraps=core.poster_draw_text) as draw:
-            core.create_poster(self.paths, self.profile, core.PosterSettings(1000, 100, 200, 3, 3))
-        cells = [call.args for call in draw.call_args_list[1:]]
-        self.assertEqual(cells[0][4], 87)
-        self.assertAlmostEqual(cells[0][6], 406, delta=1)
-        self.assertAlmostEqual(cells[1][6], 406, delta=1)
-        self.assertEqual(cells[2][4], 87)
-        self.assertEqual(cells[2][6], 851)
+    def test_portrait_spans_and_deferral(self):
+        self.assertEqual(core.poster_pages([False, False, True, False, True], 2, 2),
+                         [[(0, 0, 0, 1), (1, 0, 1, 1), (3, 1, 0, 1)],
+                          [(2, 0, 0, 2), (4, 0, 1, 2)]])
+        cells = core.poster_grid_cells([(0, 0, 2), (0, 1, 1)], 2, 2, (0, 0, 200, 200), 10)
+        self.assertEqual(cells, [(0, 0, 95, 200), (105, 0, 200, 95)])
+        with self.assertRaisesRegex(ValueError, "at least 2"):
+            core.poster_pages([True], 2, 1)
+
+    def test_portrait_export_uses_first_photo_of_each_page(self):
+        portrait = self.root / "portrait.png"
+        Image.new("RGB", (40, 80), "yellow").save(portrait)
+        paths = self.paths[:2] + [portrait, self.paths[2]]
+        records = [{"box": str(i), "comment": "Photo " + str(i)} for i in range(4)]
+        with patch("core.read_metadata", side_effect=records), \
+             patch("core.create_poster", wraps=core.create_poster) as create:
+            outputs = core.create_posters(paths, self.profile, core.PosterSettings(600, 200, 100, 2, 2))
+        self.assertEqual(len(outputs), 2)
+        self.assertEqual(create.call_args_list[0].args[0], [paths[0], paths[1], paths[3]])
+        self.assertEqual(create.call_args_list[1].args[0], [portrait])
+        self.assertEqual([call.kwargs["title"] for call in create.call_args_list], ["0", "2"])
+        self.assertEqual(create.call_args_list[1].kwargs["placements"], [(0, 0, 2)])
+        self.assertEqual(create.call_args_list[1].kwargs["metadata"][0]["comment"], "Photo 2")
 
     def test_ui_passes_title_and_only_new_additions(self):
         app = App.__new__(App)
@@ -185,13 +175,32 @@ class PosterTests(unittest.TestCase):
         app.media, app.profile = self.paths, self.profile
         app.settings = SimpleNamespace(poster=core.PosterSettings(), path=self.root / "setup.ini")
         app.media_baseline = {"box": "Existing", "comment": "Original"}
-        app.values = Mock(return_value={"category": "Unsaved title", "box": "Existing", "comment": "Added"})
+        app.values = Mock(return_value={"category": "Different category", "box": "Existing", "comment": "Added"})
         app.log = Mock()
         app.task = lambda work, done: work()
-        with patch("core.create_poster") as create:
+        with patch("core.create_posters") as create:
             app.make_poster()
         self.assertEqual(create.call_args.kwargs,
-                         {"title": "Unsaved title", "box_addition": "", "comment_addition": "Added", "setup_dir": self.root})
+                         {"field_overrides": {"category": "Different category", "comment": "Added"}, "setup_dir": self.root})
+
+    def test_multiple_posters_preserve_order_and_title(self):
+        paths = self.paths * 3
+        settings = core.PosterSettings(600, 200, 100, 2, 2)
+        with patch("core.create_poster", wraps=core.create_poster) as create:
+            with patch("core.read_metadata", side_effect=[{"box": str(i)} for i in range(9)]):
+                outputs = core.create_posters(paths, self.profile, settings)
+        self.assertEqual(len(outputs), 3)
+        self.assertEqual(len(set(outputs)), 3)
+        self.assertTrue(all(path.is_file() for path in outputs))
+        self.assertEqual([call.args[0] for call in create.call_args_list],
+                         [paths[:4], paths[4:8], paths[8:]])
+        self.assertEqual([call.kwargs["title"] for call in create.call_args_list], ["0", "4", "8"])
+
+    def test_batch_validation_before_export(self):
+        for paths in ([], self.paths * 3 + [self.root / "movie.mp4"]):
+            with self.assertRaises(ValueError):
+                core.create_posters(paths, self.profile, core.PosterSettings())
+        self.assertFalse((self.root / "poster").exists())
 
     def test_wrapping_preserves_long_words_and_paragraphs(self):
         font = core.poster_font(15)

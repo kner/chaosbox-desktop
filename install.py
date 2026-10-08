@@ -10,6 +10,40 @@ from pathlib import Path
 import core
 
 
+def installed_roots(home):
+    """Read registered installation paths without executing their launchers."""
+    roots = []
+    installations = Path(home) / ".local/share/chaosbox/installations"
+    for launcher in sorted(installations.glob("*/run-desktop.sh")):
+        for line in launcher.read_text(encoding="utf-8").splitlines():
+            if not line.startswith("exec "):
+                continue
+            command = shlex.split(line)
+            root = None
+            for index, argument in enumerate(command):
+                if argument == "--installdir" and index + 1 < len(command):
+                    root = Path(command[index + 1]).expanduser()
+                    break
+                if argument.startswith("--installdir="):
+                    root = Path(argument.split("=", 1)[1]).expanduser()
+                    break
+            # Stale launchers must not recreate removed installations.
+            if root is not None and root.is_absolute() and (root / "setup.ini").is_file():
+                root = root.resolve()
+                if root not in roots:
+                    roots.append(root)
+    return roots
+
+
+def install_all(home=None, credentials=True, installdir=None):
+    """Update registered boxes, or create the default box on first install."""
+    home = Path.home() if home is None else Path(home)
+    roots = [installdir] if installdir is not None else installed_roots(home)
+    if not roots:
+        roots = [home / "ChaosBox"]
+    return [install(home, credentials=credentials, installdir=root) for root in roots]
+
+
 def install(home=None, credentials=True, installdir=None):
     home = Path.home() if home is None else Path(home)
     source = Path(__file__).resolve().parent
@@ -88,13 +122,15 @@ def install(home=None, credentials=True, installdir=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Update the shared app for all boxes and install a box launcher")
-    parser.add_argument("--installdir", type=Path, default=Path.home() / "ChaosBox")
+    parser = argparse.ArgumentParser(description="Update all existing installations, or create ~/ChaosBox on first install")
+    parser.add_argument("--installdir", type=Path,
+                        help="Install or update a specific box (shared app updates apply to all boxes)")
     args = parser.parse_args()
     try:
-        target, setup, desktop = install(installdir=args.installdir)
+        results = install_all(installdir=args.installdir)
     except FileExistsError as error:
         parser.exit(1, f"Installation aborted: a required directory is occupied by a file: {error.filename}\n")
-    print(f"Updated shared app for all boxes: {target.parent.parent / 'desktop'}\n"
-          f"Setup: {setup}\nApplication menu: {desktop}\n"
-          "Reopen running boxes to use the new version.")
+    print(f"Updated shared app for all boxes: {results[0][0].parent.parent / 'desktop'}")
+    for target, setup, desktop in results:
+        print(f"Setup: {setup}\nApplication menu: {desktop}")
+    print("Reopen running boxes to use the new version.")

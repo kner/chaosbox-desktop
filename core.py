@@ -475,35 +475,77 @@ def poster_draw_text(draw, lines, font, line_height, left, top, width):
         top += line_height
 
 
-def poster_caption(record, box_addition="", comment_addition=""):
-    comment = "\n".join(str(value).strip() for value in
-                        (record.get("comment", ""), box_addition, comment_addition)
-                        if str(value).strip())
-    box = str(record.get("box", "")).strip()
-    return f"{box}: {comment}" if box and comment else box or comment
+def poster_caption(record):
+    return str(record.get("comment", "")).strip()
 
 
-def poster_cells(count, cols, rows, bounds, gap):
-    """Keep configured row heights; reserve unused rows for the final photo."""
+def poster_pages(portraits, cols, rows):
+    """Place photos row by row, deferring portraits that cannot span two rows."""
+    if rows < 2 and any(portraits):
+        raise ValueError("Portrait photos require POSTER-ROWS of at least 2.")
+    pending = list(range(len(portraits)))
+    pages = []
+    while pending:
+        occupied = set()
+        page, deferred = [], []
+        for index in pending:
+            slot = next((slot for slot in range(cols * rows) if slot not in occupied), None)
+            if slot is None:
+                deferred.append(index)
+                continue
+            row, col = divmod(slot, cols)
+            span = 2 if portraits[index] else 1
+            if span == 2 and (row + 1 == rows or slot + cols in occupied):
+                deferred.append(index)
+                continue
+            occupied.add(slot)
+            if span == 2:
+                occupied.add(slot + cols)
+            page.append((index, row, col, span))
+        pages.append(page)
+        pending = deferred
+    return pages
+
+
+def poster_grid_cells(placements, cols, rows, bounds, gap):
     left, top, right, bottom = bounds
+    width = (right - left - gap * (cols - 1)) / cols
     height = (bottom - top - gap * (rows - 1)) / rows
-    preceding_rows = math.ceil((count - 1) / cols)
-    expand_last = count < cols * rows and preceding_rows < rows
-    regular_count = count - 1 if expand_last else count
-    cells = []
-    for index in range(regular_count):
-        row, col = divmod(index, cols)
-        row_count = min(cols, regular_count - row * cols)
-        width = (right - left - gap * (row_count - 1)) / row_count
-        x, y = left + col * (width + gap), top + row * (height + gap)
-        cells.append(tuple(round(value) for value in (x, y, x + width, y + height)))
-    if expand_last:
-        cells.append((left, round(top + preceding_rows * (height + gap)), right, bottom))
-    return cells
+    return [tuple(round(value) for value in
+                  (left + col * (width + gap), top + row * (height + gap),
+                   left + col * (width + gap) + width,
+                   top + row * (height + gap) + height * span + gap * (span - 1)))
+            for row, col, span in placements]
+
+
+def create_posters(paths, profile, settings, progress=lambda _: None, *,
+                   field_overrides=None, setup_dir=None):
+    paths = list(paths)
+    if not paths:
+        raise ValueError("Select at least 1 image.")
+    if any(path.suffix.lower() not in {".jpg", ".jpeg", ".png"} for path in paths):
+        raise ValueError("Posters require JPG or PNG images.")
+    metadata, portraits = [], []
+    for index, path in enumerate(paths):
+        progress(f"Reading poster metadata: {index + 1}/{len(paths)}")
+        metadata.append({**read_metadata(path), **(field_overrides or {})})
+        with Image.open(path) as source:
+            photo = ImageOps.exif_transpose(source)
+            portraits.append(photo.width < photo.height)
+    pages = poster_pages(portraits, settings.cols, settings.rows)
+    outputs = []
+    for number, page in enumerate(pages, 1):
+        progress(f"Poster page: {number}/{len(pages)}")
+        indices = [item[0] for item in page]
+        outputs.append(create_poster([paths[index] for index in indices], profile, settings, progress,
+                                     title=str(metadata[indices[0]].get("box", "")),
+                                     metadata=[metadata[index] for index in indices],
+                                     placements=[item[1:] for item in page], setup_dir=setup_dir))
+    return outputs
 
 
 def create_poster(paths, profile, settings, progress=lambda _: None, *,
-                  title="", box_addition="", comment_addition="", setup_dir=None):
+                  title=None, metadata=None, placements=None, setup_dir=None):
     paths = list(paths)
     if not paths or len(paths) > settings.cols * settings.rows:
         raise ValueError(f"Select between 1 and {settings.cols * settings.rows} images.")
@@ -519,16 +561,26 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
         raise ValueError(f"POSTER-SIZE={settings.height:g}x{settings.width:g} mm leaves no image area: "
                          f"left+right margins={settings.margin_left + settings.margin_right:g} mm, "
                          f"top+bottom margins={settings.margin_top + settings.margin_bottom:g} mm.")
-    metadata = []
-    for index, path in enumerate(paths):
-        progress(f"Reading poster metadata: {index + 1}/{len(paths)}")
-        metadata.append(read_metadata(path))
+    if metadata is None:
+        metadata = [read_metadata(path) for path in paths]
+    if title is None:
+        title = str(metadata[0].get("box", ""))
     gap = max(1, round(3 * scale))
     title_font, title_lines, title_line_height, title_height = poster_text(
         [title], content_width, content_height * .15, round(5 * scale), round(1.5 * scale), True)
     grid_top = top_edge + title_height + (gap if title_height else 0)
-    cells = poster_cells(len(paths), settings.cols, settings.rows,
-                         (left_edge, grid_top, right_edge, bottom_edge), gap)
+    bounds = (left_edge, grid_top, right_edge, bottom_edge)
+    if placements is None:
+        portraits = []
+        for path in paths:
+            with Image.open(path) as source:
+                photo = ImageOps.exif_transpose(source)
+                portraits.append(photo.width < photo.height)
+        pages = poster_pages(portraits, settings.cols, settings.rows)
+        if len(pages) != 1:
+            raise ValueError("Selection needs multiple posters; use create_posters.")
+        placements = [item[1:] for item in pages[0]]
+    cells = poster_grid_cells(placements, settings.cols, settings.rows, bounds, gap)
     cell_width = min(right - left for left, top, right, bottom in cells)
     cell_height = min(bottom - top for left, top, right, bottom in cells)
     if min(cell_width, cell_height) < 2:
@@ -538,7 +590,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
     cell_height -= 2 * inset
     if min(cell_width, cell_height) < 2:
         raise ValueError("Poster cells are too small for frames. Increase SIZE/LIMIT or reduce COLS/ROWS.")
-    comments = [poster_caption(record, box_addition, comment_addition) for record in metadata]
+    comments = [poster_caption(record) for record in metadata]
     font, captions, line_height, caption_height = poster_text(
         comments, int(cell_width), cell_height * .4, round(3 * scale), round(1 * scale))
     caption_space = caption_height + (max(1, round(scale)) if caption_height else 0)

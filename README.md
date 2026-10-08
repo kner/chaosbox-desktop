@@ -33,8 +33,10 @@ Each installation gets its own application menu entry; all boxes use one shared 
 ./install-desktop.sh --installdir=~/cb2
 ```
 
-The installer can be run again with an existing installation directory to update
-the application and launchers while preserving setup, media and records.
+Without `--installdir`, the installer detects all registered installations and
+updates their application and launchers while preserving setup, media and records.
+It creates `~/ChaosBox` only when no existing installation is found. Use
+`--installdir` to add a new installation or explicitly update a particular one.
 An existing empty directory is also accepted. When creating a new setup,
 only the first box receives missing files from `assets/JPG` and
 `assets/TXT` in its respective folders, including subdirectories. Other boxes
@@ -47,8 +49,8 @@ are stored under `~/.local/share/chaosbox/desktop`; box launchers are stored und
 `~/.local/share/chaosbox/installations/<installation-id>`;
 menu entries are `~/.local/share/applications/<installation-id>.desktop`.
 The ID and window class depend on the full installation path, so directories
-with the same final name still have distinct launchers. Run the installer once
-with an existing or new box path to update the application for **all installed boxes**, preserving
+with the same final name still have distinct launchers. Run the installer once,
+with or without a box path, to update the application for **all installed boxes**, preserving
 each box's setup and data. Existing per-box launchers are migrated automatically.
 All boxes use the new version on their next launch; reopen any running windows.
 No administrator privileges are needed when dependencies are already present.
@@ -271,24 +273,20 @@ names are retained without overwriting files.
   setup.ini (filename order) covers the full poster background, including margins.
   The background image keeps its proportions and is center-cropped to fill;
   without a usable image, BACKGROUND-COLOR is used. Transparent backgrounds are
-  composited over that color. Individual source images are never cropped. Its title contains the
-  current **Category** text box content, used only for this export. A blank
-  Category leaves the title blank. Each image is captioned as `box: comment`
-  from its saved EXIF metadata, wrapped across lines. Newly entered Box and
-  Comment values are appended to the existing caption; unchanged form values
-  are not duplicated. Poster export does not save these fields to source files. Text space is reserved before resizing images.
-  Equal grid cells and 3 mm gutters distribute the image/caption groups evenly.
-  Long text uses a smaller font; text that cannot fit produces an error instead
-  of being cut off. JPEG print resolution is derived
-  from these settings. Every image keeps its aspect ratio, is centered, and fits
-  without cropping; unused panel space uses IMAGE-BACKGROUND-COLOR. When the grid is incomplete, the last image occupies all remaining full
-  rows. Earlier images fill preceding rows in selection order; a partial row
-  divides its width evenly among its images. For ROWS=3, COLS=3 and three images,
-  the first two share row 1 and the last spans rows 2–3 across the full width.
-  If no full row remains, the final row shares its width evenly. A single image
-  uses the whole grid area. A full grid keeps equal cells. POSTER-FIX remains
-  accepted for compatibility; both values use this layout. Selection must fit within COLS × ROWS; excess images
-  produce an error instead of being silently omitted.
+  composited over that color. Individual source images are never cropped.
+  Each poster's title is the first field (Box) of its first photo. Only each
+  photo's Comment appears below it; other fields are not shown. Changed form
+  fields apply to all selected photos for the export, replacing those values;
+  unchanged fields retain each photo's metadata. Source files stay intact.
+  Photos fill the configured grid in selection order with 3 mm gutters.
+  Portrait photos (after EXIF rotation) occupy two vertically adjacent cells.
+  A portrait that cannot fit below the current cell moves to the next poster;
+  following photos can fill the space left on the current poster. Portraits
+  require at least two configured rows. Additional posters are created until
+  all photos are placed, each with the title of its first photo.
+  Text space is reserved before resizing images. Long text uses a smaller font;
+  text that cannot fit produces an error. Print resolution follows SIZE/LIMIT.
+  POSTER-FIX remains accepted for compatibility.
 - **TXT** opens configured text snippets and copies the selection to the clipboard.
 - Keyboard shortcuts: Ctrl+O opens media, Ctrl+S saves, Ctrl+F enters/runs search.
 
