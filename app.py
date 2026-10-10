@@ -81,7 +81,15 @@ class ImageCanvas(tk.Canvas):
         self.original = None
         self.photo = None
         self.pending = None
+        self.navigate_previous = None
+        self.navigate_next = None
+        self.image_bounds = None
         self.bind("<Configure>", self.resize)
+        self.bind("<Button-1>", self.navigation_click)
+        self.bind("<Motion>", self.navigation_motion)
+
+    def set_navigation(self, previous, next_):
+        self.navigate_previous, self.navigate_next = previous, next_
 
     def set_image(self, image):
         self.original = image
@@ -110,6 +118,7 @@ class ImageCanvas(tk.Canvas):
     def draw(self):
         self.pending = None
         self.delete("all")
+        self.image_bounds = None
         if self.original is None:
             self.create_text(max(1, self.winfo_width()) / 2, max(1, self.winfo_height()) / 2,
                              text="Select an image or video", fill="#cbd5e1", font=("Sans", 15))
@@ -122,6 +131,42 @@ class ImageCanvas(tk.Canvas):
         rendered = self.original.resize((width, height), Image.Resampling.LANCZOS)
         self.photo = ImageTk.PhotoImage(rendered)
         self.create_image((vw - width) / 2, (vh - height) / 2, anchor="nw", image=self.photo)
+        left, top = (vw - width) / 2, (vh - height) / 2
+        right, bottom = left + width, top + height
+        self.image_bounds = (left, top, right, bottom)
+        center_y = (top + bottom) / 2
+        offset = min(42, width * .2)
+        self.create_text(left + offset + 2, center_y + 2, text="≪", fill="#101820", font=("Sans", 30, "bold"))
+        self.create_text(left + offset, center_y, text="≪", fill="white", font=("Sans", 30, "bold"))
+        self.create_text(right - offset + 2, center_y + 2, text="≫", fill="#101820", font=("Sans", 30, "bold"))
+        self.create_text(right - offset, center_y, text="≫", fill="white", font=("Sans", 30, "bold"))
+
+    def is_navigation_click(self, event):
+        if self.image_bounds is None:
+            return 0
+        left, top, right, bottom = self.image_bounds
+        if not top <= event.y <= bottom:
+            return 0
+        zone = min(76, (right - left) / 2)
+        if event.x <= left + zone:
+            return -1
+        if event.x >= right - zone:
+            return 1
+        return 0
+
+    def navigation_click(self, event):
+        if self.original is None:
+            return
+        direction = self.is_navigation_click(event)
+        if direction < 0 and self.navigate_previous is not None:
+            self.navigate_previous()
+            return "break"
+        if direction > 0 and self.navigate_next is not None:
+            self.navigate_next()
+            return "break"
+
+    def navigation_motion(self, event):
+        self.configure(cursor="hand2" if self.is_navigation_click(event) else "")
 
 
 class MetadataModeDialog(simpledialog.Dialog):
@@ -655,9 +700,11 @@ class App:
         self.preview_link.bind("<space>", self.open_preview)
         self.preview = ImageCanvas(right)
         self.preview.pack(fill="both", expand=True)
-        self.preview.bind("<Double-Button-1>", self.open_preview)
+        self.preview.set_navigation(lambda: self.navigate_preview(-1),
+                                   lambda: self.navigate_preview(1))
+        self.preview.bind("<Double-Button-1>", self.preview_double_click)
         self.preview.bind("<Button-3>", self.show_preview_link)
-        ttk.Label(right, text="Double-click to open · right-click for the file link",
+        ttk.Label(right, text="‹‹ / ›› browse · double-click to open · right-click for the file link",
                   foreground="#475569").pack(pady=8)
         bottom = ttk.Frame(self.root, padding=(18, 0, 18, 12))
         bottom.pack(fill="x")
@@ -767,6 +814,8 @@ class App:
         menu = tk.Menu(self.root, tearoff=False)
         menu.add_command(label=link, state="disabled")
         menu.add_separator()
+        menu.add_command(label="Open in editor", command=self.open_preview_in_editor,
+                         state="normal" if self.settings.editor else "disabled")
         menu.add_command(label="Copy link", command=lambda: self.copy_preview_link(link))
         try:
             menu.tk_popup(event.x_root, event.y_root)
@@ -774,10 +823,54 @@ class App:
             menu.grab_release()
         return "break"
 
+    def preview_double_click(self, event):
+        if self.preview.is_navigation_click(event):
+            return "break"
+        return self.open_preview(event)
+
     def copy_preview_link(self, link):
         self.root.clipboard_clear()
         self.root.clipboard_append(link)
         self.status.set("File link copied to clipboard.")
+
+    def navigate_preview(self, direction):
+        if self.busy:
+            return
+        if self.media:
+            paths = self.media
+            try:
+                index = paths.index(self.preview_path)
+            except ValueError:
+                index = 0
+            path = paths[(index + direction) % len(paths)]
+            self.set_preview_path(path)
+            def done(result):
+                image, warning = result
+                self.preview.set_image(image)
+                if warning:
+                    self.status.set(warning)
+            self.task(lambda: self.preview_result(path), done)
+            return
+        if self.box_path is not None:
+            paths = core.files(self.box_path.parent, {".json"}, recursive=False)
+            if not paths:
+                return
+            try:
+                index = paths.index(self.box_path)
+            except ValueError:
+                index = 0
+            self.load_json(paths[(index + direction) % len(paths)], selected=0)
+
+    def open_preview_in_editor(self):
+        if self.preview_path is None or not self.settings.editor:
+            return
+        path = self.preview_path.resolve()
+        try:
+            if not path.is_file():
+                raise FileNotFoundError(f"File not found: {path}")
+            subprocess.Popen([self.settings.editor, str(path)])
+        except OSError as error:
+            self.error(error)
 
     def values(self):
         data = {key: variable.get() for key, variable in self.variables.items()}

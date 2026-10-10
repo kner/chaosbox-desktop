@@ -169,6 +169,7 @@ class Settings:
         self.window_class = "Chaosbox-" + self.app_id.removeprefix("chaosbox-")
         self.profiles = []
         self.image_width = 3000
+        self.editor = None
         self.snippets = {}
         self.ssh = {}
 
@@ -254,6 +255,7 @@ class Settings:
             labels += [""] * (7 - len(labels))
             snippets = {name: value[1:-1] if value.startswith('"') and value.endswith('"') else value
                         for name, value in effective.get("textsnippets", {}).items()}
+            editor = values.get("editor", "").strip() or None
             ssh = dict(effective.get("ssh", {}))
             for key, value in dict(host="access983197478.webspace-data.io", port="22", user="u114229695",
                                    imagedestination="l1/storage/app/exif/jpg", datadestination="l1/storage/app/exif/data",
@@ -268,7 +270,7 @@ class Settings:
                     raise ValueError(f"Project folder must remain inside the installation: {folder}")
             profile = Profile(identifier, directory.name, images, data, data, self.index,
                               labels, unique_categories(values.get("kategorie", "")), owner, selector,
-                              (image_width, snippets, ssh, poster))
+                              (image_width, snippets, ssh, poster, editor))
             profiles.append(profile)
             for title, entries in children:
                 child_values = {key: value for key, value in values.items() if key != "titel"}
@@ -305,7 +307,7 @@ class Settings:
         profile = next((p for p in self.profiles if p.id.casefold() == name.casefold()),
                        next(p for p in self.profiles if p.id.casefold() == self.default.casefold()))
         self.active = profile.id
-        self.image_width, self.snippets, self.ssh, self.poster = profile.options
+        self.image_width, self.snippets, self.ssh, self.poster, self.editor = profile.options
         return profile
 
     @property

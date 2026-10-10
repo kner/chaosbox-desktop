@@ -264,7 +264,11 @@ names are retained without overwriting files.
   and updates the search index. Other JSON records are retained.
 - Double-click the selected image preview to open the file in the system's default
   application. Right-click the preview to display its encoded `file://` link and
-  copy it to the clipboard. The selected file path remains visible above the preview.
+  copy it to the clipboard. **Open in editor** launches the configured `editor`
+  from the active profile's `setup.ini`, passing it the selected file path. The
+  left and right double-chevron overlays browse selected images or neighboring
+  JSON files and wrap at either end. The selected file path remains visible above
+  the preview.
   MP4 files show a still preview; double-click opens the video in its default player.
 - **Poster** creates a JPEG poster from the selected JPG/PNG images in selection
   order, left to right and top to bottom. It saves to `poster` beside the profile's
