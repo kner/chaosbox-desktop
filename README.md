@@ -10,7 +10,7 @@ their configured language.
 On Ubuntu 24.04 the dependencies are available from Ubuntu packages:
 
 ```bash
-sudo apt install python3-tk python3-pil python3-pil.imagetk python3-paramiko libimage-exiftool-perl ffmpeg xclip fonts-dejavu-core
+sudo apt install python3-tk python3-pil python3-pil.imagetk python3-paramiko python3-gi gir1.2-gexiv2-0.10 python3-mutagen python3-markdown-it ffmpeg fonts-dejavu-core
 ```
 
 From the repository root:
@@ -82,7 +82,7 @@ sudo apt install ./dist/chaosbox-desktop_1.0.2_all.deb
 
 Launch **ChaosBox Desktop** from the application menu or run `/usr/bin/chaosbox`.
 The package installs to `/usr/share/chaosbox-desktop`; apt installs its runtime
-dependencies. It includes the current full-screen and file-operation fixes.
+dependencies. It includes the current preview and file-operation behavior.
 Settings and media remain in the user's home directory and survive removal with
 `sudo apt remove chaosbox-desktop`. SSH credentials are not included.
 
@@ -172,6 +172,13 @@ names are retained without overwriting files.
 
 ## Editing
 
+- The **Comment** box has **Markdown** and **Preview** tabs. Edit the original text
+  in Markdown; Preview displays headings, bold/italic (including combined styles),
+  strikethrough, bullet/numbered lists, block quotes, links and inline/fenced code.
+  Preview links can be opened by clicking them. Existing line breaks are retained.
+  HTML is displayed as text and embedded images show their alternative text.
+  The original Markdown is preserved when saving metadata and JSON records.
+  Tables and Markdown extensions such as footnotes are not supported.
 - **Open JPG / MP4** shows a scrollable thumbnail grid with **1–10 columns**.
   The window can be maximized and restored using its title-bar controls.
   Only files directly in the current folder are shown. **Choose folder …** changes
@@ -183,7 +190,7 @@ names are retained without overwriting files.
   use **Select all** / **Clear**. The selection survives column changes.
   Previews load in the background; unavailable previews remain selectable.
   Thumbnail size follows the column width while preserving image proportions.
-  **Show UserComment** displays **box | category | comment** below each thumbnail,
+  **Show metadata** displays **box | category | comment** below each thumbnail,
   limited to 60 characters in total. Comments load in the background when enabled.
   **Other files …**
   also imports PNG files. The first selected file supplies the preview. Selection
@@ -203,8 +210,10 @@ names are retained without overwriting files.
   After a successful **Save**, all form fields and the selection reset just as
   with **Clear all**. Cancelled or failed saves keep the inputs.
   Local saves refresh only the search index entries of the saved files.
-  Metadata for selections, poster exports and index updates is read with one
-  ExifTool call per batch of up to 128 files, including comments and capture dates.
+  Metadata for selections, poster exports and index updates is read once per
+  unique file, including comments and capture dates. Image metadata uses the
+  GExiv2 Python binding; MP4 metadata uses Mutagen and FFprobe. ExifTool is no
+  longer required.
   Initial index creation reuses metadata already read while organizing files.
   Startup loads the shared index, building it only when absent or with `--newindex`.
   Searches and profile switches reuse it. Run with `--newindex` after external
@@ -215,12 +224,24 @@ names are retained without overwriting files.
   filename; name collisions get numbered suffixes. PNG files become JPG with a
   white background. Images wider than `ImageWidth` are resized proportionally. Smaller
   JPGs retain their encoded image data; MP4 video/audio is not re-encoded.
-- JPG metadata uses EXIF `UserComment`. MP4 metadata uses ItemList `Comment`;
-  existing Keys comments are synchronized. JSON strings use the Android field
-  names, including `anzahl` and `package`.
+- JPG metadata is stored as individual embedded XMP properties:
+  - `dc:description` (language `x-default`): Comment.
+  - `xmp:CreateDate`: the preserved creation date.
+  - `chaosbox:box`, `chaosbox:anzahl`, `chaosbox:device`, `chaosbox:alias`,
+    `chaosbox:category`, `chaosbox:package`: inventory fields, using the namespace
+    `urn:chaosbox:metadata:1.0/`. `chaosbox:version=1` marks a complete record,
+    including fields deliberately left empty.
+  Other EXIF, IPTC and XMP metadata is retained; resized images retain their ICC
+  profile, with corrected orientation/dimensions and obsolete thumbnails removed.
+  MP4 metadata remains JSON in ItemList `Comment`, with existing QuickTime Keys
+  comments synchronized. Video and audio streams are retained without re-encoding.
+- Existing EXIF `UserComment` records remain readable. Saving an image migrates
+  the edited fields to XMP and removes EXIF `UserComment` and its XMP EXIF mirror.
+  Merely opening or indexing images does not rewrite them. External import sources
+  remain unchanged. Older Android versions that only read `UserComment` need XMP
+  support to read newly saved JPG metadata; JSON records and MP4 keep their format.
 - Legacy text comments recognize `Kategorie:` or the second `|`-separated
-  field (`Anzahl | Kategorie | ...`). JPG comments are read with ExifTool `-b`
-  to preserve line breaks.
+  field (`Anzahl | Kategorie | ...`). Unicode and line breaks are preserved.
 - JSON records omit `modified`. Media `created` uses EXIF DateTimeOriginal,
   then CreateDate (also for MP4), then a date in the filename (for example
   `IMG_20240102_030405.jpg` or `2024-01-02_03-04-05.png`). Invalid dates are
@@ -241,12 +262,10 @@ names are retained without overwriting files.
   **Repeat search** reuses the last query.
 - **Del** deletes the displayed media file or the current record in a JSON file
   and updates the search index. Other JSON records are retained.
-- Double-click an image preview for full-screen viewing. Zoom using the mouse
-  wheel or +/−, drag to pan, double-click for 2.5×/reset, and press Escape to close.
-  Zoom reaches 8×; full-screen images are loaded up to 12000 pixels per side.
-  **COPY** copies the displayed image as PNG to the clipboard for pasting with
-  Ctrl+V (requires `xclip`; also works in Ubuntu's XWayland session).
-  MP4 files show a still preview, without an embedded video player.
+- Double-click the selected image preview to open the file in the system's default
+  application. Right-click the preview to display its encoded `file://` link and
+  copy it to the clipboard. The selected file path remains visible above the preview.
+  MP4 files show a still preview; double-click opens the video in its default player.
 - **Poster** creates a JPEG poster from the selected JPG/PNG images in selection
   order, left to right and top to bottom. It saves to `poster` beside the profile's
   image folder, for example `~/ChaosBox/poster`. Source images stay intact;
@@ -284,7 +303,10 @@ names are retained without overwriting files.
   without a usable image, BACKGROUND-COLOR is used. Transparent backgrounds are
   composited over that color. Individual source images are never cropped.
   Each poster's title is the first field (Box) of its first photo. Only each
-  photo's Comment appears below it; other fields are not shown. Form edits
+  photo's Comment appears below it, rendered with the same Markdown styles as
+  Preview. Poster links show styled link text. Font sizing and wrapping account for
+  headings, lists and code; text that cannot fit produces an error rather than
+  being truncated. Other fields are not shown. Form edits
   apply according to the append/replace mode chosen for the selection;
   unchanged common fields retain each photo's metadata. Source files stay intact.
   Photos fill the configured grid in selection order with 3 mm gutters.
@@ -334,13 +356,15 @@ upload dialog to stop. The server must support OpenSSH's POSIX rename extension.
 ## Verification
 
 ```bash
-/usr/bin/python3 -m unittest discover -s desktop/tests -v
-/usr/bin/python3 desktop/tests/tk_smoke.py
+/usr/bin/python3 -m unittest discover -s tests -v
+/usr/bin/python3 tests/tk_smoke.py
+/usr/bin/python3 tests/tk_markdown_smoke.py
 ```
 
-The second command requires a graphical session. Tests use temporary data and
+The Tk commands require a graphical session. Tests use temporary data and
 cover metadata round-trips, encoded image/video preservation, JSON edits,
-category persistence, search, installation, UI workflows and simulated SFTP.
+category persistence, search, installation, Markdown parsing/rendering and source
+preservation, UI workflows and simulated SFTP.
 They do not connect to the live SSH server.
 # chaosboxDesktop
 # chaosboxDesktop

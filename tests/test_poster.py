@@ -135,13 +135,14 @@ class PosterTests(unittest.TestCase):
         metadata = [core.normalized({"category": "Werkzeug", "comment": "Beschreibung " + str(i)})
                     for i in range(3)]
         with patch("core.read_metadata", side_effect=metadata) as read, \
-             patch("core.poster_draw_text", wraps=core.poster_draw_text) as draw_text:
+             patch("core.poster_draw_text", wraps=core.poster_draw_text) as draw_text, \
+             patch("core.markdown_render.draw_poster", wraps=core.markdown_render.draw_poster) as captions:
             output = core.create_poster(self.paths, self.profile,
                                         core.PosterSettings(1000, 100, 200, 3, 1, True), title="Werkzeug")
         self.assertEqual([call.args[0] for call in read.call_args_list], self.paths)
         self.assertEqual(draw_text.call_args_list[0].args[1], ["Werkzeug"])
-        for index, call in enumerate(draw_text.call_args_list[1:]):
-            self.assertEqual(" ".join(call.args[1]), "Beschreibung " + str(index))
+        for index, call in enumerate(captions.call_args_list):
+            self.assertEqual(" ".join(call.args[1].plain_lines), "Beschreibung " + str(index))
         with Image.open(output) as image:
             # Leave a pixel tolerance at JPEG block boundaries.
             for box in [(0, 0, 73, 500), (977, 0, 1000, 500),
@@ -162,11 +163,30 @@ class PosterTests(unittest.TestCase):
         self.assertEqual(core.poster_caption({"box": "Title"}), "")
         before = [path.read_bytes() for path in self.paths]
         with patch("core.read_metadata_batch", return_value=[record] * 3), \
-             patch("core.poster_draw_text", wraps=core.poster_draw_text) as draw:
+             patch("core.poster_draw_text", wraps=core.poster_draw_text) as draw, \
+             patch("core.markdown_render.draw_poster", wraps=core.markdown_render.draw_poster) as captions:
             core.create_posters(self.paths, self.profile, core.PosterSettings(1000, 200, 200, 3, 1))
         self.assertEqual(draw.call_args_list[0].args[1], ["Title"])
-        self.assertEqual(draw.call_args_list[1].args[1], ["Original"])
+        self.assertEqual(captions.call_args_list[0].args[1].plain_lines, ["Original"])
         self.assertEqual([path.read_bytes() for path in self.paths], before)
+
+    def test_markdown_caption_is_rendered_without_changing_source(self):
+        source = "# Heading\n\n**Bold** and *italic*\n\n- `Code`\n- [Link](https://example.org)"
+        record = {"box": "Literal **box**", "comment": source}
+        before = self.paths[0].read_bytes()
+        with patch("core.markdown_render.draw_poster", wraps=core.markdown_render.draw_poster) as draw:
+            output = core.create_poster(self.paths[:1], self.profile,
+                                        core.PosterSettings(1200, 200, 150, 1, 1), metadata=[record])
+        layout = draw.call_args.args[1]
+        self.assertEqual(layout.plain_lines, ["Heading", "Bold and italic", "Code", "Link"])
+        self.assertGreater(layout.lines[0].height, layout.lines[1].height)
+        self.assertTrue(layout.lines[1].runs[0].span.bold)
+        self.assertEqual(layout.lines[2].prefix, "•")
+        self.assertTrue(layout.lines[2].runs[0].span.code)
+        self.assertEqual(record["comment"], source)
+        self.assertEqual(self.paths[0].read_bytes(), before)
+        with Image.open(output) as image:
+            self.assertEqual(image.size, (900, 1200))
 
     def test_portrait_spans_and_deferral(self):
         self.assertEqual(core.poster_pages([False, False, True, False, True], 2, 2),
@@ -295,13 +315,14 @@ class PosterTests(unittest.TestCase):
         values = dict(baseline, comment="new")
         for mode in ("extend", "replace"):
             with self.subTest(mode=mode), patch("core.read_metadata_batch", return_value=originals), \
-                 patch("core.poster_draw_text", wraps=core.poster_draw_text) as draw:
+                 patch("core.poster_draw_text", wraps=core.poster_draw_text) as draw, \
+                 patch("core.markdown_render.draw_poster", wraps=core.markdown_render.draw_poster) as captions:
                 core.create_posters(self.paths[:2], self.profile, core.PosterSettings(600, 200, 200, 2, 1),
                                     field_overrides=values, field_baseline=baseline, edit_mode=mode,
                                     differing_fields=core.differing_metadata_fields(originals))
             self.assertEqual(draw.call_args_list[0].args[1], ["A"] if mode == "extend" else [])
-            self.assertEqual(draw.call_args_list[1].args[1], ["first", "new"] if mode == "extend" else ["new"])
-            self.assertEqual(draw.call_args_list[2].args[1], ["second", "new"] if mode == "extend" else ["new"])
+            self.assertEqual(captions.call_args_list[0].args[1].plain_lines, ["first", "new"] if mode == "extend" else ["new"])
+            self.assertEqual(captions.call_args_list[1].args[1].plain_lines, ["second", "new"] if mode == "extend" else ["new"])
 
     def test_multiple_posters_preserve_order_and_title(self):
         paths = self.paths * 3

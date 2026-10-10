@@ -2,7 +2,6 @@
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 import queue
-import io
 import sys
 import json
 import tempfile
@@ -12,7 +11,7 @@ from unittest.mock import Mock, patch
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from app import App, MediaGrid, MediaFolderDialog, copy_image_clipboard, user_comment_preview
+from app import App, MediaGrid, MediaFolderDialog, user_comment_preview
 import core
 import app as desktop_app
 
@@ -273,7 +272,7 @@ class UserCommentTests(unittest.TestCase):
     def test_caption_shows_fields_in_order_and_limits_unicode_to_60_characters(self):
         raw = json.dumps({"box": "A11", "category": "Elektronik", "comment": "Grüße 🎬 " + "ä" * 70,
                           "device": "Not displayed"}, ensure_ascii=False)
-        with patch("core.run_tool", return_value=raw.encode("utf-8")):
+        with patch("core.read_user_comment", return_value=raw):
             caption = user_comment_preview(Path("photo.jpg"))
             self.assertEqual(caption, ("A11 | ELEKTRONIK | Grüße 🎬 " + "ä" * 70)[:60])
             self.assertEqual(len(caption), 60)
@@ -423,22 +422,6 @@ class MediaFolderTests(unittest.TestCase):
             app.error.assert_not_called()
 
 
-class ClipboardTests(unittest.TestCase):
-    def test_copy_publishes_png_pixels(self):
-        image = Image.new("RGB", (17, 11), "teal")
-        with patch("app.shutil.which", return_value="/usr/bin/xclip"), patch("app.subprocess.run") as run:
-            copy_image_clipboard(image)
-        self.assertIn("image/png", run.call_args.args[0])
-        pasted = Image.open(io.BytesIO(run.call_args.kwargs["input"]))
-        self.assertEqual(pasted.size, image.size)
-        self.assertEqual(pasted.tobytes(), image.tobytes())
-
-    def test_missing_clipboard_helper_is_reported(self):
-        with patch("app.shutil.which", return_value=None):
-            with self.assertRaisesRegex(RuntimeError, "sudo apt install xclip"):
-                copy_image_clipboard(Image.new("RGB", (1, 1)))
-
-
 class QueueRecoveryTests(unittest.TestCase):
     def setUp(self):
         self.app = App.__new__(App)
@@ -489,13 +472,6 @@ class QueueRecoveryTests(unittest.TestCase):
         self.app.drain()
         done.assert_called_once_with(None)
         self.assertFalse(self.app.busy)
-
-    def test_existing_viewer_is_reused(self):
-        self.app.fullscreen_window = Mock()
-        self.app.fullscreen_window.winfo_exists.return_value = True
-        self.app.fullscreen()
-        self.app.fullscreen_window.lift.assert_called_once()
-        self.assertTrue(self.app.events.empty())
 
     def test_closing_during_write_is_still_blocked(self):
         self.app.close()

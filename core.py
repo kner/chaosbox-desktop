@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 import errno
 import hashlib
 import io
@@ -22,6 +23,8 @@ import uuid
 
 from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageColor
 
+import markdown_render
+
 FIELDS = ("box", "anzahl", "device", "alias", "category", "comment", "package")
 LABELS = ("Box", "Quantity", "Device", "Alias", "Category", "Comment", "Package")
 MEDIA = {".jpg", ".jpeg", ".mp4"}
@@ -29,6 +32,19 @@ IMPORTS = MEDIA | {".png"}
 RECORD_KEYS = set(FIELDS) | {"count", "pack", "created", "modified"}
 REPO = Path(__file__).resolve().parent.parent
 DEFAULT_SETUP = Path(__file__).with_name("setup.ini")
+XMP_NAMESPACE = "urn:chaosbox:metadata:1.0/"
+XMP_FIELDS = {field: f"Xmp.chaosbox.{field}" for field in FIELDS if field != "comment"}
+XMP_FIELDS.update(comment="Xmp.dc.description", created="Xmp.xmp.CreateDate")
+
+
+@lru_cache(maxsize=1)
+def image_metadata_library():
+    """Load the Ubuntu-packaged Python binding, registering our inventory schema."""
+    import gi
+    gi.require_version("GExiv2", "0.10")
+    from gi.repository import GExiv2
+    GExiv2.Metadata.try_register_xmp_namespace(XMP_NAMESPACE, "chaosbox")
+    return GExiv2
 
 
 class Cancelled(Exception):
@@ -672,7 +688,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
     if min(cell_width, cell_height) < 2:
         raise ValueError("Poster cells are too small for frames. Increase SIZE/LIMIT or reduce COLS/ROWS.")
     comments = [poster_caption(record) for record in metadata]
-    font, captions, line_height, caption_height = poster_text(
+    captions, caption_height = markdown_render.fit(
         comments, int(cell_width), cell_height * .4, round(3 * scale), round(1 * scale))
     caption_space = caption_height + (max(1, round(scale)) if caption_height else 0)
     canvas = poster_background((width, height), settings.background_color, setup_dir, progress)
@@ -698,13 +714,13 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
             if image_height < 1:
                 raise ValueError("No room for images below poster captions.")
             photo = ImageOps.contain(photo, (right - left, image_height), Image.Resampling.LANCZOS)
-            own_caption_height = len(captions[index]) * line_height
+            own_caption_height = captions[index].height
             text_gap = max(1, round(scale)) if own_caption_height else 0
             group_height = photo.height + text_gap + own_caption_height
             photo_top = top + (bottom - top - group_height) // 2
             canvas.paste(photo, (left + (right - left - photo.width) // 2, photo_top), photo)
-            poster_draw_text(draw, captions[index], font, line_height,
-                             left, photo_top + photo.height + text_gap, right - left)
+            markdown_render.draw_poster(draw, captions[index],
+                                        left, photo_top + photo.height + text_gap, right - left)
     output = io.BytesIO()
     canvas.save(output, "JPEG", quality=95,
                 dpi=(width * 25.4 / settings.width, height * 25.4 / settings.height))
@@ -789,16 +805,151 @@ def run_tool(*arguments, timeout=300):
     return result.stdout
 
 
+def open_image_metadata(path):
+    metadata = image_metadata_library().Metadata()
+    metadata.open_path(str(path))
+    return metadata
+
+
+def legacy_image_comment(path, metadata):
+    """Decode EXIF's character-code prefix, including Android's UTF-8 comments."""
+    if not metadata.try_has_tag("Exif.Photo.UserComment"):
+        return ""
+    raw = bytes(metadata.try_get_tag_raw("Exif.Photo.UserComment").get_data())
+    prefix, content = raw[:8], raw[8:]
+    if prefix == b"UNICODE\0":
+        if content.startswith((b"\xff\xfe", b"\xfe\xff")):
+            return content.decode("utf-16").rstrip("\0")
+        # Some writers label UTF-8 as UNICODE. Real UTF-16 Latin text contains NULs.
+        if b"\0" not in content:
+            try:
+                return content.decode("utf-8")
+            except UnicodeDecodeError:
+                pass
+        with Image.open(path) as image:
+            little_endian = image.info.get("exif", b"")[6:8] == b"II"
+        return content.decode("utf-16-le" if little_endian else "utf-16-be").rstrip("\0")
+    if prefix == b"JIS\0\0\0\0\0":
+        return content.decode("shift_jis").rstrip("\0")
+    if prefix in (b"ASCII\0\0\0", b"\0" * 8):
+        raw = content
+    return raw.decode("utf-8").rstrip("\0")
+
+
+def image_record(path, metadata):
+    # A complete XMP record takes precedence, even when fields have been cleared.
+    complete = metadata.try_has_tag("Xmp.chaosbox.version")
+    record = {} if complete else parse_metadata(legacy_image_comment(path, metadata))
+    for field, tag in XMP_FIELDS.items():
+        if not metadata.try_has_tag(tag):
+            continue
+        if field == "comment":
+            alternatives = metadata.try_get_tag_multiple(tag) or []
+            value = next((value for value in alternatives if value.startswith('lang="x-default" ')),
+                         alternatives[0] if alternatives and not complete else "")
+            record[field] = re.sub(r'^lang="[^"]*" ', "", value, count=1)
+        else:
+            record[field] = metadata.try_get_tag_string(tag) or ""
+        # Legacy aliases must not override a more recent XMP property.
+        if field == "anzahl":
+            record.pop("count", None)
+            record.pop("Anzahl", None)
+        elif field == "package":
+            record.pop("pack", None)
+        elif field == "category":
+            record = {key: value for key, value in record.items()
+                      if key == "category" or key.casefold() not in ("category", "kategorie")}
+    return normalized(record)
+
+
+def image_capture_tags(metadata):
+    names = {"DateTimeOriginal": "Exif.Photo.DateTimeOriginal", "CreateDate": "Exif.Photo.DateTimeDigitized",
+             "OffsetTimeOriginal": "Exif.Photo.OffsetTimeOriginal", "OffsetTimeDigitized": "Exif.Photo.OffsetTimeDigitized"}
+    return {name: metadata.try_get_tag_string(tag) for name, tag in names.items()
+            if metadata.try_has_tag(tag)}
+
+
+def video_key_comments(path, payload=None):
+    """Read/update existing QuickTime Keys comments through Mutagen's atom engine.
+
+    Mutagen's public writer handles moov.udta.meta only. Its atom writer also
+    handles the moov.meta variant used by cameras, updating chunk offsets when
+    a longer comment grows the file. Keep that compatibility code in one place.
+    """
+    from mutagen.mp4 import MP4Tags
+    from mutagen.mp4._atom import Atom, Atoms
+
+    comments = []
+    for parent in ((b"moov", b"udta", b"meta"), (b"moov", b"meta")):
+        with Path(path).open("r+b" if payload is not None else "rb") as stream:
+            atoms = Atoms(stream)
+            try:
+                keys_atom = atoms[parent + (b"keys",)]
+                ilst_path = atoms.path(*parent, b"ilst")
+            except KeyError:
+                continue
+            ok, keys = keys_atom.read(stream)
+            if not ok or len(keys) < 8:
+                raise ValueError("Truncated MP4 Keys metadata.")
+            position, indices = 8, []
+            for index in range(1, int.from_bytes(keys[4:8], "big") + 1):
+                size = int.from_bytes(keys[position:position + 4], "big")
+                if size < 8 or position + size > len(keys):
+                    raise ValueError("Invalid MP4 Keys metadata.")
+                name = keys[position + 8:position + size]
+                if name in (b"comment", b"com.apple.quicktime.comment"):
+                    indices.append(index.to_bytes(4, "big").decode("latin-1"))
+                position += size
+            if not indices:
+                continue
+
+            class MetadataPath:
+                def path(self, *names):
+                    return ilst_path
+
+            tags = MP4Tags(MetadataPath(), stream)
+            for key in indices:
+                if key in tags:
+                    comments.extend(tags[key])
+                if payload is not None:
+                    tags[key] = [payload]
+            if payload is not None:
+                rendered = [tags._render(key, value) for key, value in tags.items()]
+                # Preserve unknown binary metadata exactly as Mutagen's public save does.
+                for key, values in tags._failed_atoms.items():
+                    if key not in tags:
+                        rendered.extend(Atom.render(key.encode("latin-1"), value) for value in values)
+                tags._MP4Tags__save_existing(stream, atoms, ilst_path,
+                                            Atom.render(b"ilst", b"".join(rendered)), None)
+    return comments
+
+
+def video_metadata(path):
+    from mutagen.mp4 import MP4
+    media = MP4(path)
+    probe = json.loads(run_tool("ffprobe", "-v", "error", "-show_entries", "format_tags:stream_tags",
+                                "-of", "json", str(path)))
+    tags = probe.get("format", {}).get("tags", {})
+    comments = (media.tags or {}).get("\xa9cmt")
+    if comments is None:
+        comments = video_key_comments(path)
+    raw = comments[0] if comments else tags.get("comment", "")
+    created = tags.get("creation_time", "")
+    if not created:
+        created = next((item["tags"]["creation_time"] for item in probe.get("streams", [])
+                        if item.get("tags", {}).get("creation_time")), "")
+    return raw, {"DateTimeOriginal": tags.get("com.apple.quicktime.creationdate", ""), "CreateDate": created}
+
+
 def read_user_comment(path):
-    """Read the original media comment without interpreting its JSON content."""
+    """Compatibility accessor: return XMP fields as JSON, or the original legacy comment."""
     path = Path(path).resolve()
     if path.suffix.lower() == ".mp4":
-        tags = json.loads(run_tool("exiftool", "-j", "-G1", "-ItemList:Comment", "-Keys:Comment", "-UserData:Comment", str(path)))
-        item = tags[0]
-        raw = next((item[key] for key in ("ItemList:Comment", "Keys:Comment", "UserData:Comment") if key in item), "")
-    else:
-        raw = run_tool("exiftool", "-b", "-EXIF:UserComment", str(path)).decode("utf-8")
-    return raw
+        return video_metadata(path)[0]
+    metadata = open_image_metadata(path)
+    if any(metadata.try_has_tag(tag) for tag in (*XMP_FIELDS.values(), "Xmp.chaosbox.version")):
+        return json.dumps(image_record(path, metadata), ensure_ascii=False)
+    return legacy_image_comment(path, metadata)
 
 
 def read_metadata(path):
@@ -806,45 +957,64 @@ def read_metadata(path):
 
 
 def read_metadata_batch(paths, progress=lambda _: None):
-    """Read comments and capture dates together, retaining input order and duplicates."""
+    """Read each file once, retaining input order and independent duplicate records."""
     paths = [Path(path).resolve() for path in paths]
     unique = list(dict.fromkeys(paths))
     records = {}
-    # Bound command-line size and memory even for very large selections.
-    for start in range(0, len(unique), 128):
-        batch = unique[start:start + 128]
-        progress(f"Reading metadata: {start + len(batch)}/{len(unique)}")
-        items = json.loads(run_tool("exiftool", "-q", "-j", "-G1", "-s",
-                                   "-EXIF:UserComment", "-ItemList:Comment", "-Keys:Comment", "-UserData:Comment",
-                                   "-DateTimeOriginal", "-CreateDate", "-OffsetTimeOriginal", "-OffsetTimeDigitized",
-                                   "--", *(str(path) for path in batch)))
-        for item in items:
-            path = Path(item["SourceFile"]).resolve()
-            error = next((value for key, value in item.items() if key.rsplit(":", 1)[-1] == "Error"), None)
-            if error:
-                raise ValueError(f"{path}: {error}")
+    for index, path in enumerate(unique, 1):
+        try:
             if path.suffix.lower() == ".mp4":
-                raw = next((item[key] for key in ("ItemList:Comment", "Keys:Comment", "UserData:Comment")
-                            if key in item), "")
+                raw, tags = video_metadata(path)
+                record = parse_metadata(raw)
             else:
-                raw = next((value for key, value in item.items()
-                            if key.rsplit(":", 1)[-1] == "UserComment"), "")
-            record = parse_metadata(raw)
-            tags = {key.rsplit(":", 1)[-1]: value for key, value in item.items()}
+                metadata = open_image_metadata(path)
+                record = image_record(path, metadata)
+                tags = image_capture_tags(metadata)
             record["created"] = media_created(path, record.get("created"), tags=tags)
             records[path] = record
-        for path in batch:
-            if path not in records:
-                raise ValueError(f"{path}: ExifTool returned no metadata.")
+        except Exception as error:
+            raise ValueError(f"{path}: {error}") from error
+        if index % 128 == 0 or index == len(unique):
+            progress(f"Reading metadata: {index}/{len(unique)}")
     return [dict(records[path]) for path in paths]
+
+
+def write_image_metadata(original, target, record, dimensions=None):
+    metadata = open_image_metadata(original)
+    metadata.try_clear_tag("Exif.Photo.UserComment")
+    # Remove obsolete mirrored UserComment metadata, retaining unrelated XMP.
+    metadata.try_clear_tag("Xmp.exif.UserComment")
+    metadata.try_set_tag_string("Xmp.chaosbox.version", "1")
+    for field, tag in XMP_FIELDS.items():
+        value = str(record.get(field, ""))
+        if field == "comment":
+            value = 'lang="x-default" ' + value
+        if not metadata.try_set_tag_string(tag, value):
+            raise ValueError(f"Cannot write {tag}.")
+    if dimensions:
+        metadata.try_set_orientation(image_metadata_library().Orientation.NORMAL)
+        metadata.try_set_metadata_pixel_width(dimensions[0])
+        metadata.try_set_metadata_pixel_height(dimensions[1])
+        metadata.try_erase_exif_thumbnail()
+    metadata.save_file(str(target))
+
+
+def write_video_metadata(path, record):
+    from mutagen.mp4 import MP4
+    payload = json.dumps(record, ensure_ascii=False, separators=(",", ":"))
+    media = MP4(path)
+    if media.tags is None:
+        media.add_tags()
+    media.tags["\xa9cmt"] = [payload]
+    media.save()
+    video_key_comments(path, payload)
 
 
 def media_created(path, existing=None, *, tags=None):
     """Prefer capture metadata, then filename, saved creation date, and source mtime."""
     path = Path(path)
     if tags is None:
-        tags = json.loads(run_tool("exiftool", "-j", "-DateTimeOriginal", "-CreateDate",
-                                   "-OffsetTimeOriginal", "-OffsetTimeDigitized", str(path)))[0]
+        tags = video_metadata(path)[1] if path.suffix.lower() == ".mp4" else image_capture_tags(open_image_metadata(path))
     for key, offset in (("DateTimeOriginal", "OffsetTimeOriginal"),
                         ("CreateDate", "OffsetTimeDigitized")):
         value = str(tags.get(key, ""))
@@ -938,30 +1108,17 @@ def save_media(source, profile, metadata, image_width):
                         converted = converted.resize((image_width, height), Image.Resampling.LANCZOS)
                     rgb = Image.new("RGB", converted.size, "white")
                     rgb.paste(converted, mask=converted.getchannel("A"))
-                    rgb.save(temporary, "JPEG", quality=92)
+                    rgb.save(temporary, "JPEG", quality=92, icc_profile=image.info.get("icc_profile"))
                     width, height = rgb.size
                 else:
                     shutil.copyfile(original, temporary)
-        payload = json.dumps(metadata, ensure_ascii=False, separators=(",", ":"))
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", prefix="chaosbox-comment-", delete=False) as text:
-            text.write(payload)
-            comment_file = Path(text.name)
-        try:
-            args = ["exiftool", "-overwrite_original"]
-            if resized:
-                args += ["-TagsFromFile", str(original), "-all:all", "-Orientation#=1",
-                         f"-ExifImageWidth={width}", f"-ExifImageHeight={height}", "-ThumbnailImage="]
-            args += [f"-ItemList:Comment<={comment_file}"] if video else [f"-EXIF:UserComment<={comment_file}"]
-            if video:
-                old = json.loads(run_tool("exiftool", "-j", "-G1", "-Keys:Comment", str(original)))[0]
-                if "Keys:Comment" in old:
-                    args += [f"-Keys:Comment<={comment_file}"]
-            run_tool(*args, str(temporary))
-        finally:
-            comment_file.unlink(missing_ok=True)
+        if video:
+            write_video_metadata(temporary, metadata)
+        else:
+            write_image_metadata(original, temporary, metadata, (width, height) if resized else None)
         # Validate the newly written metadata before replacing any user file.
         result = read_metadata(temporary)
-        if any(str(result.get(field, "")) != str(metadata.get(field, "")) for field in FIELDS):
+        if any(str(result.get(field, "")) != str(metadata.get(field, "")) for field in (*FIELDS, "created")):
             raise ValueError("Metadata verification failed; the source file was not changed.")
         if target is None:
             target = reserve_output(destination, original.name if editing else original.stem + "_cb" + extension)

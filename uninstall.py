@@ -29,7 +29,7 @@ def uninstall(home=None, installdir=None):
     remove(target / "run-desktop.sh")
     # Shared code is still needed while another installation has a launcher.
     if not any(installations.glob("*/run-desktop.sh")):
-        for name in ("app.py", "core.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
+        for name in ("app.py", "core.py", "markdown_render.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
             remove(base / "desktop" / name)
     # Leave directories, caches, credentials and any unrecognized files intact.
     return root, removed

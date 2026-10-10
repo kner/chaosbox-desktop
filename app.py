@@ -5,11 +5,9 @@ from __future__ import annotations
 import argparse
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
-import io
 import json
 from pathlib import Path
 import queue
-import shutil
 import subprocess
 import sys
 import threading
@@ -19,18 +17,51 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 from PIL import Image, ImageTk
 
 import core
+import markdown_render
 
 
-def copy_image_clipboard(image):
-    """Publish actual PNG pixels, with xclip retaining clipboard ownership."""
-    executable = shutil.which("xclip")
-    if executable is None:
-        raise RuntimeError("Image copy requires xclip. Install it with: sudo apt install xclip")
-    buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
-    subprocess.run([executable, "-selection", "clipboard", "-target", "image/png", "-in"],
-                   input=buffer.getvalue(), stdout=subprocess.DEVNULL,
-                   stderr=subprocess.DEVNULL, check=True, timeout=15)
+class CommentEditor(ttk.Notebook):
+    """Keep editable Markdown separate from its read-only native preview."""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.pending = None
+        edit = ttk.Frame(self)
+        preview = ttk.Frame(self)
+        self.source = tk.Text(edit, height=13, wrap="word", font=("Sans", 11), undo=True, padx=8, pady=8)
+        self.preview = tk.Text(preview, height=13, wrap="word", font=("DejaVu Sans", 11),
+                               padx=8, pady=8, state="disabled", background="#ffffff")
+        for frame, widget in ((edit, self.source), (preview, self.preview)):
+            scroll = ttk.Scrollbar(frame, orient="vertical", command=widget.yview)
+            scroll.pack(side="right", fill="y")
+            widget.pack(side="left", fill="both", expand=True)
+            widget.configure(yscrollcommand=scroll.set)
+        self.add(edit, text="Markdown")
+        self.add(preview, text="Preview")
+        self.source.bind("<<Modified>>", self.changed)
+        self.source.edit_modified(False)
+        self.bind("<<NotebookTabChanged>>", self.refresh)
+        self.bind("<Destroy>", self.cleanup)
+
+    def changed(self, event=None):
+        if not self.source.edit_modified():
+            return
+        self.source.edit_modified(False)
+        if self.pending is not None:
+            self.after_cancel(self.pending)
+        self.pending = self.after(150, self.refresh)
+
+    def refresh(self, event=None):
+        if self.pending is not None:
+            self.after_cancel(self.pending)
+            self.pending = None
+        if self.index(self.select()) == 1:
+            markdown_render.render_preview(self.preview, self.source.get("1.0", "end-1c"))
+
+    def cleanup(self, event):
+        if event.widget is self and self.pending is not None:
+            self.after_cancel(self.pending)
+            self.pending = None
 
 
 USER_COMMENT_PREVIEW_LIMIT = 60
@@ -45,26 +76,15 @@ def user_comment_preview(path):
 
 
 class ImageCanvas(tk.Canvas):
-    def __init__(self, parent, zoomable=False, **kwargs):
+    def __init__(self, parent, **kwargs):
         super().__init__(parent, background="#101820", highlightthickness=0, **kwargs)
         self.original = None
         self.photo = None
-        self.zoom, self.x, self.y = 1., 0., 0.
-        self.drag = None
         self.pending = None
-        self.zoomable = zoomable
         self.bind("<Configure>", self.resize)
-        if zoomable:
-            self.bind("<Button-4>", lambda e: self.scale(1.2, e.x, e.y))
-            self.bind("<Button-5>", lambda e: self.scale(1 / 1.2, e.x, e.y))
-            self.bind("<MouseWheel>", lambda e: self.scale(1.2 if e.delta > 0 else 1 / 1.2, e.x, e.y))
-            self.bind("<ButtonPress-1>", self.start_drag)
-            self.bind("<B1-Motion>", self.move_drag)
-            self.bind("<Double-Button-1>", lambda e: self.reset() if self.zoom > 1.01 else self.scale(2.5, e.x, e.y))
 
     def set_image(self, image):
         self.original = image
-        self.zoom = 1.
         self.resize()
 
     def fit(self):
@@ -74,48 +94,7 @@ class ImageCanvas(tk.Canvas):
                    max(1, self.winfo_height()) / self.original.height)
 
     def resize(self, event=None):
-        self.zoom = 1.
-        if self.original is not None:
-            scale = self.fit()
-            self.x = (self.winfo_width() - self.original.width * scale) / 2
-            self.y = (self.winfo_height() - self.original.height * scale) / 2
         self.schedule()
-
-    def reset(self):
-        self.resize()
-
-    def scale(self, factor, x=None, y=None):
-        if self.original is None:
-            return
-        x = self.winfo_width() / 2 if x is None else x
-        y = self.winfo_height() / 2 if y is None else y
-        new = max(1., min(8., self.zoom * factor))
-        factor = new / self.zoom
-        self.x = x - (x - self.x) * factor
-        self.y = y - (y - self.y) * factor
-        self.zoom = new
-        self.constrain()
-        self.schedule()
-
-    def constrain(self):
-        if self.original is None:
-            return
-        scale = self.fit() * self.zoom
-        w, h = self.original.width * scale, self.original.height * scale
-        vw, vh = self.winfo_width(), self.winfo_height()
-        self.x = (vw - w) / 2 if w <= vw else max(vw - w, min(0., self.x))
-        self.y = (vh - h) / 2 if h <= vh else max(vh - h, min(0., self.y))
-
-    def start_drag(self, event):
-        self.drag = (event.x, event.y)
-
-    def move_drag(self, event):
-        if self.drag:
-            self.x += event.x - self.drag[0]
-            self.y += event.y - self.drag[1]
-            self.drag = (event.x, event.y)
-            self.constrain()
-            self.schedule()
 
     def schedule(self):
         if self.pending:
@@ -135,22 +114,14 @@ class ImageCanvas(tk.Canvas):
             self.create_text(max(1, self.winfo_width()) / 2, max(1, self.winfo_height()) / 2,
                              text="Select an image or video", fill="#cbd5e1", font=("Sans", 15))
             return
-        scale = self.fit() * self.zoom
+        scale = self.fit()
         if scale <= 0:
             return
         vw, vh = max(1, self.winfo_width()), max(1, self.winfo_height())
-        # Render only the visible region, keeping memory bounded even at 8× zoom.
-        left, top = max(0., -self.x / scale), max(0., -self.y / scale)
-        right = min(self.original.width, (vw - self.x) / scale)
-        bottom = min(self.original.height, (vh - self.y) / scale)
-        if right <= left or bottom <= top:
-            return
-        width, height = max(1, round((right - left) * scale)), max(1, round((bottom - top) * scale))
-        rendered = self.original.resize((width, height), Image.Resampling.LANCZOS, box=(left, top, right, bottom))
+        width, height = max(1, round(self.original.width * scale)), max(1, round(self.original.height * scale))
+        rendered = self.original.resize((width, height), Image.Resampling.LANCZOS)
         self.photo = ImageTk.PhotoImage(rendered)
-        self.create_image(max(0, self.x), max(0, self.y), anchor="nw", image=self.photo)
-        if self.zoomable:
-            self.create_text(18, 18, anchor="nw", text=f"{self.zoom:.1f}×", fill="white", font=("Sans", 12, "bold"))
+        self.create_image((vw - width) / 2, (vh - height) / 2, anchor="nw", image=self.photo)
 
 
 class MetadataModeDialog(simpledialog.Dialog):
@@ -483,7 +454,6 @@ class App:
         self.media, self.box_path, self.records, self.record_index = [], None, [], None
         self.created = ""
         self.preview_path = None
-        self.fullscreen_window = None
         self.search_mode, self.before_search, self.last_search = False, None, None
         self.cancel_upload = threading.Event()
         self.uploading = False
@@ -583,6 +553,11 @@ class App:
         position = self.FORM_FIELDS.index(key)
         for next_key in self.FORM_FIELDS[position + 1:]:
             widget = self.field_widgets[next_key]
+            if next_key == "comment" and getattr(self, "comment_editor", None) is not None:
+                if self.comment_editor.winfo_viewable() and str(widget.cget("state")) != "disabled":
+                    self.comment_editor.select(0)
+                    widget.focus_set()
+                    return
             if widget.winfo_viewable() and str(widget.cget("state")) != "disabled":
                 widget.focus_set()
                 return
@@ -639,8 +614,9 @@ class App:
             label = ttk.Label(row, text=core.LABELS[position])
             label.pack(anchor="w", pady=(0, 4))
             if key == "comment":
-                widget = tk.Text(row, height=13, wrap="word", font=("Sans", 11), undo=True, padx=8, pady=8)
-                widget.pack(fill="both", expand=True)
+                self.comment_editor = CommentEditor(row)
+                self.comment_editor.pack(fill="both", expand=True)
+                widget = self.comment_editor.source
             elif key in ("category", "device"):
                 widget = ttk.Combobox(row, textvariable=self.variables[key], font=("Sans", 11))
                 widget.configure(postcommand=lambda widget=widget, key=key:
@@ -672,10 +648,6 @@ class App:
         selection = ttk.Frame(right)
         selection.pack(fill="x", pady=(3, 8))
         ttk.Label(selection, textvariable=self.selected, wraplength=540).pack(side="left", fill="x", expand=True)
-        copy_path = ttk.Button(selection, text="Copy path", command=self.copy_selected_path, state="disabled")
-        copy_path.pack(side="right", padx=(8, 0))
-        self.selected.trace_add("write", lambda *_: copy_path.configure(
-            state="normal" if self.media or self.box_path else "disabled"))
         self.preview_link = ttk.Label(right, foreground="#2563eb", cursor="hand2",
                                       font=("Sans", 11, "underline"), wraplength=720, takefocus=True)
         self.preview_link.bind("<Button-1>", self.open_preview)
@@ -683,8 +655,10 @@ class App:
         self.preview_link.bind("<space>", self.open_preview)
         self.preview = ImageCanvas(right)
         self.preview.pack(fill="both", expand=True)
-        self.preview.bind("<Double-Button-1>", self.fullscreen)
-        ttk.Label(right, text="Double-click an image for full-screen view · mouse wheel to zoom", foreground="#475569").pack(pady=8)
+        self.preview.bind("<Double-Button-1>", self.open_preview)
+        self.preview.bind("<Button-3>", self.show_preview_link)
+        ttk.Label(right, text="Double-click to open · right-click for the file link",
+                  foreground="#475569").pack(pady=8)
         bottom = ttk.Frame(self.root, padding=(18, 0, 18, 12))
         bottom.pack(fill="x")
         self.status = tk.StringVar(value="Ready")
@@ -786,12 +760,24 @@ class App:
             self.status.set(f"{len(entries)} records · {self.settings.index}")
         self.task(work, done)
 
-    def copy_selected_path(self):
-        path = self.media[0] if self.media else self.box_path
-        if path is not None:
-            self.root.clipboard_clear()
-            self.root.clipboard_append(str(path))
-            self.status.set("File path copied to clipboard.")
+    def show_preview_link(self, event):
+        if self.preview_path is None:
+            return "break"
+        link = self.preview_path.resolve().as_uri()
+        menu = tk.Menu(self.root, tearoff=False)
+        menu.add_command(label=link, state="disabled")
+        menu.add_separator()
+        menu.add_command(label="Copy link", command=lambda: self.copy_preview_link(link))
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+        return "break"
+
+    def copy_preview_link(self, link):
+        self.root.clipboard_clear()
+        self.root.clipboard_append(link)
+        self.status.set("File link copied to clipboard.")
 
     def values(self):
         data = {key: variable.get() for key, variable in self.variables.items()}
@@ -805,6 +791,8 @@ class App:
             variable.set(value.upper() if key == "category" else value)
         self.field_widgets["comment"].delete("1.0", "end")
         self.field_widgets["comment"].insert("1.0", str(values.get("comment", "")))
+        if getattr(self, "comment_editor", None) is not None:
+            self.comment_editor.refresh()
         self.created = values.get("created", "")
 
     def clear(self):
@@ -904,7 +892,7 @@ class App:
         def change_comment():
             self.media_show_user_comment = show_comment.get()
             grid.set_show_user_comment(self.media_show_user_comment)
-        ttk.Checkbutton(toolbar, text="Show UserComment", variable=show_comment,
+        ttk.Checkbutton(toolbar, text="Show metadata", variable=show_comment,
                         command=change_comment).pack(side="right", padx=8)
         change_comment()
         def change_columns(event=None):
@@ -1391,43 +1379,6 @@ class App:
             names.selection_set(0)
             show()
 
-    def fullscreen(self, event=None):
-        if self.fullscreen_window is not None and self.fullscreen_window.winfo_exists():
-            self.fullscreen_window.lift()
-            self.fullscreen_window.focus_set()
-            return
-        if self.busy or self.preview.original is None or self.preview_path is None or self.preview_path.suffix.lower() == ".mp4":
-            return
-        path = self.preview_path
-        self.task(lambda: core.load_preview(path, maximum=(12000, 12000)), self.show_fullscreen)
-
-    def show_fullscreen(self, image):
-        dialog = tk.Toplevel(self.root)
-        self.fullscreen_window = dialog
-        dialog.title("Image — ChaosBox")
-        dialog.attributes("-fullscreen", True)
-        dialog.configure(background="#101820")
-        view = ImageCanvas(dialog, zoomable=True)
-        view.pack(fill="both", expand=True)
-        view.set_image(image)
-        bar = ttk.Frame(dialog, padding=6)
-        bar.place(relx=1., x=-14, y=12, anchor="ne")
-        ttk.Button(bar, text="−", command=lambda: view.scale(1 / 1.25)).pack(side="left")
-        ttk.Button(bar, text="+", command=lambda: view.scale(1.25)).pack(side="left")
-        ttk.Button(bar, text="Fit", command=view.reset).pack(side="left", padx=5)
-        def copied(result):
-            self.status.set("Image copied. Paste with Ctrl+V.")
-            if copy_button.winfo_exists():
-                copy_button.configure(text="COPIED")
-        copy_button = ttk.Button(bar, text="COPY",
-                                 command=lambda: self.task(lambda: copy_image_clipboard(image), copied))
-        copy_button.pack(side="left", padx=5)
-        ttk.Button(bar, text="Close", command=dialog.destroy).pack(side="left")
-        dialog.bind("<Escape>", lambda e: dialog.destroy())
-        dialog.transient(self.root)
-        dialog.grab_set()
-        dialog.focus_set()
-
     def start_upload(self):
         if self.busy:
             return
@@ -1494,10 +1445,13 @@ def main():
     if args.check:
         import shutil
         import paramiko
-        for tool in ("exiftool", "ffmpeg"):
+        import mutagen
+        core.image_metadata_library()
+        for tool in ("ffmpeg", "ffprobe"):
             if shutil.which(tool) is None:
                 raise SystemExit(f"Missing program: {tool}")
-        print(f"Dependencies ready: Tk {tk.TkVersion}, Pillow {Image.__version__}, Paramiko {paramiko.__version__}")
+        print(f"Dependencies ready: Tk {tk.TkVersion}, Pillow {Image.__version__}, "
+              f"GExiv2, Mutagen {mutagen.version_string}, markdown-it-py, Paramiko {paramiko.__version__}")
         return
     settings = core.Settings(installdir, args.state_dir, args.setup)
     root = tk.Tk(className=settings.window_class)

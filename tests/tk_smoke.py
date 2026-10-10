@@ -125,14 +125,26 @@ def main():
                 settle()
             app.open_media([source])
             settle()
-            app.fill(dict(zip(core.FIELDS, ["A11", "2", "Camera", "Test alias", "Desktop test", "Grüße", "P1"])))
+            markdown_comment = "# Sensor\n\n**Grüße** und *präzise Messung*\n\n- `24 V DC`"
+            app.fill(dict(zip(core.FIELDS, ["A11", "2", "Camera", "Test alias", "Desktop test", markdown_comment, "P1"])))
+            app.comment_editor.select(1)
+            root.update()
+            assert app.values()["comment"] == markdown_comment
+            assert "**Grüße**" not in app.comment_editor.preview.get("1.0", "end-1c")
+            assert "Grüße" in app.comment_editor.preview.get("1.0", "end-1c")
+            app.next_field("package")
+            root.update()
+            assert app.comment_editor.index(app.comment_editor.select()) == 0
+            app.comment_editor.select(1)
+            root.update()
             app.save()
             settle()
             assert not app.media
             saved = core.files(app.profile.images, core.MEDIA)[0]
             assert saved != source and saved.is_file()
             assert "DESKTOP TEST" in app.profile.categories
-            assert core.read_metadata(saved)["comment"] == "Grüße"
+            assert core.read_metadata(saved)["comment"] == markdown_comment
+            assert app.comment_editor.preview.get("1.0", "end-1c") == ""
             app.search_clicked()
             app.fill({"comment": "Camera"})
             app.run_search()
@@ -162,38 +174,6 @@ def main():
             app.fill({"comment": "temporary search"})
             app.cancel_search()
             assert app.variables["anzahl"].get() == "7"
-            # Full-screen window and canvas zoom work without altering the source.
-            app.open_media([saved])
-            settle()
-            app.fullscreen()
-            settle()
-            dialogs = [child for child in root.winfo_children() if isinstance(child, tk.Toplevel)]
-            assert len(dialogs) == 1
-            viewer = next(child for child in dialogs[0].winfo_children() if isinstance(child, tk.Canvas))
-            copy_button = next(widget for frame in dialogs[0].winfo_children()
-                               for widget in frame.winfo_children()
-                               if widget.winfo_class() == "TButton" and widget.cget("text") == "COPY")
-            with patch("app.copy_image_clipboard") as copy_image:
-                copy_button.invoke()
-                settle()
-                copy_image.assert_called_once_with(viewer.original)
-                assert copy_button.cget("text") == "COPIED"
-            viewer.scale(2)
-            root.update()
-            assert viewer.zoom == 2
-            viewer.reset()
-            assert viewer.zoom == 1
-            app.fullscreen()
-            assert len([child for child in root.winfo_children() if isinstance(child, tk.Toplevel)]) == 1
-            for _ in range(20):
-                viewer.scale(1.2)
-            # Closing while a redraw is pending must cancel that callback.
-            dialogs[0].destroy()
-            settle()
-            app.fullscreen()
-            settle()
-            app.fullscreen_window.destroy()
-            settle()
             app.profile_var.set(settings.profiles[1].id)
             app.select_profile()
             settle()
@@ -210,7 +190,7 @@ def main():
             settle()
             assert app.record_index == 1 and app.variables["device"].get() == "second"
             app.close()
-        print("PASS: Tk open/save, category addition, search/repeat, JSON editing, full-screen zoom, profiles")
+        print("PASS: Tk open/save, category addition, search/repeat, JSON editing, profiles")
 
 
 if __name__ == "__main__":

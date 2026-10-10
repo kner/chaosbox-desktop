@@ -13,7 +13,7 @@ class UninstallTests(unittest.TestCase):
             base = home / ".local/share/chaosbox"
             shared = base / "desktop"
             shared.mkdir(parents=True)
-            for name in ("app.py", "core.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
+            for name in ("app.py", "core.py", "markdown_render.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
                 (shared / name).write_text("application")
             (shared / "unknown.txt").write_text("keep")
             roots = [home / "one box", home / "two box"]
@@ -41,6 +41,7 @@ class UninstallTests(unittest.TestCase):
             self.assertTrue(all(not path.exists() for path in launchers[0]))
             uninstall.uninstall(home, roots[1])
             self.assertFalse((shared / "app.py").exists())
+            self.assertFalse((shared / "markdown_render.py").exists())
             self.assertTrue((shared / "unknown.txt").exists())
             self.assertEqual(uninstall.uninstall(home, roots[1])[1], [])
             self.assertEqual({path: path.read_bytes() for path in preserved}, preserved)

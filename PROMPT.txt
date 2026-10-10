@@ -6,7 +6,7 @@ The application manages images, videos, and inventory records using file-based s
 
 1. Technology and architecture
 
-Use Python 3, Tkinter/ttk, Pillow, ExifTool, FFmpeg, Paramiko, and xclip.
+Use Python 3, Tkinter/ttk, Pillow, GExiv2 (Python GI binding), Mutagen, markdown-it-py, FFmpeg/FFprobe, and Paramiko.
 
 Separate the GUI from storage and metadata operations:
 - app.py: windows, dialogs, thumbnail selection, editing, and previews.
@@ -61,6 +61,8 @@ box, anzahl, device, alias, category, comment, package, created.
 Display the default labels:
 Box, Quantity, Device, Alias, Category, Comment, Package.
 
+Provide Markdown source and rendered Preview tabs for Comment, preserving the exact source on save. Render headings, bold/italic, strikethrough, lists, quotes, links and code consistently in the preview and poster captions. Account for styled text dimensions when fitting poster captions.
+
 Use a multiline Comment editor and an editable Category selector. Quantity must be a nonnegative integer. Omit modified from JSON records. For media, created uses the capture timestamp from EXIF, then the filename, then an existing created value, finally the original file modification time as an approximation. Preserve creation timestamps for non-media records.
 
 Support Ctrl+O, Ctrl+S, and Ctrl+F.
@@ -90,9 +92,9 @@ In the folder picker:
 - Pressing Enter in the path field navigates to that directory.
 - Do not include Go or Browse buttons.
 
-5. Show UserComment
+5. Show metadata
 
-Place a checkbox labeled “Show UserComment” beside the column selector.
+Place a checkbox labeled “Show metadata” beside the column selector.
 
 When enabled, display the parsed metadata values below each thumbnail in this exact order:
 
@@ -118,9 +120,12 @@ For external imports, preserve the source and create a separate file with an _cb
 
 Convert PNG to JPEG with a white background. Resize images only when they exceed the configured limit. Preserve the encoded image data of smaller JPEGs and do not re-encode MP4 audio or video.
 
-Store JSON metadata in:
-- JPEG EXIF UserComment.
-- MP4 ItemList Comment, synchronizing existing Keys Comment metadata.
+Store image metadata as individual embedded XMP properties using the GExiv2 Python binding:
+- Comment in dc:description (x-default), created in xmp:CreateDate.
+- box, anzahl, device, alias, category and package in the ChaosBox namespace urn:chaosbox:metadata:1.0/.
+- chaosbox:version=1 marks a complete record, including cleared fields.
+Read legacy EXIF UserComment records and migrate them on save, removing UserComment and its XMP EXIF mirror only from the successfully saved output. Preserve other image metadata.
+Store MP4 metadata as JSON in ItemList Comment using Mutagen, synchronizing existing Keys Comment metadata. Use FFprobe for capture dates and legacy comment fallback. Do not depend on ExifTool.
 
 Write to a temporary file, verify the metadata, and install the result atomically. Remove a moved source only after successful verification and installation. Preserve recoverable state after partial batch failures.
 
@@ -141,11 +146,9 @@ Cancel search restores the previous editor state. Repeat search reruns the last 
 
 8. Preview and clipboard
 
-Double-click the main preview to open a full-screen viewer.
-
-Support mouse-wheel and +/- zoom, drag-to-pan, double-click to toggle 2.5× zoom/reset, a maximum zoom of 8×, and Escape to close.
-
-Provide COPY to place actual PNG image data on the clipboard using xclip.
+Double-click the main preview to open the selected file with the system's default application.
+Right-click the image to display its percent-encoded file:// link and offer copying that link.
+Do not show a separate full-screen image viewer or a Copy path button.
 
 Show a still preview for MP4 files; an embedded video player is unnecessary.
 

@@ -8,9 +8,10 @@ import tempfile
 import threading
 import types
 import unittest
+import xml.etree.ElementTree as ET
 from unittest.mock import patch
 
-from PIL import Image
+from PIL import Image, ImageCms
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import core
@@ -38,53 +39,56 @@ class LegacyMetadataTests(unittest.TestCase):
                 self.assertEqual(data["category"], expected.upper())
                 self.assertEqual(data["comment"], raw)
 
-    def test_binary_comment_preserves_line_breaks(self):
-        path = Path("photo.jpg").resolve()
-        with patch("core.run_tool", return_value=b"3 | Tools | First\nsecond\n") as run:
-            self.assertEqual(core.read_user_comment(path), "3 | Tools | First\nsecond\n")
-        run.assert_called_once_with("exiftool", "-b", "-EXIF:UserComment", str(path))
+    def test_binary_comment_preserves_unicode_and_line_breaks(self):
+        raw = "3 | Tools | Grüße 🎬\n東京\n"
+        with tempfile.TemporaryDirectory() as folder:
+            for prefix, encoding in ((b"ASCII\0\0\0", "utf-8"), (b"UNICODE\0", "utf-16-be"),
+                                     (b"UNICODE\0", "utf-16"), (b"UNICODE\0", "utf-8")):
+                with self.subTest(encoding=encoding):
+                    path = Path(folder) / "photo.jpg"
+                    exif = Image.Exif()
+                    exif[34665] = {37510: prefix + raw.encode(encoding)}
+                    Image.new("RGB", (20, 10)).save(path, exif=exif)
+                    with patch("core.run_tool", side_effect=AssertionError("Images must use the Python library")):
+                        self.assertEqual(core.read_user_comment(path), raw)
 
 
 class MetadataBatchTests(unittest.TestCase):
-    def test_grouped_comments_dates_and_shuffled_output_preserve_selection_order(self):
-        image, video = Path("/tmp/unicode 東京.jpg"), Path("/tmp/movie.mp4")
-        image_record = {"box": "A", "comment": "Grüße\n東京", "created": "old"}
-        response = [{"SourceFile": str(video), "ItemList:Comment": '{"comment":"preferred"}',
-                     "Keys:Comment": '{"comment":"other"}', "QuickTime:CreateDate": "2024:01:02 03:04:05"},
-                    {"SourceFile": str(image), "ExifIFD:UserComment": json.dumps(image_record),
-                     "ExifIFD:DateTimeOriginal": "2020:05:06 07:08:09", "ExifIFD:OffsetTimeOriginal": "+02:00"}]
-        with patch("core.run_tool", return_value=json.dumps(response).encode()) as tool:
-            records = core.read_metadata_batch([image, video, image])
-        self.assertEqual(tool.call_count, 1)
-        self.assertEqual(tool.call_args.args[-2:], (str(image), str(video)))
+    def test_mixed_selection_preserves_order_and_reads_duplicates_once(self):
+        with tempfile.TemporaryDirectory() as folder:
+            image, video = Path(folder) / "unicode 東京.jpg", Path(folder) / "movie.mp4"
+            Image.new("RGB", (20, 10)).save(image)
+            metadata = core.open_image_metadata(image)
+            metadata.try_set_tag_string("Xmp.dc.description", "Grüße\n東京")
+            metadata.try_set_tag_string("Exif.Photo.DateTimeOriginal", "2020:05:06 07:08:09")
+            metadata.try_set_tag_string("Exif.Photo.OffsetTimeOriginal", "+02:00")
+            metadata.save_file(str(image))
+            with patch("core.open_image_metadata", wraps=core.open_image_metadata) as opened, \
+                 patch("core.video_metadata", return_value=('{"comment":"preferred"}',
+                       {"CreateDate": "2024-01-02T03:04:05"})) as movie:
+                records = core.read_metadata_batch([image, video, image])
+            opened.assert_called_once_with(image)
+            movie.assert_called_once_with(video)
         self.assertEqual([record["comment"] for record in records], ["Grüße\n東京", "preferred", "Grüße\n東京"])
         self.assertEqual(records[0]["created"], "2020-05-06T07:08:09+02:00")
         self.assertEqual(records[1]["created"], "2024-01-02T03:04:05")
         records[0]["comment"] = "changed"
         self.assertEqual(records[2]["comment"], "Grüße\n東京")
 
-    def test_large_selection_uses_bounded_batches_and_empty_selection_runs_no_tool(self):
-        paths = [Path(f"/tmp/image-{i}.jpg") for i in range(130)]
-        def response(*args):
-            selected = args[args.index("--") + 1:]
-            return json.dumps([{"SourceFile": path, "ExifIFD:DateTimeOriginal": "2024:01:02 03:04:05"}
-                               for path in selected]).encode()
-        with patch("core.run_tool", side_effect=response) as tool:
-            records = core.read_metadata_batch(paths)
-            self.assertEqual(len(records), 130)
-            self.assertEqual(tool.call_count, 2)
-            counts = [len(call.args) - call.args.index("--") - 1 for call in tool.call_args_list]
-            self.assertEqual(counts, [128, 2])
-            tool.reset_mock()
+    def test_empty_selection_performs_no_io(self):
+        with patch("core.open_image_metadata") as image, patch("core.video_metadata") as video:
             self.assertEqual(core.read_metadata_batch([]), [])
-            tool.assert_not_called()
+            image.assert_not_called()
+            video.assert_not_called()
 
     def test_missing_or_failed_metadata_is_not_silently_dropped(self):
-        path = Path("/tmp/missing.jpg")
-        for response in ([], [{"SourceFile": str(path), "ExifTool:Error": "Unreadable image"}]):
-            with self.subTest(response=response), patch("core.run_tool", return_value=json.dumps(response).encode()):
-                with self.assertRaisesRegex(ValueError, "missing.jpg"):
-                    core.read_metadata_batch([path])
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "missing.jpg"
+            with self.assertRaisesRegex(ValueError, "missing.jpg"):
+                core.read_metadata_batch([path])
+            path.write_bytes(b"not an image")
+            with self.assertRaisesRegex(ValueError, "missing.jpg"):
+                core.read_metadata_batch([path])
 
 
 class DesktopTests(unittest.TestCase):
@@ -270,22 +274,90 @@ class DesktopTests(unittest.TestCase):
 
     def test_capture_date_overrides_filename_and_legacy_created(self):
         source = self.picture("IMG_20240102_030405.jpg")
-        core.run_tool("exiftool", "-overwrite_original", "-DateTimeOriginal=2020:05:06 07:08:09",
-                      "-OffsetTimeOriginal=+02:00", str(source))
+        metadata = core.open_image_metadata(source)
+        metadata.try_set_tag_string("Exif.Photo.DateTimeOriginal", "2020:05:06 07:08:09")
+        metadata.try_set_tag_string("Exif.Photo.OffsetTimeOriginal", "+02:00")
+        metadata.save_file(str(source))
         saved = core.save_media(source, self.profile, dict(self.record, created="wrong", modified="old"), 60)
         raw = json.loads(core.read_user_comment(saved))
         self.assertEqual(raw["created"], "2020-05-06T07:08:09+02:00")
         self.assertNotIn("modified", raw)
         self.assertEqual(core.read_metadata(saved)["created"], raw["created"])
 
+    def test_xmp_migration_preserves_other_metadata_and_supports_clearing(self):
+        source = self.picture()
+        metadata = core.open_image_metadata(source)
+        metadata.try_set_tag_string("Exif.Photo.UserComment", "charset=Ascii " + json.dumps(self.record))
+        metadata.try_set_tag_string("Xmp.exif.UserComment", "Obsolete mirror")
+        metadata.try_set_tag_string("Exif.Image.Make", "Keep camera")
+        metadata.try_set_tag_string("Xmp.dc.rights", "Keep copyright")
+        metadata.try_set_tag_string("Xmp.dc.description", 'lang="de-DE" Andere Sprache')
+        metadata.save_file(str(source))
+        before = source.read_bytes()
+        changed = dict(self.record, comment='lang="de-DE" is literal text\nGrüße 🎬 東京 & < >')
+        with patch("core.run_tool", side_effect=AssertionError("No external tools for images")):
+            saved = core.save_media(source, self.profile, changed, 3000)
+        self.assertEqual(source.read_bytes(), before)
+        metadata = core.open_image_metadata(saved)
+        self.assertFalse(metadata.try_has_tag("Exif.Photo.UserComment"))
+        self.assertFalse(metadata.try_has_tag("Xmp.exif.UserComment"))
+        self.assertEqual(metadata.try_get_tag_string("Exif.Image.Make"), "Keep camera")
+        self.assertIn("Keep copyright", metadata.try_get_tag_string("Xmp.dc.rights"))
+        packet = ET.fromstring(metadata.try_get_xmp_packet())
+        description = packet.find(".//{http://www.w3.org/1999/02/22-rdf-syntax-ns#}Description")
+        self.assertEqual(description.get("{" + core.XMP_NAMESPACE + "}box"), self.record["box"])
+        self.assertEqual(description.get("{" + core.XMP_NAMESPACE + "}anzahl"), "3")
+        alternatives = {item.get("{http://www.w3.org/XML/1998/namespace}lang"): item.text
+                        for item in packet.findall(".//{http://purl.org/dc/elements/1.1/}description/"
+                                                   "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}Alt/"
+                                                   "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}li")}
+        self.assertEqual(alternatives["x-default"], changed["comment"])
+        self.assertEqual(alternatives["de-DE"], "Andere Sprache")
+        self.assertEqual(core.read_metadata(saved)["comment"], changed["comment"])
+        cleared = core.save_media(saved, self.profile, core.normalized({}), 3000)
+        self.assertEqual({key: core.read_metadata(cleared)[key] for key in core.FIELDS},
+                         {key: core.normalized({})[key] for key in core.FIELDS})
+
+    def test_resize_preserves_capture_metadata_and_icc_and_removes_stale_thumbnail(self):
+        source = self.root / "rotated.jpg"
+        exif = Image.Exif()
+        exif[274] = 6
+        profile = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB")).tobytes()
+        Image.new("RGB", (120, 80), "red").save(source, exif=exif, icc_profile=profile)
+        metadata = core.open_image_metadata(source)
+        metadata.try_set_tag_string("Exif.Photo.DateTimeOriginal", "2020:05:06 07:08:09")
+        metadata.set_exif_thumbnail_from_file(str(self.picture("thumbnail.jpg", (12, 8))))
+        metadata.save_file(str(source))
+        saved = core.save_media(source, self.profile, self.record, 60)
+        with Image.open(saved) as image:
+            self.assertEqual(image.size, (60, 90))
+            self.assertEqual(image.getexif()[274], 1)
+            self.assertEqual(image.info["icc_profile"], profile)
+        metadata = core.open_image_metadata(saved)
+        self.assertEqual(metadata.try_get_metadata_pixel_width(), 60)
+        self.assertEqual(metadata.try_get_metadata_pixel_height(), 90)
+        self.assertFalse(metadata.get_exif_thumbnail())
+        self.assertEqual(core.read_metadata(saved)["created"], "2020-05-06T07:08:09")
+
+    def test_failed_xmp_write_preserves_source_and_cleans_temporary_file(self):
+        source = self.picture("JPG/elektronik/source.jpg")
+        before = source.read_bytes()
+        with patch("core.write_image_metadata", side_effect=ValueError("XMP write failed")):
+            with self.assertRaisesRegex(ValueError, "XMP write failed"):
+                core.save_media(source, self.profile, self.record, 3000)
+        self.assertEqual(source.read_bytes(), before)
+        self.assertEqual(list(source.parent.iterdir()), [source])
+
     def test_real_batch_matches_original_reader_for_jpeg_and_png(self):
         paths = [self.picture("Grüße 東京.jpg"), self.picture("IMG_20240102_030405.png")]
-        comment = self.root / "comment.txt"
-        comment.write_text(json.dumps(self.record, ensure_ascii=False), encoding="utf-8")
         for path in paths:
-            core.run_tool("exiftool", "-overwrite_original", f"-EXIF:UserComment<={comment}", str(path))
-        core.run_tool("exiftool", "-overwrite_original", "-DateTimeOriginal=2020:05:06 07:08:09",
-                      "-OffsetTimeOriginal=+02:00", str(paths[0]))
+            metadata = core.open_image_metadata(path)
+            metadata.try_set_tag_string("Exif.Photo.UserComment", "charset=Ascii " + json.dumps(self.record))
+            metadata.save_file(str(path))
+        metadata = core.open_image_metadata(paths[0])
+        metadata.try_set_tag_string("Exif.Photo.DateTimeOriginal", "2020:05:06 07:08:09")
+        metadata.try_set_tag_string("Exif.Photo.OffsetTimeOriginal", "+02:00")
+        metadata.save_file(str(paths[0]))
         original_read = []
         for path in paths:
             record = core.parse_metadata(core.read_user_comment(path))
@@ -293,7 +365,7 @@ class DesktopTests(unittest.TestCase):
             original_read.append(record)
         with patch("core.run_tool", wraps=core.run_tool) as tool:
             records = core.read_metadata_batch(paths)
-        self.assertEqual(tool.call_count, 1)
+        tool.assert_not_called()
         self.assertEqual(records, original_read)
 
     def test_large_preview_is_reduced_before_rotation_and_rgb_conversion(self):
@@ -331,8 +403,8 @@ class DesktopTests(unittest.TestCase):
                                ("IMG-20240102-WA0001.jpg", "2024-01-02"),
                                ("IMG_20240230_030405.jpg", "existing"),
                                ("photo.jpg", "existing")):
-            with self.subTest(name=name), patch("core.run_tool", return_value=b'[{"DateTimeOriginal":"0000:00:00 00:00:00"}]'):
-                self.assertEqual(core.media_created(Path(name), "existing"), expected)
+            with self.subTest(name=name):
+                self.assertEqual(core.media_created(Path(name), "existing", tags={"DateTimeOriginal": "0000:00:00 00:00:00"}), expected)
 
     def test_source_mtime_fallback_survives_repeated_saves(self):
         source = self.picture()
@@ -539,11 +611,44 @@ class DesktopTests(unittest.TestCase):
         saved = core.save_media(video, self.profile, self.record, 60)
         self.assertEqual(hashes(saved), before)
         self.assertEqual(core.read_metadata(saved)["comment"], self.record["comment"])
-        self.assertEqual(core.run_tool("exiftool", "-s3", "-Title", str(saved)).decode().strip(), "Keep title")
+        from mutagen.mp4 import MP4
+        self.assertEqual(MP4(saved).tags["\xa9nam"], ["Keep title"])
         entries = core.build_index(self.profile)
         self.assertEqual(len(core.search(entries, core.compile_query({"comment": "東京"}))), 1)
         self.assertEqual(core.related_media(entries[0], entries), saved)
         self.assertIsNotNone(core.load_preview(saved))
+
+    def test_mp4_keys_comments_and_capture_date_survive_longer_and_shorter_updates(self):
+        for location in ("udta", "moov"):
+            with self.subTest(location=location):
+                video = self.root / f"keys-{location}.mp4"
+                core.run_tool("ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=size=80x60:rate=5", "-t", "0.4",
+                              "-c:v", "mpeg4", "-movflags", "use_metadata_tags+faststart", "-metadata", "title=Keep title",
+                              "-metadata", 'comment={"comment":"Old keys"}', "-metadata", "creation_time=2020-01-02T03:04:05Z",
+                              str(video))
+                def hashes(path):
+                    return core.run_tool("ffmpeg", "-v", "error", "-i", str(path), "-map", "0", "-c", "copy", "-f", "streamhash", "-")
+                if location == "moov":
+                    # Move the generated Keys meta from moov.udta to moov without
+                    # moving any bytes: turn the enclosing eight-byte header into free.
+                    from mutagen.mp4._atom import Atoms
+                    with video.open("r+b") as stream:
+                        container = Atoms(stream)[b"moov.udta"]
+                        self.assertEqual(len(container.children), 1)
+                        stream.seek(container.offset)
+                        stream.write(b"\x00\x00\x00\x08free")
+                before = hashes(video)
+                self.assertEqual(core.read_metadata(video)["comment"], "Old keys")
+                for comment in ("Grüße 🎬\n東京" * 1000, "short"):
+                    saved = core.save_media(video, self.profile, dict(self.record, comment=comment), 60)
+                    self.assertEqual(hashes(saved), before)
+                    self.assertEqual(core.read_metadata(saved)["comment"], comment)
+                    self.assertEqual(core.read_metadata(saved)["created"], "2020-01-02T03:04:05+00:00")
+                    self.assertEqual(json.loads(core.video_key_comments(saved)[0])["comment"], comment)
+                    probe = json.loads(core.run_tool("ffprobe", "-v", "error", "-show_entries", "format_tags", "-of", "json", str(saved)))
+                    self.assertEqual(probe["format"]["tags"]["title"], "Keep title")
+                    self.assertEqual(json.loads(probe["format"]["tags"]["comment"])["comment"], comment)
+                    video = saved
 
     def test_install_uses_separate_keys_and_preserves_them_on_update(self):
         home = self.root / "key-home"
