@@ -252,7 +252,9 @@ names are retained without overwriting files.
   in its JSON entries without rewriting the source images.
 - **Open JSON** uses the Box field if supplied, or opens a file chooser. Select a
   record through Device; profiles with hidden Device use a record chooser.
-  Saving a selected record preserves unknown fields and its creation date.
+  Saving a selected record preserves unknown fields and its creation date. Click
+  the preview to choose an image or video for the record; the JSON fields stay in
+  the form and Save writes them into media under the profile's `JPG` folder.
 - **Search** first enters search mode; pressing it again runs the query. Queries
   match Category by a case-insensitive literal prefix; other fields use
   case-insensitive Python regular expressions. Categories are stored in uppercase.

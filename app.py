@@ -83,13 +83,17 @@ class ImageCanvas(tk.Canvas):
         self.pending = None
         self.navigate_previous = None
         self.navigate_next = None
+        self.select_media = None
+        self.navigation_enabled = False
         self.image_bounds = None
         self.bind("<Configure>", self.resize)
         self.bind("<Button-1>", self.navigation_click)
         self.bind("<Motion>", self.navigation_motion)
 
-    def set_navigation(self, previous, next_):
+    def set_navigation(self, previous, next_, select_media=None, enabled=False):
         self.navigate_previous, self.navigate_next = previous, next_
+        self.select_media, self.navigation_enabled = select_media, enabled
+        self.schedule()
 
     def set_image(self, image):
         self.original = image
@@ -119,9 +123,13 @@ class ImageCanvas(tk.Canvas):
         self.pending = None
         self.delete("all")
         self.image_bounds = None
+        vw, vh = max(1, self.winfo_width()), max(1, self.winfo_height())
         if self.original is None:
-            self.create_text(max(1, self.winfo_width()) / 2, max(1, self.winfo_height()) / 2,
+            self.create_text(vw / 2, vh / 2,
                              text="Select an image or video", fill="#cbd5e1", font=("Sans", 15))
+            if self.navigation_enabled:
+                self.image_bounds = (0, 0, vw, vh)
+                self.draw_navigation(0, 0, vw, vh)
             return
         scale = self.fit()
         if scale <= 0:
@@ -133,13 +141,19 @@ class ImageCanvas(tk.Canvas):
         self.create_image((vw - width) / 2, (vh - height) / 2, anchor="nw", image=self.photo)
         left, top = (vw - width) / 2, (vh - height) / 2
         right, bottom = left + width, top + height
-        self.image_bounds = (left, top, right, bottom)
+        if self.navigation_enabled:
+            self.image_bounds = (left, top, right, bottom)
+            self.draw_navigation(left, top, right, bottom)
+
+    def draw_navigation(self, left, top, right, bottom):
         center_y = (top + bottom) / 2
+        width = right - left
         offset = min(42, width * .2)
-        self.create_text(left + offset + 2, center_y + 2, text="≪", fill="#101820", font=("Sans", 30, "bold"))
-        self.create_text(left + offset, center_y, text="≪", fill="white", font=("Sans", 30, "bold"))
-        self.create_text(right - offset + 2, center_y + 2, text="≫", fill="#101820", font=("Sans", 30, "bold"))
-        self.create_text(right - offset, center_y, text="≫", fill="white", font=("Sans", 30, "bold"))
+        font = ("Sans", 30, "bold")
+        for x, arrow in ((left + offset, "≪"), (right - offset, "≫")):
+            for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-1, -1), (1, -1), (-1, 1), (1, 1)):
+                self.create_text(x + dx, center_y + dy, text=arrow, fill="#111827", font=font)
+            self.create_text(x, center_y, text=arrow, fill="#ffd43b", font=font)
 
     def is_navigation_click(self, event):
         if self.image_bounds is None:
@@ -155,8 +169,6 @@ class ImageCanvas(tk.Canvas):
         return 0
 
     def navigation_click(self, event):
-        if self.original is None:
-            return
         direction = self.is_navigation_click(event)
         if direction < 0 and self.navigate_previous is not None:
             self.navigate_previous()
@@ -164,9 +176,12 @@ class ImageCanvas(tk.Canvas):
         if direction > 0 and self.navigate_next is not None:
             self.navigate_next()
             return "break"
+        if self.navigation_enabled and self.select_media is not None:
+            self.select_media()
+            return "break"
 
     def navigation_motion(self, event):
-        self.configure(cursor="hand2" if self.is_navigation_click(event) else "")
+        self.configure(cursor="hand2" if self.navigation_enabled and self.is_navigation_click(event) else "")
 
 
 class MetadataModeDialog(simpledialog.Dialog):
@@ -701,7 +716,8 @@ class App:
         self.preview = ImageCanvas(right)
         self.preview.pack(fill="both", expand=True)
         self.preview.set_navigation(lambda: self.navigate_preview(-1),
-                                   lambda: self.navigate_preview(1))
+                                   lambda: self.navigate_preview(1),
+                                   self.select_media_for_json)
         self.preview.bind("<Double-Button-1>", self.preview_double_click)
         self.preview.bind("<Button-3>", self.show_preview_link)
         ttk.Label(right, text="‹‹ / ›› browse · double-click to open · right-click for the file link",
@@ -1022,11 +1038,44 @@ class App:
 
     def set_preview_path(self, path):
         self.preview_path = path
+        self.preview.set_navigation(lambda: self.navigate_preview(-1),
+                                    lambda: self.navigate_preview(1),
+                                    self.select_media_for_json,
+                                    enabled=bool(self.media or self.box_path))
         if path is None:
             self.preview_link.pack_forget()
         else:
             self.preview_link.configure(text=f"preview: {path.resolve()}")
             self.preview_link.pack(before=self.preview, anchor="w", pady=(0, 8))
+
+    def select_media_for_json(self):
+        if self.busy or self.box_path is None or self.search_mode:
+            return
+        name = filedialog.askopenfilename(
+            parent=self.root, initialdir=self.profile.images,
+            title="Select image or video for this JSON record",
+            filetypes=[("Images and videos", "*.jpg *.jpeg *.png *.mp4")])
+        if not name:
+            return
+        path = Path(name)
+        if path.suffix.lower() not in core.IMPORTS:
+            self.error("Select JPG, PNG or MP4 media.")
+            return
+        # Keep the currently displayed JSON fields as the metadata for this media.
+        values = self.values()
+        self.media, self.box_path, self.records, self.record_index = [path], None, [], None
+        self.media_records = [dict(values)]
+        self.media_baseline = dict(values)
+        self.media_edit_mode, self.media_differing_fields = "replace", []
+        self.selected.set(f"Selected media: {path.name} · JSON fields retained")
+        self.set_preview_path(path)
+        self.preview.set_image(None)
+        def done(result):
+            image, warning = result
+            self.preview.set_image(image)
+            if warning:
+                self.status.set(warning)
+        self.task(lambda: self.preview_result(path), done)
 
     def open_preview(self, event=None):
         if self.preview_path is None or self.busy:

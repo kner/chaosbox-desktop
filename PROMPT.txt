@@ -147,6 +147,7 @@ Cancel search restores the previous editor state. Repeat search reruns the last 
 8. Preview and clipboard
 
 Overlay transparent previous/next double-chevron buttons at the left and right edges of the preview. Browse the selected images when images are selected; browse neighboring JSON files otherwise. Navigation wraps from the last item to the first and from the first item to the last.
+Keep the arrows visible on empty JSON previews with a bright contrasting color. When a JSON record is open, clicking the center of the preview lets the user choose image/video media; preserve the record fields and save them into media in the profile's JPG folder.
 Double-click the main preview to open the selected file with the system's default application.
 Right-click the image to display its percent-encoded file:// link and offer copying that link.
 Also offer "Open in editor", launching the editor configured by `editor=` in setup.ini with the selected file path.
