@@ -16,7 +16,7 @@ Separate the GUI from storage and metadata operations:
 
 Use background workers for expensive operations. All Tk operations must run on the main thread. Keep the interface responsive and cancel pending callbacks safely when windows close.
 
-Use an English interface. Preserve the configured language of custom labels, categories, and text snippets.
+Support English, German, French, and Italian UI translations selected through `Language=en|de|fr|it` in the global `[App]` section of setup.ini. Preserve the configured language of custom labels, categories, and text snippets.
 
 2. Profiles and configuration
 

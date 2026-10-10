@@ -56,7 +56,7 @@ def install(home=None, credentials=True, installdir=None):
         settings.reload()
     shared = home / ".local/share/chaosbox/desktop"
     shared.mkdir(parents=True, exist_ok=True)
-    for name in ("app.py", "core.py", "markdown_render.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
+    for name in ("app.py", "core.py", "i18n.py", "markdown_render.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
         core.atomic_write(shared / name, (source / name).read_bytes(), mode=0o644)
     installations = shared.parent / "installations"
     target = installations / settings.app_id

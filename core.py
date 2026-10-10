@@ -170,6 +170,7 @@ class Settings:
         self.profiles = []
         self.image_width = 3000
         self.editor = None
+        self.language = "en"
         self.snippets = {}
         self.ssh = {}
 
@@ -284,7 +285,10 @@ class Settings:
         for title, entries in boxes:
             visit(self.root / title, title, dict(defaults, **entries), globals_, self.path, title)
         first = profiles[0]
-        return profiles, first.id, *first.options[:3]
+        language = defaults.get("language", "en").strip().lower().replace("_", "-").split("-", 1)[0]
+        if language not in {"en", "de", "fr", "it"}:
+            raise ValueError("Language must be one of: en, de, fr, it.")
+        return profiles, first.id, *first.options[:3], language
 
     def parse(self, text):
         return self._load(text)
@@ -292,7 +296,7 @@ class Settings:
     def reload(self):
         text = self.path.read_text(encoding="utf-8-sig")
         loaded = self._load(text)
-        self.profiles, self.default, self.image_width, self.snippets, self.ssh = loaded
+        self.profiles, self.default, self.image_width, self.snippets, self.ssh, self.language = loaded
         self.poster = poster_settings(text)
         self.profile(getattr(self, "active", self.default))
 

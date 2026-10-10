@@ -2,8 +2,10 @@
 
 A native Python/Tk application using the same metadata fields, JSON records and
 setup profile format as the Android app. No browser or Android emulator is needed.
-The interface is in English; category names, custom labels and snippets retain
-their configured language.
+The interface supports English, German, French, and Italian. Set `Language=en`,
+`Language=de`, `Language=fr`, or `Language=it` in the global `[App]` section of
+`setup.ini`. Category names, custom labels, and text snippets retain their
+configured language.
 
 ## Install and launch
 

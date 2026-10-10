@@ -33,7 +33,7 @@ def build(version, output):
             path.chmod(0o644)
 
         # Explicit allowlist: never package user data, SSH keys or local settings.
-        for name in ("app.py", "core.py", "markdown_render.py", "setup.ini"):
+        for name in ("app.py", "core.py", "i18n.py", "markdown_render.py", "setup.ini"):
             write(f"usr/share/{PACKAGE}/{name}", (SOURCE / name).read_text())
         copy(f"usr/share/{PACKAGE}/chaosbox.png", SOURCE / "chaosbox.png")
         copy("usr/share/icons/hicolor/128x128/apps/chaosbox.png", SOURCE / "chaosbox.png")
