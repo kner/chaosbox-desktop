@@ -70,6 +70,7 @@ Support Ctrl+O, Ctrl+S, and Ctrl+F.
 4. Media selection
 
 “Open JPG / MP4” opens a resizable window that supports maximizing and restoring through the title bar.
+All visible labels, captions, and controls in this media-selection window must be in German.
 
 Show only media files directly inside the current folder. Do not recursively include files from subfolders.
 
@@ -80,9 +81,17 @@ Provide:
 - A column selector from 1 to 10.
 - Click to toggle individual selections.
 - Shift-click for range selection.
-- Select all, Clear, Open, and Cancel.
-- Choose folder …
-- Other files … for importing JPG, JPEG, PNG, and MP4.
+- “Alle auswählen”, “Auswahl aufheben”, “Abbrechen”, “Selektion editieren”, and
+  “Einzelbilder editieren”. “Selektion editieren” preserves the existing
+  multi-selection editing behavior.
+- “Ordner wählen …”.
+- “Andere Dateien …” for importing JPG, JPEG, PNG, and MP4.
+- “Metadaten anzeigen” beside the column selector.
+
+“Einzelbilder editieren” opens the selected files one at a time, starting with
+the first selected file. Saving keeps the current image displayed. A “Felder
+leeren” action clears its editable metadata fields without closing the image.
+The preview arrows cycle through only the selected files in this mode.
 
 Keep selections when changing the number of columns. Resize thumbnails proportionally to their available width. Load visible previews in the background with bounded image caching. Damaged previews must not prevent file selection.
 
@@ -94,15 +103,15 @@ In the folder picker:
 
 5. Show metadata
 
-Place a checkbox labeled “Show metadata” beside the column selector.
+Place a checkbox labeled “Metadaten anzeigen” beside the column selector.
 
 When enabled, display the parsed metadata values below each thumbnail in this exact order:
 
 box | category | comment
 
-Limit the entire combined caption, including separators, to 60 characters. Normalize line breaks and repeated whitespace for display. Keep empty field positions; show no caption when all three fields are empty.
+Display the entire combined caption, including the complete comment in its original Markdown source form. Preserve line breaks and whitespace; do not render Markdown or truncate. Keep empty field positions; show no caption when all three fields are empty.
 
-Read metadata asynchronously. Do not change the stored metadata when formatting captions. Adjust tile heights so captions remain visible at different column counts.
+Read metadata asynchronously. Do not change the stored metadata when formatting captions. Adjust tile heights so full captions remain visible at different column counts.
 
 6. Saving media
 

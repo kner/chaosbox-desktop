@@ -179,20 +179,26 @@ names are retained without overwriting files.
   HTML is displayed as text and embedded images show their alternative text.
   The original Markdown is preserved when saving metadata and JSON records.
   Tables and Markdown extensions such as footnotes are not supported.
-- **Open JPG / MP4** shows a scrollable thumbnail grid with **1–10 columns**.
+- **Open JPG / MP4** öffnet einen vollständig deutsch beschrifteten, scrollbaren
+  Vorschauraster mit **1–10 Spalten**. Die Schaltfläche **Selektion editieren**
+  übernimmt die bisherige Mehrfachbearbeitung. **Einzelbilder editieren** öffnet
+  die ausgewählten Dateien nacheinander, beginnend mit der ersten Auswahl.
   The window can be maximized and restored using its title-bar controls.
   Only files directly in the current folder are shown. **Choose folder …** changes
   folders. The last selected folder is remembered per profile across restarts,
   including folders used through **Other files …**.
   Double-clicking a folder in the folder picker selects it and opens its images
   immediately. Enter a folder path and press Enter to navigate directly.
-  Click tiles to toggle multiple selections, Shift-click to select a range, or
-  use **Select all** / **Clear**. The selection survives column changes.
+  Kacheln schalten die Auswahl um; Umschalt-Klick wählt einen Bereich. **Alle
+  auswählen** und **Auswahl aufheben** ändern die Auswahl. Sie bleibt beim
+  Wechsel der Spaltenzahl erhalten.
   Previews load in the background; unavailable previews remain selectable.
   Thumbnail size follows the column width while preserving image proportions.
-  **Show metadata** displays **box | category | comment** below each thumbnail,
-  limited to 60 characters in total. Comments load in the background when enabled.
-  **Other files …**
+  **Metadaten anzeigen** displays the full **box | category | comment** below each
+  thumbnail. Comments remain in their original Markdown source form, including
+  line breaks, and tiles grow to show the entire comment. Comments load in the
+  background when enabled.
+  **Andere Dateien …**
   also imports PNG files. The first selected file supplies the preview. Selection
   order is preserved; deselecting and reselecting a tile moves it to the end.
   Select all appends unselected tiles in display order.
@@ -207,8 +213,12 @@ names are retained without overwriting files.
   selected files. OK proceeds; Cancel leaves files and form inputs untouched.
   **Save** preserves unchanged common fields independently for each file.
   Other metadata and each file's creation date are retained.
-  After a successful **Save**, all form fields and the selection reset just as
-  with **Clear all**. Cancelled or failed saves keep the inputs.
+  In der Einzelbildbearbeitung bleibt das Bild nach **Save** angezeigt und die
+  Pfeile wechseln zyklisch nur zwischen den ausgewählten Dateien. **Felder
+  leeren** setzt die Metadatenfelder zurück, ohne das angezeigte Bild zu schließen;
+  so können auch Bilder ohne weitere Änderungen durchgeblättert werden. In der
+  normalen Mehrfachbearbeitung setzt **Save** weiterhin Felder und Auswahl zurück.
+  Abgebrochene oder fehlgeschlagene Speicherungen behalten die Eingaben.
   Local saves refresh only the search index entries of the saved files.
   Metadata for selections, poster exports and index updates is read once per
   unique file, including comments and capture dates. Image metadata uses the
@@ -253,8 +263,9 @@ names are retained without overwriting files.
 - **Open JSON** uses the Box field if supplied, or opens a file chooser. Select a
   record through Device; profiles with hidden Device use a record chooser.
   Saving a selected record preserves unknown fields and its creation date. Click
-  the preview to choose an image or video for the record; the JSON fields stay in
-  the form and Save writes them into media under the profile's `JPG` folder.
+  the preview to open the media gallery for the record; **Show metadata** there
+  reveals full Markdown comments. Selecting a file keeps the JSON fields in the
+  form and Save writes them into media under the profile's `JPG` folder.
 - **Search** first enters search mode; pressing it again runs the query. Queries
   match Category by a case-insensitive literal prefix; other fields use
   case-insensitive Python regular expressions. Categories are stored in uppercase.

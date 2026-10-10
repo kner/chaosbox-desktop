@@ -64,15 +64,11 @@ class CommentEditor(ttk.Notebook):
             self.pending = None
 
 
-USER_COMMENT_PREVIEW_LIMIT = 60
-
-
 def user_comment_preview(path):
-    # Keep captions on a predictable number of lines without changing metadata.
+    # Keep the original Markdown source, including its whitespace and line breaks.
     metadata = core.parse_metadata(core.read_user_comment(path))
-    fields = [" ".join(str(metadata.get(key) or "").split())
-              for key in ("box", "category", "comment")]
-    return " | ".join(fields)[:USER_COMMENT_PREVIEW_LIMIT] if any(fields) else ""
+    fields = [str(metadata.get(key) or "") for key in ("box", "category", "comment")]
+    return " | ".join(fields) if any(fields) else ""
 
 
 class ImageCanvas(tk.Canvas):
@@ -126,7 +122,7 @@ class ImageCanvas(tk.Canvas):
         vw, vh = max(1, self.winfo_width()), max(1, self.winfo_height())
         if self.original is None:
             self.create_text(vw / 2, vh / 2,
-                             text="Select an image or video", fill="#cbd5e1", font=("Sans", 15))
+                             text="Kein Bild oder Video ausgewählt", fill="#cbd5e1", font=("Sans", 15))
             if self.navigation_enabled:
                 self.image_bounds = (0, 0, vw, vh)
                 self.draw_navigation(0, 0, vw, vh)
@@ -215,20 +211,20 @@ class MediaFolderDialog(simpledialog.Dialog):
     def __init__(self, parent, folder):
         self.folder = Path(folder)
         self.directories = []
-        super().__init__(parent, title="Select media folder")
+        super().__init__(parent, title="Medienordner auswählen")
 
     def body(self, master):
         self.location = tk.StringVar(value=str(self.folder))
         navigation = ttk.Frame(master)
         navigation.pack(fill="x")
-        ttk.Button(navigation, text="Up", command=lambda: self.browse(self.folder.parent)).pack(side="left")
+        ttk.Button(navigation, text="Übergeordnet", command=lambda: self.browse(self.folder.parent)).pack(side="left")
         entry = ttk.Entry(navigation, textvariable=self.location, width=65)
         entry.pack(side="left", fill="x", expand=True, padx=6)
         def enter_path(event):
             self.browse(Path(self.location.get()).expanduser())
             return "break"
         entry.bind("<Return>", enter_path)
-        ttk.Label(master, text="Double-click a folder to select it and open its images.").pack(anchor="w", pady=8)
+        ttk.Label(master, text="Doppelklick wählt einen Ordner aus und öffnet dessen Medien.").pack(anchor="w", pady=8)
         frame = ttk.Frame(master)
         frame.pack(fill="both", expand=True)
         self.listing = tk.Listbox(frame, height=18, exportselection=False)
@@ -240,13 +236,21 @@ class MediaFolderDialog(simpledialog.Dialog):
         self.browse(self.folder)
         return self.listing
 
+    def buttonbox(self):
+        buttons = ttk.Frame(self)
+        buttons.pack(padx=12, pady=12)
+        ttk.Button(buttons, text="Auswählen", command=self.ok).pack(side="left", padx=4)
+        ttk.Button(buttons, text="Abbrechen", command=self.cancel).pack(side="left", padx=4)
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+
     def browse(self, folder):
         try:
             folder = folder.resolve()
             directories = sorted((path for path in folder.iterdir() if path.is_dir()),
                                  key=lambda path: path.name.casefold())
         except OSError as error:
-            messagebox.showerror("Select media folder", str(error), parent=self)
+            messagebox.showerror("Medienordner auswählen", str(error), parent=self)
             return
         self.folder, self.directories = folder, directories
         self.location.set(str(folder))
@@ -269,7 +273,7 @@ class MediaFolderDialog(simpledialog.Dialog):
 
     def validate(self):
         if not self.selected_folder().is_dir():
-            messagebox.showerror("Select media folder", "This folder is no longer available.", parent=self)
+            messagebox.showerror("Medienordner auswählen", "Dieser Ordner ist nicht mehr verfügbar.", parent=self)
             return False
         return True
 
@@ -375,7 +379,12 @@ class MediaGrid(ttk.Frame):
         self.cell_height = self.thumb_size + 66
         if self.show_user_comment:
             chars_per_line = max(1, int((self.cell_width - 14) / 10))
-            self.cell_height += ((USER_COMMENT_PREVIEW_LIMIT + chars_per_line - 1) // chars_per_line) * 18 + 8
+            comment_lines = 1
+            for comment in self.comments.values():
+                lines = sum(max(1, (len(line) + chars_per_line - 1) // chars_per_line)
+                            for line in (comment or "").split("\n")) or 1
+                comment_lines = max(comment_lines, lines)
+            self.cell_height += comment_lines * 18 + 8
         rows = (len(self.paths) + self.columns - 1) // self.columns
         canvas.configure(scrollregion=(0, 0, width, rows * self.cell_height),
                          yscrollincrement=max(20, self.cell_height // 3))
@@ -386,7 +395,7 @@ class MediaGrid(ttk.Frame):
         self.visible = list(range(top * self.columns, min(len(self.paths), bottom * self.columns)))
         self.photo_cache = {index: cached for index, cached in self.photo_cache.items() if index in self.visible}
         if not self.paths:
-            canvas.create_text(width / 2, 60, text="No media found. Use Other files … to import images.",
+            canvas.create_text(width / 2, 60, text="Keine Medien gefunden. Verwende „Andere Dateien …“, um Bilder zu importieren.",
                                width=max(100, width - 40), fill="#475569")
         for index in self.visible:
             path = self.paths[index]
@@ -413,10 +422,10 @@ class MediaGrid(ttk.Frame):
                     canvas.create_image(x + self.cell_width / 2, y + 8 + self.thumb_size / 2, image=photo)
                 else:
                     canvas.create_text(x + self.cell_width / 2, y + self.thumb_size / 2,
-                                       text="Preview unavailable", width=self.thumb_size, fill="#64748b")
+                                       text="Vorschau nicht verfügbar", width=self.thumb_size, fill="#64748b")
             else:
                 canvas.create_text(x + self.cell_width / 2, y + self.thumb_size / 2,
-                                   text="Loading…", width=self.thumb_size, fill="#64748b")
+                                   text="Lädt …", width=self.thumb_size, fill="#64748b")
             label = str(path.relative_to(self.base)) if path.is_relative_to(self.base) else path.name
             max_chars = max(6, int((self.cell_width - 14) / 8) * 2)
             if len(label) > max_chars:
@@ -426,7 +435,7 @@ class MediaGrid(ttk.Frame):
                                font=("Sans", 9), fill="#0f172a")
             if self.show_user_comment:
                 canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 62,
-                                   anchor="n", text=self.comments.get(index, "Loading…"),
+                                   anchor="n", text=self.comments.get(index, "Metadaten werden geladen …"),
                                    width=max(12, self.cell_width - 14),
                                    font=("Sans", 9), fill="#475569")
             canvas.create_text(x + 9, y + 9, anchor="nw", text="☑" if selected else "☐",
@@ -512,6 +521,7 @@ class App:
         self.events = queue.Queue()
         self.busy, self.closing = False, False
         self.media, self.box_path, self.records, self.record_index = [], None, [], None
+        self.individual_paths, self.individual_index = None, 0
         self.created = ""
         self.preview_path = None
         self.search_mode, self.before_search, self.last_search = False, None, None
@@ -652,6 +662,7 @@ class App:
         self.search_button = self.button(actions, "Search", self.search_clicked, side="left", padx=6)
         self.repeat_button = self.button(actions, "Repeat search", self.repeat_search, side="left", padx=6)
         self.button(actions, "Clear all", self.clear, side="left", padx=6)
+        self.clear_fields_button = self.button(actions, "Felder leeren", self.clear_fields, side="left", padx=6)
         self.button(actions, "TXT", self.snippets_dialog, side="left", padx=6)
         self.delete_button = self.button(actions, "Del", self.delete_current, side="left", padx=6)
         pane = ttk.Panedwindow(self.root, orient="horizontal")
@@ -698,10 +709,9 @@ class App:
                 widget.pack(fill="x", ipady=4)
             self.rows.append((row, label))
             self.field_widgets[key] = widget
-            widget.bind("<Return>", lambda e, key=key: self.field_enter(key))
-            widget.bind("<KP_Enter>", lambda e, key=key: self.field_enter(key))
-            if key == "comment":
-                widget.bind("<Shift-Return>", lambda e: None)
+            if key != "comment":
+                widget.bind("<Return>", lambda e, key=key: self.field_enter(key))
+                widget.bind("<KP_Enter>", lambda e, key=key: self.field_enter(key))
         right = ttk.Frame(pane)
         pane.add(right, weight=1)
         self.selected = tk.StringVar(value="No media or record selected")
@@ -759,6 +769,8 @@ class App:
                 button.configure(state="disabled")
         self.delete_button.configure(state="normal" if not self.busy and not self.search_mode
                                      and (self.media or self.record_index is not None) else "disabled")
+        self.clear_fields_button.configure(state="normal" if not self.busy and not self.search_mode
+                                           and (self.media or self.record_index is not None) else "disabled")
         self.repeat_button.configure(state="normal" if self.last_search is not None and not self.busy else "disabled")
         self.search_button.configure(text="Run search" if self.search_mode else "Search")
 
@@ -852,6 +864,10 @@ class App:
     def navigate_preview(self, direction):
         if self.busy:
             return
+        if self.individual_paths:
+            self.individual_index = (self.individual_index + direction) % len(self.individual_paths)
+            self.open_media([self.individual_paths[self.individual_index]], individual=True)
+            return
         if self.media:
             paths = self.media
             try:
@@ -909,12 +925,20 @@ class App:
             return
         self.search_mode, self.before_search = False, None
         self.media, self.box_path, self.records, self.record_index = [], None, [], None
+        self.individual_paths, self.individual_index = None, 0
         self.fill({"anzahl": 0})
         self.field_widgets["device"].configure(values=[])
         self.set_preview_path(None)
         self.preview.set_image(None)
         self.selected.set("No media or record selected")
         self.refresh_profile()
+
+    def clear_fields(self):
+        if self.busy or self.search_mode:
+            return
+        self.fill({"anzahl": 0})
+        if self.individual_paths:
+            self.selected.set(f"Einzelbild {self.individual_index + 1}/{len(self.individual_paths)} · Felder geleert")
 
     def adjust(self, change):
         if self.busy or self.search_mode:
@@ -957,10 +981,10 @@ class App:
                                  key=lambda path: path.stat().st_mtime_ns, reverse=True),
                   lambda paths: self.media_dialog(paths, folder))
 
-    def media_dialog(self, paths, folder=None):
+    def media_dialog(self, paths, folder=None, on_select=None):
         folder = folder or self.media_folder()
         dialog = tk.Toplevel(self.root)
-        dialog.title("Open JPG / MP4")
+        dialog.title("Bild oder Video auswählen" if on_select else "JPG / MP4 auswählen")
         dialog.geometry("1000x700")
         dialog.minsize(640, 400)
         # Keep normal window decorations: transient dialogs can lose their
@@ -980,20 +1004,29 @@ class App:
             if chosen:
                 self.remember_media_folder(chosen)
                 dialog.destroy()
-                self.choose_media()
-        ttk.Button(navigation, text="Choose folder …", command=change_folder).pack(side="left")
+                if on_select:
+                    paths = sorted(core.files(chosen, core.IMPORTS, recursive=False),
+                                   key=lambda path: path.stat().st_mtime_ns, reverse=True)
+                    self.media_dialog(paths, chosen, on_select=on_select)
+                else:
+                    self.choose_media()
+        ttk.Button(navigation, text="Ordner wählen …", command=change_folder).pack(side="left")
         ttk.Label(navigation, text=str(folder), wraplength=750).pack(side="left", padx=12)
         toolbar = ttk.Frame(dialog, padding=12)
         toolbar.pack(fill="x")
-        ttk.Label(toolbar, text="Click to select · Shift-click for a range · Double-click to open one file").pack(side="left")
+        action = "Doppelklick wählt eine Datei aus" if on_select else "Doppelklick öffnet eine Datei"
+        ttk.Label(toolbar, text=f"Klick wählt aus · Umschalt-Klick wählt einen Bereich · {action}").pack(side="left")
         columns = tk.StringVar(value=str(getattr(self, "media_columns", 4)))
         picker = ttk.Combobox(toolbar, textvariable=columns, values=list(range(1, 11)),
                               state="readonly", width=3)
         picker.pack(side="right")
-        ttk.Label(toolbar, text="Columns").pack(side="right", padx=8)
-        count = tk.StringVar(value=f"0 / {len(paths)} selected")
+        ttk.Label(toolbar, text="Spalten").pack(side="right", padx=8)
+        count = tk.StringVar(value=f"0 / {len(paths)} ausgewählt")
         def changed():
-            count.set(f"{len(grid.selected)} / {len(paths)} selected")
+            if on_select and len(grid.selected) > 1:
+                grid.selected = {grid.anchor: None}
+                grid.redraw()
+            count.set(f"{len(grid.selected)} / {len(paths)} ausgewählt")
             open_button.configure(state="normal" if grid.selected else "disabled")
         grid = MediaGrid(dialog, paths, folder, changed)
         grid.pack(fill="both", expand=True, padx=12)
@@ -1001,7 +1034,7 @@ class App:
         def change_comment():
             self.media_show_user_comment = show_comment.get()
             grid.set_show_user_comment(self.media_show_user_comment)
-        ttk.Checkbutton(toolbar, text="Show metadata", variable=show_comment,
+        ttk.Checkbutton(toolbar, text="Metadaten anzeigen", variable=show_comment,
                         command=change_comment).pack(side="right", padx=8)
         change_comment()
         def change_columns(event=None):
@@ -1014,23 +1047,52 @@ class App:
             if selected:
                 self.remember_media_folder(selected[0].parent)
                 dialog.destroy()
-                self.open_media(selected)
-        def external():
+                if on_select:
+                    on_select(selected[0])
+                else:
+                    self.open_media(selected)
+        def edit_individual(paths):
+            if not paths:
+                return
+            self.remember_media_folder(paths[0].parent)
+            self.individual_paths, self.individual_index = list(paths), 0
             dialog.destroy()
-            chosen = filedialog.askopenfilenames(parent=self.root, initialdir=folder,
-                title="Select JPG, PNG or MP4 files", filetypes=[("Images and videos", "*.jpg *.jpeg *.JPG *.JPEG *.png *.PNG *.mp4 *.MP4"), ("All files", "*")])
+            self.open_media([self.individual_paths[0]], individual=True)
+        def external():
+            title = "Bild oder Video auswählen" if on_select else "JPG-, PNG- oder MP4-Dateien auswählen"
+            chooser = filedialog.askopenfilename if on_select else filedialog.askopenfilenames
+            chosen = chooser(parent=dialog, initialdir=folder, title=title,
+                filetypes=[("Bilder und Videos", "*.jpg *.jpeg *.JPG *.JPEG *.png *.PNG *.mp4 *.MP4"),
+                           ("Alle Dateien", "*")])
             if chosen:
-                self.remember_media_folder(Path(chosen[0]).parent)
-                self.open_media([Path(name) for name in chosen])
+                names = [chosen] if on_select else chosen
+                self.remember_media_folder(Path(names[0]).parent)
+                dialog.destroy()
+                if on_select:
+                    on_select(Path(names[0]))
+                else:
+                    self.open_media([Path(name) for name in names])
         buttons = ttk.Frame(dialog, padding=12)
         buttons.pack(fill="x")
-        ttk.Button(buttons, text="Other files …", command=external).pack(side="left")
-        ttk.Button(buttons, text="Select all", command=grid.select_all).pack(side="left", padx=6)
-        ttk.Button(buttons, text="Clear", command=grid.clear_selection).pack(side="left")
+        ttk.Button(buttons, text="Andere Dateien …", command=external).pack(side="left")
+        if not on_select:
+            ttk.Button(buttons, text="Alle auswählen", command=grid.select_all).pack(side="left", padx=6)
+        ttk.Button(buttons, text="Auswahl aufheben", command=grid.clear_selection).pack(side="left")
         ttk.Label(buttons, textvariable=count).pack(side="left", padx=8)
-        ttk.Button(buttons, text="Cancel", command=dialog.destroy).pack(side="right")
-        open_button = ttk.Button(buttons, text="Open", command=open_selected, state="disabled")
+        ttk.Button(buttons, text="Abbrechen", command=dialog.destroy).pack(side="right")
+        open_button = ttk.Button(buttons, text="Auswählen" if on_select else "Selektion editieren",
+                                 command=open_selected, state="disabled")
         open_button.pack(side="right", padx=8)
+        individual_button = None
+        if not on_select:
+            individual_button = ttk.Button(buttons, text="Einzelbilder editieren",
+                                           command=lambda: edit_individual(grid.selection()), state="disabled")
+            individual_button.pack(side="right", padx=8)
+        def selection_changed():
+            changed()
+            if individual_button is not None:
+                individual_button.configure(state="normal" if grid.selected else "disabled")
+        grid.changed = selection_changed
         dialog.bind("<Return>", open_selected)
         grid.canvas.bind("<Double-Button-1>", lambda event: grid.double_click(event, open_selected))
         dialog.bind("<Escape>", lambda e: dialog.destroy())
@@ -1051,13 +1113,14 @@ class App:
     def select_media_for_json(self):
         if self.busy or self.box_path is None or self.search_mode:
             return
-        name = filedialog.askopenfilename(
-            parent=self.root, initialdir=self.profile.images,
-            title="Select image or video for this JSON record",
-            filetypes=[("Images and videos", "*.jpg *.jpeg *.png *.mp4")])
-        if not name:
+        paths = sorted(core.files(self.profile.images, core.IMPORTS),
+                       key=lambda path: path.stat().st_mtime_ns, reverse=True)
+        self.media_dialog(paths, self.profile.images, on_select=self.use_media_for_json)
+
+    def use_media_for_json(self, path):
+        if self.busy or self.box_path is None or self.search_mode:
             return
-        path = Path(name)
+        path = Path(path)
         if path.suffix.lower() not in core.IMPORTS:
             self.error("Select JPG, PNG or MP4 media.")
             return
@@ -1104,10 +1167,12 @@ class App:
         except Exception as error:
             return None, f"Preview unavailable: {error}"
 
-    def open_media(self, paths):
+    def open_media(self, paths, individual=False):
         if any(path.suffix.lower() not in core.IMPORTS for path in paths):
             self.error("Select JPG, PNG or MP4 files.")
             return
+        if not individual:
+            self.individual_paths, self.individual_index = None, 0
         def work():
             records = core.read_metadata_batch(list(dict.fromkeys(paths)), self.log)
             return records, self.preview_result(paths[0])
@@ -1130,7 +1195,10 @@ class App:
             self.fill(values)
             self.set_preview_path(paths[0])
             self.preview.set_image(image)
-            self.selected.set(f"{len(self.media)} file(s) selected")
+            if self.individual_paths:
+                self.selected.set(f"Einzelbild {self.individual_index + 1}/{len(self.individual_paths)} · {paths[0].name}")
+            else:
+                self.selected.set(f"{len(self.media)} file(s) selected")
             if warning:
                 self.status.set(warning)
         self.task(work, done)
@@ -1190,6 +1258,7 @@ class App:
                 raise ValueError("No records available in this JSON file.")
             return records
         def done(records):
+            self.individual_paths, self.individual_index = None, 0
             self.media, self.box_path, self.records = [], path, records
             self.record_index = min(selected or 0, len(records) - 1)
             if selected is None and len(records) > 1 and not self.profile.labels[2]:
@@ -1298,8 +1367,22 @@ class App:
                 warning = f"Saved locally, but the search index could not be updated: {error}"
             return result, warning
         def done(result):
-            _, warning = result
+            saved_result, warning = result
             self.profile = self.settings.profile(profile.id)
+            if self.individual_paths and saved_result[0] == "media":
+                _, saved_paths, (image, preview_warning), records = saved_result
+                path = saved_paths[0]
+                self.individual_paths[self.individual_index] = path
+                self.media, self.box_path, self.records, self.record_index = saved_paths, None, [], None
+                self.media_records = records
+                self.media_baseline = dict(records[0])
+                self.refresh_profile()
+                self.fill(records[0])
+                self.set_preview_path(path)
+                self.preview.set_image(image)
+                self.selected.set(f"Einzelbild {self.individual_index + 1}/{len(self.individual_paths)} · {path.name}")
+                self.status.set(warning or preview_warning or "Einzelbild gespeichert. Sie können weiterblättern oder die Felder leeren.")
+                return
             self.clear()
             self.status.set(warning or "Saved locally. Use Upload to synchronize manually.")
         def failed(error):
