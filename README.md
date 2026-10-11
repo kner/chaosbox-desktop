@@ -9,16 +9,16 @@ configured language.
 
 ## Install and launch
 
-On Ubuntu 24.04 the dependencies are available from Ubuntu packages:
+Install all runtime dependencies on Ubuntu 24.04 from the repository root:
 
 ```bash
-sudo apt install python3-tk python3-pil python3-pil.imagetk python3-paramiko python3-gi gir1.2-gexiv2-0.10 python3-mutagen python3-markdown-it ffmpeg fonts-dejavu-core
+./install-dependencies.sh
 ```
 
-From the repository root:
+The script installs the Ubuntu packages and checks that the application can
+load its dependencies. It uses `sudo` when needed. Then launch the app with:
 
 ```bash
-./run-desktop.sh --check
 ./run-desktop.sh
 ```
 
@@ -390,3 +390,17 @@ They do not connect to the live SSH server.
 # chaosboxDesktop
 # chaosbox-desktop
 ===
+
+The companion website and `push-data`/`pull-data` scripts use the same source layout
+on both machines: media in `JPG/`, JSON sources in `TXT/` under the configured
+data root. Default SSH upload destinations are now
+`chaosbox-data/JPG` and
+`chaosbox-data/TXT`. Existing installations
+can override these with `ImageDestination` and `DataDestination` in their setup.ini.
+Generated website catalogs live in `.indices/web-catalog.json` below the website
+data root and are not JSON sources. Desktop keeps its shared `.indices` at the
+installation level.
+
+This host exposes the SSH htdocs directory as SFTP `/`; Desktop upload paths
+therefore use `chaosbox-data/JPG` and `chaosbox-data/TXT`, equivalent to the
+absolute SSH data-root paths used by rsync.

@@ -180,7 +180,7 @@ class Settings:
             if default_box and not any(name.casefold() == "box" for name, *_ in section_blocks(text)):
                 text += f"\n[Box]\nTitel={default_box}\n"
             text += ("\n[SSH]\nHost=access983197478.webspace-data.io\nPort=22\nUser=u114229695\n"
-                     "ImageDestination=l1/storage/app/exif/jpg\nDataDestination=l1/storage/app/exif/data\n"
+                     "ImageDestination=chaosbox-data/JPG\nDataDestination=chaosbox-data/TXT\n"
                      f"KeyFile={self.state_dir / 'credentials/id_ed25519'}\n"
                      f"KnownHosts={self.state_dir / 'credentials/known_hosts'}\n")
             atomic_write(self.path, text)
@@ -259,7 +259,7 @@ class Settings:
             editor = values.get("editor", "").strip() or None
             ssh = dict(effective.get("ssh", {}))
             for key, value in dict(host="access983197478.webspace-data.io", port="22", user="u114229695",
-                                   imagedestination="l1/storage/app/exif/jpg", datadestination="l1/storage/app/exif/data",
+                                   imagedestination="chaosbox-data/JPG", datadestination="chaosbox-data/TXT",
                                    keyfile=str(self.state_dir / "credentials/id_ed25519"),
                                    knownhosts=str(self.state_dir / "credentials/known_hosts")).items():
                 ssh.setdefault(key, value)
