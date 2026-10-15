@@ -733,7 +733,7 @@ class DesktopTests(unittest.TestCase):
         settings = core.Settings(home / "ChaosBox")
         settings.reload()
         settings.remember_category(settings.profile("Chaosbox"), "Keep this")
-        asset = next(path for path in settings.profiles[0].data.rglob("*") if path.is_file())
+        asset = settings.profiles[0].data / "user-record.json"
         asset.write_text("User content")
         setup_before = setup.read_bytes()
         shared_app = home / ".local/share/chaosbox/desktop/app.py"
@@ -746,6 +746,25 @@ class DesktopTests(unittest.TestCase):
         self.assertIn("KEEP THIS", settings.profile(settings.default).categories)
         self.assertFalse((home / ".config/chaosbox/credentials/android_copy").exists())
         self.assertIn("Exec=\"", launcher.read_text())
+
+    def test_installation_icons_are_distinct_stable_and_used_by_launchers(self):
+        home = self.root / "icon-home"
+        first = install.install(home, credentials=False, installdir=home / "first")
+        second = install.install(home, credentials=False, installdir=home / "second")
+        original = Image.open(Path(core.__file__).with_name("chaosbox.png")).convert("RGBA")
+        icons = []
+        for target, setup, desktop in (first, second):
+            path = home / ".local/share/chaosbox/icons" / f"{core.Settings(setup.parent).app_id}.png"
+            self.assertIn(f"Icon={path}\n", desktop.read_text())
+            with Image.open(path) as image:
+                self.assertEqual(image.size, original.size)
+                self.assertEqual(image.getchannel("A").tobytes(), original.getchannel("A").tobytes())
+                self.assertEqual(image.tobytes(), core.installation_icon(core.Settings(setup.parent).app_id).tobytes())
+            before = path.read_bytes()
+            install.install(home, credentials=False, installdir=setup.parent)
+            self.assertEqual(path.read_bytes(), before)
+            icons.append(before)
+        self.assertNotEqual(*icons)
 
     def test_installer_populates_only_first_box_from_assets(self):
         home = self.root / "seeded-home"
@@ -761,7 +780,7 @@ class DesktopTests(unittest.TestCase):
                     continue
                 source = assets / name
                 files = [path for path in source.rglob("*") if path.is_file()]
-                self.assertTrue(files)
+                self.assertEqual(sorted(path.relative_to(destination) for path in destination.rglob("*") if path.is_file()), sorted(path.relative_to(source) for path in files))
                 for path in files:
                     with self.subTest(profile=profile.id, asset=path.relative_to(assets)):
                         self.assertEqual((destination / path.relative_to(source)).read_bytes(),
@@ -780,8 +799,8 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual([profile.id for profile in settings.profiles], ["ChaosBox"])
         self.assertEqual(settings.image_width, 2048)
         self.assertEqual(settings.profiles[0].categories, ["EXAMPLE"])
-        self.assertTrue(list(settings.profiles[0].images.iterdir()))
-        self.assertTrue(list(settings.profiles[0].data.iterdir()))
+        self.assertTrue(settings.profiles[0].images.is_dir())
+        self.assertTrue(settings.profiles[0].data.is_dir())
         self.assertIn("[SSH]", setup.read_text())
         self.assertFalse((settings.root / "JPG").exists())
 

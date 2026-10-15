@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Install this desktop build for the current user without root or network access."""
 import argparse
+import io
 import os
 import shlex
 import shutil
@@ -71,6 +72,10 @@ def install(home=None, credentials=True, installdir=None):
                            for line in script.splitlines(keepends=True))
         if migrated != script:
             core.atomic_write(existing, migrated, mode=0o755)
+    icon = shared.parent / "icons" / f"{settings.app_id}.png"
+    icon_data = io.BytesIO()
+    core.installation_icon(settings.app_id).save(icon_data, format="PNG")
+    core.atomic_write(icon, icon_data.getvalue(), mode=0o644)
     launcher = target / "run-desktop.sh"
     script = ('#!/usr/bin/env bash\nset -euo pipefail\n'
               f'exec /usr/bin/python3 {shlex.quote(str(shared / "app.py"))} '
@@ -89,8 +94,9 @@ def install(home=None, credentials=True, installdir=None):
                 shutil.copy2(source_file, destination_file)
             return destination_file
         for name, destination in (("JPG", first.images), ("TXT", first.data)):
-            shutil.copytree(source / "assets" / name, destination, dirs_exist_ok=True,
-                            copy_function=copy_missing)
+            if (source / "assets" / name).is_dir():
+                shutil.copytree(source / "assets" / name, destination, dirs_exist_ok=True,
+                                copy_function=copy_missing)
     if credentials:
         credential_dir = state / "credentials"
         credential_dir.mkdir(mode=0o700, exist_ok=True)
@@ -113,7 +119,7 @@ def install(home=None, credentials=True, installdir=None):
     core.atomic_write(desktop, "[Desktop Entry]\nType=Application\nVersion=1.0\n"
                       f"Name={settings.title}\n"
                       "Comment=Edit image and video metadata, JSON records and synchronize with SSH\n"
-                      f"Exec={quoted(launcher)}\nIcon={shared / 'chaosbox.svg'}\n"
+                      f"Exec={quoted(launcher)}\nIcon={icon}\n"
                       "Terminal=false\nCategories=Graphics;Utility;\nStartupNotify=true\n"
                       f"StartupWMClass={settings.window_class}\n", mode=0o644)
     return target, settings.path, desktop

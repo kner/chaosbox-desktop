@@ -9,6 +9,7 @@ import chaos_sync
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--data',required=True,type=Path,help='Profile directory containing JPG and TXT')
 p.add_argument('--install-dir',type=Path)
+p.add_argument('--show-target',action='store_true',help='Show this installation ID and effective server destinations without syncing')
 p.add_argument('--transport',choices=['ssh','rsync','sftp'])
 p.add_argument('--import-journal',type=Path)
 p.add_argument('--prepare-only',action='store_true')
@@ -27,7 +28,12 @@ a=p.parse_args()
 profile=core.Profile('','',a.data/'JPG',a.data/'TXT',a.data/'TXT',a.data/'.indices',[],[])
 store=core.sync_store(profile)
 with store.locked():
-    if a.import_journal:
+    if a.show_target:
+        settings=core.Settings(a.install_dir or a.data.parent);settings.reload()
+        configured=next(pr for pr in settings.profiles if pr.data.resolve()==(a.data/'TXT').resolve())
+        settings.profile(configured.id)
+        print(json.dumps({key:settings.ssh[key] for key in ('installation','datadestination','shelldatadestination')},indent=2))
+    elif a.import_journal:
         store.import_from(a.import_journal)
         store.capture()
         print("Conflicts:",len(store.apply()))

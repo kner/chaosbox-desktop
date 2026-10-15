@@ -27,6 +27,19 @@ import markdown_render
 import chaos_sync
 import sync_transport
 
+def installation_icon(app_id):
+    """Tint the desktop and window icon consistently for one installation."""
+    with Image.open(Path(__file__).with_name("chaosbox.png")) as original:
+        icon = original.convert("RGBA")
+    # Hash the full ID so similar installation names get unrelated colors.
+    shift = int.from_bytes(hashlib.sha256(app_id.encode("utf-8")).digest()[:2], "big") % 256
+    hue, saturation, value = icon.convert("RGB").convert("HSV").split()
+    hue = hue.point([(level + shift) % 256 for level in range(256)])
+    tinted = Image.merge("HSV", (hue, saturation, value)).convert("RGBA")
+    tinted.putalpha(icon.getchannel("A"))
+    return tinted
+
+
 FIELDS = ("box", "anzahl", "device", "alias", "category", "comment", "package")
 LABELS = ("Box", "Quantity", "Device", "Alias", "Category", "Comment", "Package")
 MEDIA = {".jpg", ".jpeg", ".mp4"}
@@ -169,6 +182,12 @@ class Settings:
         self.index = self.root / ".indices"
         self.title = f"Chaosbox-{self.root.name}"
         self.app_id = "chaosbox-" + hashlib.sha256(str(self.root).encode()).hexdigest()[:16]
+        # Bind defaults to both this directory and this computer. Copied setup
+        # files cannot make a second installation reuse the first one's target.
+        try: machine = Path('/etc/machine-id').read_text().strip()
+        except OSError: machine = __import__('socket').gethostname()
+        slug = re.sub(r'[^a-z0-9_-]+', '-', self.root.name.casefold()).strip('-_') or 'installation'
+        self.installation_id = slug[:40] + '-' + hashlib.sha256((machine+'\0'+str(self.root)).encode()).hexdigest()[:16]
         self.window_class = "Chaosbox-" + self.app_id.removeprefix("chaosbox-")
         self.profiles = []
         self.image_width = 3000
@@ -183,7 +202,7 @@ class Settings:
             if default_box and not any(name.casefold() == "box" for name, *_ in section_blocks(text)):
                 text += f"\n[Box]\nTitel={default_box}\n"
             text += ("\n[SSH]\nHost=access983197478.webspace-data.io\nPort=22\nUser=u114229695\n"
-                     "ImageDestination=chaosbox-data/JPG\nDataDestination=chaosbox-data/TXT\n"
+                     f"Installation={self.installation_id}\n"
                      f"KeyFile={self.state_dir / 'credentials/id_ed25519'}\n"
                      f"KnownHosts={self.state_dir / 'credentials/known_hosts'}\n")
             atomic_write(self.path, text)
@@ -262,7 +281,14 @@ class Settings:
             editor = values.get("editor", "").strip() or None
             ssh = dict(effective.get("ssh", {}))
             ssh.update(effective.get("ssh."+identifier.casefold(),{}))
-            sync_root="chaosbox-data" if identifier.casefold() in ("chaosbox","chaobox") else "chaosbox-data/profiles/"+identifier.casefold()
+            profile_path=identifier.casefold()
+            sync_root="chaosbox-data/installations/"+self.installation_id+"/profiles/"+profile_path
+            # Upgrade the former shared defaults, including paths copied from
+            # another installation. Explicit custom servers/paths stay explicit.
+            if ssh.get('host','access983197478.webspace-data.io')=='access983197478.webspace-data.io':
+                for key in ('datadestination','sftpdatadestination','shelldatadestination','imagedestination'):
+                    ssh.pop(key,None)
+            ssh['installation']=self.installation_id
             for key, value in dict(host="access983197478.webspace-data.io", port="22", user="u114229695",
                                    imagedestination=sync_root+"/JPG", datadestination=sync_root+"/TXT",
                                    keyfile=str(self.state_dir / "credentials/id_ed25519"),
@@ -1598,6 +1624,7 @@ def _legacy_upload(settings, profile, cancel: threading.Event, progress=lambda _
 
 def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
     progress('Preparing synchronization …')
+    progress('Installation: '+settings.installation_id)
     progress('Box: '+profile.title)
     store = sync_store(profile)
     with store.locked():

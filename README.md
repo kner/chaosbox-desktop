@@ -415,3 +415,21 @@ data root and are not JSON sources. Desktop keeps its shared `.indices` at the
 installation level.
 
 This host exposes htdocs as SFTP `/`. The absolute SSH/rsync path is configured separately with ShellDataDestination; both address the same journal.
+
+## Independent installation synchronization
+
+Each installation directory and each configured Box has its own server dataset
+under `chaosbox-data/installations/<installation-id>/profiles/<box>/`. Defaults
+on the existing hosting are scoped even if setup.ini was copied from another
+installation. Installation IDs are bound to this computer and absolute path;
+custom destinations on other SSH servers remain explicit. Synchronization logs
+show the ID; `sync-data.py --install-dir DIR --data BOX_DIR --show-target` prints
+the effective destinations without transferring data. Android must explicitly
+select that installation in `[SSH] Installation=...`. The website selector keeps
+searches and image links within the chosen dataset. See SYNC-PROTOCOL.md.
+
+Desktop installations use individual icon colors derived from their installation ID.
+The application menu, desktop shortcuts, and window/taskbar icon share the same color.
+Run `./install-desktop.sh` to refresh icons for all registered installations, then
+reopen running windows. Existing desktop shortcuts copied outside the application
+menu may need to be recreated from the updated menu entry.

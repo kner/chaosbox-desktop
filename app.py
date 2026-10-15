@@ -518,7 +518,7 @@ class App:
     def __init__(self, root, settings, newindex=False):
         self.root, self.settings = root, settings
         self.newindex = newindex
-        self.window_icon = tk.PhotoImage(file=str(Path(__file__).with_name("chaosbox.png")))
+        self.window_icon = ImageTk.PhotoImage(core.installation_icon(settings.app_id))
         root.iconphoto(True, self.window_icon)
         root.title(settings.title)
         root.geometry("1240x850")

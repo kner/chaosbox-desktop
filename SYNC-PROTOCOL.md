@@ -235,3 +235,54 @@ abweichend bearbeitete Zieldateien werden nicht überschrieben. Bei ungelösten
 Konflikten bleibt die vorhandene JPG-Ansicht des Objekts unverändert. Fehlt sie,
 wird erst nach Auswahl einer Version eine aktuelle Kopie veröffentlicht.
 Ein späterer Abgleich repariert eine unterbrochene Veröffentlichung.
+
+## Getrennte Desktop-Installationen
+
+Jedes Desktop-Installationsverzeichnis erhält eine eigene, von Computer und
+absolutem Verzeichnis abgeleitete Installations-ID. Auch kopierte setup.ini-Dateien
+führen auf dem bestehenden Hosting nicht zum Teilen desselben Serverziels.
+Die bisherigen gemeinsamen Hosting-Pfade werden zur Laufzeit ersetzt durch:
+
+`chaosbox-data/installations/<Installations-ID>/profiles/<Profilname>/`
+
+Darunter liegen jeweils JPG, TXT/.chaosbox-sync und .indices/web-catalog.json.
+Die ID bleibt auf demselben Computer und im selben Verzeichnis stabil. Ein
+anderes Verzeichnis oder ein anderer Computer erhält eine andere ID. Explizite
+Ziele auf anderen SSH-Servern bleiben benutzerdefiniert.
+
+Desktop zeigt die ID beim Synchronisieren an. Ohne Übertragung anzeigen:
+
+```sh
+/usr/bin/python3 sync-data.py --install-dir ~/ChaosBox --data ~/ChaosBox/ChaosBox --show-target
+```
+
+Android verbindet sich ausdrücklich mit einer Installation. In
+ChaosBox/Setup/setup.ini unter [SSH] oder [SSH.Profilname] eintragen:
+
+```ini
+[SSH]
+Installation=chaosbox-47ebae22f7cbec2c
+; Bei abweichendem Android-Profilnamen optional:
+; RemoteProfile=chaosbox
+```
+
+Die Beispiel-ID muss durch die tatsächliche Desktop-ID ersetzt werden.
+Ohne ausgewählte Installation oder explizites eigenes Ziel verweigert Android
+Abgleiche mit den alten gemeinsamen Standardpfaden. Alte lokale Daten und
+Journale nicht zwischen unabhängigen Installationen kopieren.
+
+Die Website findet synchronisierte Installationen unter installations und bietet
+Installation / Sammlung als Auswahl an. Suche, JSON-Auswahl und Bildabrufe
+bleiben im gewählten Datenbestand. Der gemeinsame Login gewährt weiterhin
+Zugriff auf alle dort sichtbaren Installationen; dies sind keine getrennten
+Benutzerkonten. Der Betreiber steuert die Sichtbarkeit über das konfigurierte
+CHAOSBOX_DATA_DIR und die darunter vorhandenen Installationen.
+
+```sh
+php scripts/rebuild-index.php --all
+php scripts/rebuild-index.php --installation INSTALLATIONS-ID/chaosbox
+```
+
+Die bisherigen push-data/pull-data-Hilfsskripte verwenden explizite Datenziele;
+für installationsgebundene Desktop-Abgleiche sync-data.py mit --install-dir
+oder den Synchronisieren-Knopf der jeweiligen Installation verwenden.

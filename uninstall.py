@@ -27,6 +27,7 @@ def uninstall(home=None, installdir=None):
 
     remove(home / ".local/share/applications" / f"{app_id}.desktop")
     remove(target / "run-desktop.sh")
+    remove(base / "icons" / f"{app_id}.png")
     # Shared code is still needed while another installation has a launcher.
     if not any(installations.glob("*/run-desktop.sh")):
         for name in ("app.py", "core.py", "i18n.py", "markdown_render.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
