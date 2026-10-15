@@ -219,3 +219,19 @@ eine Bearbeitung erzeugt eine neue Operation. Die Inventarprüfung ist ein Cache
 für dieses Protokoll, kein Manipulationsnachweis gegen einen kompromittierten
 Server. Beim Verdacht auf manuelle Journaländerungen `checksums.json` entfernen,
 damit der nächste Abgleich alle Operationen erneut prüft.
+
+## Aktuelle Medien im JPG-Ordner
+
+Nach jedem erfolgreichen Journal-Austausch veröffentlichen Desktop (SFTP,
+SSH und rsync) und Android (SFTP) die eindeutigen aktuellen Medien zusätzlich
+unter `<Datenwurzel>/JPG/<Originalpfad>`. Auch Kategorie-Unterordner und MP4
+bleiben erhalten. Die Dateien werden aus den geprüften Journal-Blobs erzeugt;
+das Journal mit seiner Versionshistorie bleibt die Synchronisationsgrundlage.
+SSH/rsync benötigt dafür `sha256sum` auf dem Server.
+
+Umbenennen und explizites Löschen entfernen alte JPG-Kopien nur, wenn deren
+Prüfsumme einer bekannten Version entspricht. Fremde Dateien bleiben erhalten;
+abweichend bearbeitete Zieldateien werden nicht überschrieben. Bei ungelösten
+Konflikten bleibt die vorhandene JPG-Ansicht des Objekts unverändert. Fehlt sie,
+wird erst nach Auswahl einer Version eine aktuelle Kopie veröffentlicht.
+Ein späterer Abgleich repariert eine unterbrochene Veröffentlichung.

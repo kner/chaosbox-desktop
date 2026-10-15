@@ -16,6 +16,20 @@ class SyncTests(unittest.TestCase):
             for folder,suffix in [('blobs','.blob'),('ops','.op')]:
                 for source in (first.root/folder).glob('*'+suffix): second.immutable(second.root/folder/source.name,source.read_bytes())
         self.a.apply();self.b.apply()
+    def test_null_comment_matches_empty_without_losing_literal_text(self):
+        from chaos_sync import normalized
+        for key in ('comment','kommentar','Kommentar'):
+            for value in (None,'','null','Grüße 東京'):
+                with self.subTest(key=key,value=value):
+                    self.assertEqual(normalized({key:value})['comment'], '' if value is None else value)
+        atomic(self.path,'[{"box":"B","comment":null}]')
+        self.a.capture();self.exchange()
+        before=self.a.operations()
+        records=json.loads(self.path.read_text());records[0]['comment']=''
+        atomic(self.path,canonical(records));self.a.capture();self.exchange()
+        self.assertEqual(before,self.a.operations())
+        self.assertFalse({k:v for k,v in self.a.heads().items() if len(v)>1})
+
     def test_initial_idempotent(self):
         self.a.capture();self.exchange();before=self.a.operations();self.b.capture();self.exchange()
         self.assertEqual(before,self.b.operations());self.assertEqual(len(before),2)

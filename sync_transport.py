@@ -198,9 +198,116 @@ def publish_sftp_manifest(store, sftp, remote, check, previous=None):
     return value
 
 
+def media_projection(store):
+    """Current media plus known historical bytes; conflicts keep their existing view."""
+    operations=store.operations()
+    desired={}; known={}; protected=set()
+    for op in operations.values():
+        if op['kind']=='media' and op['action']=='put':
+            known.setdefault(op['path'],set()).add(op['blob'])
+    for versions in store.heads(operations).values():
+        if versions[0]['kind']!='media':continue
+        if len(versions)>1:
+            ident=versions[0]['id']
+            protected.update(op['path'] for op in operations.values() if op['id']==ident)
+        elif versions[0]['action']=='put':
+            op=versions[0];path=op['path']
+            if path in desired:raise ValueError('Media filename conflict: '+path)
+            desired[path]=op['blob']
+    for path in protected:desired.pop(path,None)
+    return desired,known,protected
+
+
+def sftp_media_projection(store, sftp, remote, mkdirs, check, progress):
+    desired,known,protected=media_projection(store)
+    images=posixpath.join(posixpath.dirname(posixpath.dirname(remote.rstrip('/'))),'JPG')
+    progress('Updating current media in remote JPG/ …')
+    mkdirs(images)
+    def remote_hash(path):
+        try:info=sftp.lstat(path)
+        except OSError as error:
+            if error.errno==errno.ENOENT:return None
+            raise
+        if not stat.S_ISREG(info.st_mode):raise ValueError('Unsafe remote media: '+path)
+        import hashlib
+        value=hashlib.sha256()
+        with sftp.open(path,'rb') as stream:
+            while True:
+                check();chunk=stream.read(65536)
+                if not chunk:break
+                value.update(chunk)
+        return value.hexdigest()
+    # Preflight every managed path before publishing or removing anything.
+    current={}
+    for path in sorted(set(known)-protected):
+        check();target=posixpath.join(images,path)
+        mkdirs(posixpath.dirname(target))
+        current[path]=remote_hash(target)
+        if path in desired and current[path] is not None and current[path] not in known[path]:
+            raise ValueError('Untracked remote JPG file; retained: '+path)
+    for path,blob in sorted(desired.items()):
+        check()
+        if current[path]==blob:continue
+        source=store.root/'blobs'/(blob+'.blob')
+        if digest(source)!=blob:raise ValueError('Corrupt media payload: '+path)
+        target=posixpath.join(images,path);temporary=target+'.'+uuid.uuid4().hex+'.tmp'
+        try:
+            sftp.put(str(source),temporary,callback=byte_progress('Publishing JPG/'+path,check,progress))
+            check()
+            renamed=False
+            if hasattr(sftp,'posix_rename'):
+                try:sftp.posix_rename(temporary,target);renamed=True
+                except OSError as error:
+                    if error.errno not in (errno.ENOSYS,errno.EOPNOTSUPP) and 'unsupported' not in str(error).lower():raise
+            if not renamed:
+                if current[path] is not None:sftp.remove(target)
+                sftp.rename(temporary,target)
+        finally:
+            try:sftp.remove(temporary)
+            except OSError:pass
+    for path,value in current.items():
+        if path not in desired and value in known[path]:
+            check();sftp.remove(posixpath.join(images,path))
+
+
+def shell_media_projection(store, remote):
+    desired,known,protected=media_projection(store)
+    images=posixpath.join(posixpath.dirname(posixpath.dirname(remote.rstrip('/'))),'JPG')
+    q=shlex.quote
+    lines=['set -eu', 'command -v sha256sum >/dev/null']
+    def directories(path):
+        parts=[]
+        while path not in ('','/','.'):
+            parts.append(path);path=posixpath.dirname(path)
+        for directory in reversed(parts):
+            quoted=q(directory)
+            lines.append('[ ! -L '+quoted+' ] && { [ -d '+quoted+' ] || mkdir -- '+quoted+'; }')
+    # Validate paths, contents, and payloads before changing the current view.
+    directories(images)
+    for path in sorted(set(known)-protected):
+        target=posixpath.join(images,path);directories(posixpath.dirname(target));target=q(target)
+        lines.append('[ ! -L '+target+' ] && { [ ! -e '+target+' ] || [ -f '+target+' ]; }')
+        if path in desired:
+            allowed='|'.join(sorted(known[path]))
+            lines.append('if [ -f '+target+' ]; then h=$(sha256sum -- '+target+'); h=${h%% *}; case "$h" in '+allowed+') ;; *) echo '+q('Untracked remote JPG file; retained: '+path)+' >&2; exit 1;; esac; fi')
+            source=q(remote+'/blobs/'+desired[path]+'.blob')
+            lines.append('[ ! -L '+source+' ] && [ -f '+source+' ] && h=$(sha256sum -- '+source+') && [ "${h%% *}" = '+q(desired[path])+' ]')
+    for path in sorted(set(known)-protected):
+        target=posixpath.join(images,path);quoted=q(target)
+        if path in desired:
+            source=q(remote+'/blobs/'+desired[path]+'.blob');temporary=q(target+'.'+uuid.uuid4().hex+'.tmp')
+            lines.append('h=""; if [ -f '+quoted+' ]; then h=$(sha256sum -- '+quoted+'); h=${h%% *}; fi')
+            lines.append('if [ "$h" != '+q(desired[path])+' ]; then cp -- '+source+' '+temporary+' && mv -f -- '+temporary+' '+quoted+'; fi')
+        else:
+            allowed='|'.join(sorted(known[path]))
+            lines.append('if [ -f '+quoted+' ]; then h=$(sha256sum -- '+quoted+'); h=${h%% *}; case "$h" in '+allowed+') rm -- '+quoted+';; esac; fi')
+    return '\n'.join(lines)
+
+
 def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reader_factory=None):
     def mkdirs(path):
         if path in ('','/','.'): return
+        mkdirs(posixpath.dirname(path))
         try:
             info=sftp.lstat(path)
             if not stat.S_ISDIR(info.st_mode): raise ValueError('Unsafe remote directory: '+path)
@@ -307,6 +414,7 @@ def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reade
                     try:sftp.remove(temporary)
                     except OSError:pass
         check()
+        sftp_media_projection(store,sftp,remote,mkdirs,check,progress)
         manifest=publish_sftp_manifest(store,sftp,remote,check,server_manifest)
         progress('Local and server checksum agree; journal synchronized.')
         progress('Immutable journal exchanged over SFTP.')
@@ -385,6 +493,10 @@ def shell_exchange(store, ssh, transport, cancel, progress=print):
                 command+='for d in blobs ops; do for f in '+q(target)+'/$d/*; do [ -f "$f" ] || continue; b=${f##*/}; '
                 command+='if [ -e '+q(remote)+'/$d/"$b" ]; then cmp -s "$f" '+q(remote)+'/$d/"$b" || exit 1; else mv -- "$f" '+q(remote)+'/$d/"$b" || exit 1; fi; done; done; rm -r -- '+q(target)
                 with upload.open('rb') as inp: run(args+[command],stdin=inp)
+        progress('Updating current media in remote JPG/ …')
+        with tempfile.TemporaryFile() as script:
+            script.write(shell_media_projection(store,remote).encode('utf-8'));script.seek(0)
+            run(args+['sh -s'],stdin=script)
         manifest=store.checksums()
         source=store.root/'checksums.json'
         temporary=remote+'/.checksums-'+uuid.uuid4().hex+'.tmp'

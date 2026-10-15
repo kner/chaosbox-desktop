@@ -72,6 +72,7 @@ def normalized(record):
     result['anzahl']=max(0,int(result.get('count',result.get('anzahl',result.get('Anzahl',0))) or 0))
     result['package']=result.get('pack',result.get('package',''))
     result['comment']=result.get('comment',result.get('kommentar',result.get('Kommentar','')))
+    if result['comment'] is None:result['comment']=''
     category=next((v for k,v in result.items() if k.casefold() in ('category','kategorie')),'')
     result['category']=(', '.join(map(str,category)) if isinstance(category,list) else str(category or '')).upper()
     for key in ('box','device','alias','created'):result.setdefault(key,'')

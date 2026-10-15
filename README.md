@@ -362,6 +362,11 @@ Host, Port, User, KeyFile, KnownHosts and DataDestination in setup.ini; the
 existing Setup editor can edit these values. ShellDataDestination accounts
 for a different path namespace on SSH hosts. The common root is `chaosbox-data`.
 See [SYNC-PROTOCOL.md](SYNC-PROTOCOL.md) for exact paths and the format.
+After exchanging the journal, synchronization also publishes current media under
+`chaosbox-data/JPG/` with their original filenames and category subfolders.
+Renames and explicit deletions update that view; conflicts retain its existing
+copy until resolved. Unrelated server files are retained. SSH/rsync requires
+`sha256sum` on the server.
 
 The local installer preserves its per-installation Ed25519 key pair under
 `.state/credentials`. Authorize its public key on the SSH server. Unknown host

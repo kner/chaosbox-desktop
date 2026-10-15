@@ -26,6 +26,49 @@ class Transports(unittest.TestCase):
     def tearDown(self):self.temp.cleanup()
     def assert_received(self):
         self.b.apply();records=json.loads((self.b.data/'box.json').read_text());self.assertEqual(records[0]['comment'],'Grüße 東京')
+    def media(self):
+        self.a.reader=lambda path:next((dict(v[0]['record']) for v in self.a.heads().values() if v[0]['kind']=='media' and v[0]['action']=='put'),{'device':'photo','comment':''})
+        path=self.a.images/'SCHRAUBEN/Grüße photo.jpg'
+        atomic(path,b'first image')
+        return path
+
+    def test_sftp_publishes_named_media_updates_moves_and_deletes(self):
+        source=self.media();sftp=FileSftp(self.server);remote='data/TXT/.chaosbox-sync'
+        sync=lambda:sync_transport.sftp_exchange(self.a,sftp,remote,progress=lambda _:None)
+        sync();target=self.server/'data/JPG/SCHRAUBEN/Grüße photo.jpg'
+        self.assertEqual(target.read_bytes(),b'first image')
+        source.write_bytes(b'updated image');sync();self.assertEqual(target.read_bytes(),b'updated image')
+        # Preserve object identity when changing the path.
+        heads=self.a.heads();op=next(v[0] for v in heads.values() if v[0]['kind']=='media')
+        moved=self.a.images/'OTHER/new.jpg';atomic(moved,source.read_bytes());source.unlink()
+        sync();self.assertFalse(target.exists());target=self.server/'data/JPG/OTHER/new.jpg'
+        self.assertEqual(target.read_bytes(),b'updated image')
+        unrelated=self.server/'data/JPG/keep.jpg';unrelated.write_bytes(b'not synchronized')
+        self.a.delete(moved);sync();self.assertFalse(target.exists());self.assertEqual(unrelated.read_bytes(),b'not synchronized')
+
+    def test_sftp_preserves_remote_edits_and_rejects_symlink_parent(self):
+        source=self.media();sftp=FileSftp(self.server);remote='data/TXT/.chaosbox-sync'
+        sync=lambda:sync_transport.sftp_exchange(self.a,sftp,remote,progress=lambda _:None)
+        sync();target=self.server/'data/JPG/SCHRAUBEN/Grüße photo.jpg';target.write_bytes(b'remote edit')
+        source.write_bytes(b'local edit')
+        with self.assertRaisesRegex(ValueError,'Untracked remote JPG'):sync()
+        self.assertEqual(target.read_bytes(),b'remote edit')
+        target.unlink();target.parent.rmdir();outside=self.root/'outside';outside.mkdir()
+        target.parent.symlink_to(outside,target_is_directory=True)
+        with self.assertRaisesRegex(ValueError,'Unsafe remote directory'):sync()
+        self.assertEqual(list(outside.iterdir()),[])
+        self.assertFalse((self.server/remote/'transfer.lock').exists())
+
+    def test_conflict_keeps_existing_remote_view(self):
+        source=self.media();sftp=FileSftp(self.server);remote='data/TXT/.chaosbox-sync'
+        sync_transport.sftp_exchange(self.a,sftp,remote,progress=lambda _:None)
+        op=next(v[0] for v in self.a.heads().values() if v[0]['kind']=='media')
+        self.a.issue('media',op['path'],dict(op['record'],comment='A'),source,parents=[op['revision']])
+        self.a.issue('media',op['path'],dict(op['record'],comment='B'),source,parents=[op['revision']])
+        sync_transport.sftp_exchange(self.a,sftp,remote,progress=lambda _:None)
+        self.assertEqual((self.server/'data/JPG/SCHRAUBEN/Grüße photo.jpg').read_bytes(),b'first image')
+        self.assertTrue(any(len(v)>1 for v in self.a.heads().values()))
+
     def test_sftp_round_trip_deletion_and_remote_lock(self):
         sftp=FileSftp(self.server)
         sync_transport.sftp_exchange(self.a,sftp,'shared',progress=lambda _:None)
@@ -55,6 +98,7 @@ class Transports(unittest.TestCase):
         with self.assertRaises(ValueError):sync_transport.sftp_exchange(self.b,sftp,'shared')
         self.assertFalse(self.b.operations());self.assertFalse((self.b.data/'box.json').exists())
     def test_real_rsync_and_ssh_tar_streams(self):
+        source=self.media()
         binary=self.root/'bin';binary.mkdir();wrapper=binary/'ssh'
         wrapper.write_text('''#!/bin/sh
 while [ "$#" -gt 0 ]; do case "$1" in local-test|tester@local-test) shift; break;; *) shift;; esac; done
@@ -62,10 +106,24 @@ if [ "$#" -eq 1 ]; then exec /bin/sh -c "$1"; else exec "$@"; fi
 ''');wrapper.chmod(0o755)
         with patch.dict(os.environ,PATH=str(binary)+':'+os.environ['PATH']):
             for transport in ('rsync','ssh'):
-                remote=self.server/transport
+                remote=self.server/transport/'TXT'
                 config=dict(host='local-test',user='tester',port='22',keyfile='unused',knownhosts='unused',datadestination=str(remote))
                 sync_transport.shell_exchange(self.a,config,transport,threading.Event(),lambda _:None)
+                self.b.reader=self.a.reader
                 sync_transport.shell_exchange(self.b,config,transport,threading.Event(),lambda _:None);self.assert_received()
+                target=remote.parent/'JPG/SCHRAUBEN/Grüße photo.jpg'
+                self.assertEqual(target.read_bytes(),b'first image')
+                op=next(v[0] for v in self.a.heads().values() if v[0]['kind']=='media')
+                source.write_bytes(b'updated image')
+                sync_transport.shell_exchange(self.a,config,transport,threading.Event(),lambda _:None)
+                self.assertEqual(target.read_bytes(),b'updated image')
+                self.a.delete(source)
+                sync_transport.shell_exchange(self.a,config,transport,threading.Event(),lambda _:None)
+                self.assertFalse(target.exists())
+                atomic(source,b'first image')
+                self.a=Store(self.root/transport/'JPG',self.root/transport/'TXT',reader=lambda p:{'device':'photo','comment':''})
+                source=self.media()
+                atomic(self.a.data/'box.json','[{"device":"one","comment":"Grüße 東京"}]')
                 self.assertFalse((remote/'.chaosbox-sync/transfer.lock').exists())
     def test_cancellation_releases_remote_lock(self):
         sftp=FileSftp(self.server);sync_transport.sftp_exchange(self.a,sftp,'shared',progress=lambda _:None)
