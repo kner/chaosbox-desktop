@@ -225,13 +225,27 @@ class BatchSaveConfirmationTests(unittest.TestCase):
 
 
 class DeleteEntryTests(unittest.TestCase):
+    def test_stale_selection_after_sync_cannot_delete_a_different_record(self):
+        app=App.__new__(App)
+        app.sync_needs_reload=True
+        app.variables={}
+        app.field_widgets={"comment":Mock()}
+        app.fill({"anzahl":0})
+        with patch("app.messagebox.showinfo") as notice, patch("core.delete_entry") as delete:
+            app.delete_current()
+        notice.assert_called_once()
+        delete.assert_not_called()
+
     def test_json_deletes_only_selected_record(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "box.json"
             records = [{"device": "first", "extra": 1}, {"device": "second"}, {"device": "third"}]
             path.write_text(json.dumps(records))
             core.delete_entry(path, 1)
-            self.assertEqual(core.load_box(path), [records[0], records[2]])
+            remaining=core.load_box(path)
+            self.assertEqual([r["device"] for r in remaining], ["first","third"])
+            self.assertTrue(all(r.get("id") and r.get("revision") for r in remaining))
+            self.assertEqual(remaining[0]["extra"],1)
             core.delete_entry(path, 1)
             core.delete_entry(path, 0)
             self.assertEqual(core.load_box(path), [])
@@ -248,8 +262,8 @@ class DeleteEntryTests(unittest.TestCase):
     def test_deletes_displayed_media_only_and_updates_index(self):
         with tempfile.TemporaryDirectory() as directory:
             first, second = [Path(directory) / name for name in ("first.jpg", "second.jpg")]
-            first.touch()
-            second.touch()
+            Image.new("RGB", (20,10)).save(first)
+            Image.new("RGB", (20,10)).save(second)
             app = App.__new__(App)
             app.busy = app.search_mode = False
             app.media = [first, second]

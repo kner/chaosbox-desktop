@@ -1,0 +1,92 @@
+import unittest,tempfile,json,sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from chaos_sync import Store,atomic,canonical
+
+class SyncTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name)
+        self.a=Store(self.root/'a/JPG',self.root/'a/TXT')
+        self.b=Store(self.root/'b/JPG',self.root/'b/TXT')
+        self.path=self.a.data/'box.json'
+        atomic(self.path,'[{"box":"B","device":"one","comment":"Grüße 東京"},{"box":"B","device":"two"}]')
+    def tearDown(self): self.temp.cleanup()
+    def exchange(self):
+        for first,second in [(self.a,self.b),(self.b,self.a)]:
+            for folder,suffix in [('blobs','.blob'),('ops','.op')]:
+                for source in (first.root/folder).glob('*'+suffix): second.immutable(second.root/folder/source.name,source.read_bytes())
+        self.a.apply();self.b.apply()
+    def test_initial_idempotent(self):
+        self.a.capture();self.exchange();before=self.a.operations();self.b.capture();self.exchange()
+        self.assertEqual(before,self.b.operations());self.assertEqual(len(before),2)
+        self.assertEqual(json.loads(self.path.read_text()),json.loads((self.b.data/'box.json').read_text()))
+    def test_independent_records_merge(self):
+        self.a.capture();self.exchange()
+        for store,index,text in [(self.a,0,'A'),(self.b,1,'B')]:
+            path=store.data/'box.json';records=json.loads(path.read_text());records[index]['comment']=text
+            atomic(path,canonical(records));store.capture()
+        self.exchange()
+        self.assertFalse({k:v for k,v in self.a.heads().items() if len(v)>1})
+        self.assertEqual({r['comment'] for r in json.loads(self.path.read_text())},{'A','B'})
+    def test_offline_delete_vs_edit_retains_conflict(self):
+        self.a.capture();self.exchange()
+        self.a.delete(self.path,0)
+        path=self.b.data/'box.json';records=json.loads(path.read_text());records[0]['comment']='offline edit'
+        atomic(path,canonical(records));self.b.capture();self.exchange()
+        conflicts={k:v for k,v in self.a.heads().items() if len(v)>1}
+        self.assertEqual(len(conflicts),1)
+        ident,heads=next(iter(conflicts.items()));chosen=next(h for h in heads if h['action']=='put')
+        self.a.resolve(ident,chosen['revision']);self.exchange()
+        self.assertEqual(len(self.a.heads()[ident]),1)
+        self.assertIn('offline edit',self.path.read_text())
+    def test_deleted_missing_file_does_not_resurrect(self):
+        self.a.capture();self.exchange();self.a.delete(self.path,0);self.b.capture();self.exchange()
+        self.b.capture();self.exchange()
+        self.assertEqual(len(json.loads(self.path.read_text())),1)
+        self.assertTrue(list((self.a.root/'trash').rglob('box.json')))
+    def test_absence_is_not_delete(self):
+        self.a.capture();self.exchange();self.path.unlink();self.a.capture();self.exchange()
+        self.assertEqual(len(json.loads(self.path.read_text())),2)
+    def test_traversal_rejected(self):
+        self.a.capture();op=next(iter(self.a.operations().values()));op['path']='../outside.json'
+        with self.assertRaises(ValueError):self.a.publish(op)
+    def test_partial_history_rejected(self):
+        self.a.capture();op=next(iter(self.a.operations().values()));op['parents']=['a'*64]
+        atomic(self.a.root/'ops'/(op['revision']+'.op'),canonical(op))
+        with self.assertRaises(ValueError):self.a.apply()
+    def test_whole_box_delete_and_restore(self):
+        self.a.capture();self.exchange();before=json.loads(self.path.read_text());self.a.delete_box(self.path);self.exchange()
+        self.assertEqual(json.loads(self.path.read_text()),[])
+        old=next(op for op in self.a.operations().values() if op['id']==before[0]['id'] and op['action']=='put')
+        self.a.restore(old['id'],old['revision']);self.exchange()
+        self.assertEqual(len(json.loads(self.path.read_text())),1)
+    def test_cycles_rejected(self):
+        self.a.capture();operations=self.a.operations();revision,op=next(iter(operations.items()));op['parents']=[revision]
+        atomic(self.a.root/'ops'/(revision+'.op'),canonical(op))
+        with self.assertRaises(ValueError):self.a.apply()
+    def test_device_acknowledgment_is_stable_and_retirement_is_explicit(self):
+        self.a.capture();self.a.apply();self.a.acknowledge();before=len(self.a.operations());self.a.acknowledge()
+        self.assertEqual(len(self.a.operations()),before)
+        self.a.device_event(self.a.device,'retire')
+        with self.assertRaises(ValueError):self.a.acknowledge()
+        object_id=next(op['id'] for op in self.a.operations().values() if op['kind']=='record')
+        with self.assertRaises(ValueError):self.a.device_event(object_id,'retire')
+    def test_unknown_edit_base_remains_a_conflict(self):
+        self.a.capture();self.exchange()
+        records=json.loads(self.path.read_text());records[0].pop('revision');records[0]['comment']='lost metadata edit'
+        atomic(self.path,canonical(records));self.a.capture()
+        self.assertEqual(len([versions for versions in self.a.heads().values() if len(versions)>1]),1)
+    def test_interrupted_metadata_publication_recovers_from_base_revision(self):
+        import uuid
+        self.a.capture();records=json.loads(self.path.read_text());old=records[0]['revision']
+        records[0]['base_revision']=old;records[0]['revision']=str(uuid.uuid4());records[0]['comment']='recovered save'
+        atomic(self.path,canonical(records));self.a.capture();self.a.apply()
+        ident=records[0]['id'];self.assertEqual(len(self.a.heads()[ident]),1)
+        self.assertEqual(self.a.heads()[ident][0]['record']['comment'],'recovered save')
+    def test_partial_and_keyed_records_are_valid_and_deterministic(self):
+        atomic(self.a.data/'category.json','{"category":"Werkzeug"}')
+        atomic(self.a.data/'grouped.json','{"z":{"category":"Werkzeug"},"a":{"alias":"Reserve"}}')
+        self.a.capture();self.exchange()
+        self.assertEqual(json.loads((self.b.data/'category.json').read_text())[0]['category'],'WERKZEUG')
+        self.assertIn('Reserve',{record['alias'] for record in json.loads((self.b.data/'grouped.json').read_text())})
+if __name__=='__main__':unittest.main()

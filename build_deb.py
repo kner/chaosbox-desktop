@@ -33,7 +33,7 @@ def build(version, output):
             path.chmod(0o644)
 
         # Explicit allowlist: never package user data, SSH keys or local settings.
-        for name in ("app.py", "core.py", "i18n.py", "markdown_render.py", "setup.ini"):
+        for name in ("app.py", "core.py", "chaos_sync.py", "sync_transport.py", "sync-data.py", "i18n.py", "markdown_render.py", "setup.ini"):
             write(f"usr/share/{PACKAGE}/{name}", (SOURCE / name).read_text())
         copy(f"usr/share/{PACKAGE}/chaosbox.png", SOURCE / "chaosbox.png")
         copy("usr/share/icons/hicolor/128x128/apps/chaosbox.png", SOURCE / "chaosbox.png")
@@ -52,6 +52,7 @@ StartupNotify=true
 StartupWMClass=Chaosbox
 """)
         write(f"usr/share/doc/{PACKAGE}/README.md", (SOURCE / "README.md").read_text())
+        write(f"usr/share/doc/{PACKAGE}/SYNC-PROTOCOL.md", (SOURCE / "SYNC-PROTOCOL.md").read_text())
         files = sorted(path for path in root.rglob("*") if path.is_file())
         size = sum((path.stat().st_size + 1023) // 1024 for path in files)
         write("DEBIAN/control", f"""Package: {PACKAGE}

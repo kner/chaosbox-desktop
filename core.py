@@ -24,16 +24,19 @@ import uuid
 from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageColor
 
 import markdown_render
+import chaos_sync
+import sync_transport
 
 FIELDS = ("box", "anzahl", "device", "alias", "category", "comment", "package")
 LABELS = ("Box", "Quantity", "Device", "Alias", "Category", "Comment", "Package")
 MEDIA = {".jpg", ".jpeg", ".mp4"}
 IMPORTS = MEDIA | {".png"}
-RECORD_KEYS = set(FIELDS) | {"count", "pack", "created", "modified"}
+RECORD_KEYS = set(FIELDS) | {"count", "pack", "created", "modified", "id", "revision"}
 REPO = Path(__file__).resolve().parent.parent
 DEFAULT_SETUP = Path(__file__).with_name("setup.ini")
 XMP_NAMESPACE = "urn:chaosbox:metadata:1.0/"
 XMP_FIELDS = {field: f"Xmp.chaosbox.{field}" for field in FIELDS if field != "comment"}
+XMP_FIELDS.update({key: "Xmp.chaosbox." + key for key in ("id", "revision", "base_revision")})
 XMP_FIELDS.update(comment="Xmp.dc.description", created="Xmp.xmp.CreateDate")
 
 
@@ -258,11 +261,18 @@ class Settings:
                         for name, value in effective.get("textsnippets", {}).items()}
             editor = values.get("editor", "").strip() or None
             ssh = dict(effective.get("ssh", {}))
+            ssh.update(effective.get("ssh."+identifier.casefold(),{}))
+            sync_root="chaosbox-data" if identifier.casefold() in ("chaosbox","chaobox") else "chaosbox-data/profiles/"+identifier.casefold()
             for key, value in dict(host="access983197478.webspace-data.io", port="22", user="u114229695",
-                                   imagedestination="chaosbox-data/JPG", datadestination="chaosbox-data/TXT",
+                                   imagedestination=sync_root+"/JPG", datadestination=sync_root+"/TXT",
                                    keyfile=str(self.state_dir / "credentials/id_ed25519"),
                                    knownhosts=str(self.state_dir / "credentials/known_hosts")).items():
                 ssh.setdefault(key, value)
+            ssh.setdefault("transport", "sftp")
+            ssh.setdefault("shelldatadestination", "/kunden/homepages/13/d983197478/htdocs/"+sync_root+"/TXT"
+                if ssh["host"]=="access983197478.webspace-data.io" and ssh["datadestination"]==sync_root+"/TXT" else ssh["datadestination"])
+            if ssh["transport"].lower() not in ("sftp", "rsync", "ssh"):
+                raise ValueError("SSH Transport must be sftp, rsync or ssh.")
             if not 1 <= int(ssh["port"]) <= 65535:
                 raise ValueError("SSH port must be between 1 and 65535.")
             images, data = directory / "JPG", directory / "TXT"
@@ -451,6 +461,16 @@ def edited_metadata(original, values, baseline, *, mode="auto", differing_fields
                 result[field] = separator.join(str(part) for part in (old, value) if str(part))
         else:
             result[field] = value
+    # Parsed legacy metadata still contains aliases. They must not override
+    # the edited canonical fields when an MP4 comment is read back.
+    for alias, field in (("count", "anzahl"), ("Anzahl", "anzahl"),
+                         ("pack", "package"), ("kommentar", "comment"),
+                         ("Kommentar", "comment")):
+        if field in result:
+            result.pop(alias, None)
+    if "category" in result:
+        result = {key: value for key, value in result.items()
+                  if key == "category" or key.casefold() not in ("category", "kategorie")}
     return validate_record(result) if validate else result
 
 
@@ -748,7 +768,7 @@ def files(folder, extensions, recursive=True):
         return []
     result = []
     for base, directories, names in os.walk(folder, followlinks=False):
-        directories[:] = (sorted(d for d in directories if not (Path(base) / d).is_symlink())
+        directories[:] = (sorted(d for d in directories if not d.startswith(".") and not (Path(base) / d).is_symlink())
                           if recursive else [])
         for name in sorted(names):
             path = Path(base) / name
@@ -992,6 +1012,7 @@ def write_image_metadata(original, target, record, dimensions=None):
     metadata.try_clear_tag("Xmp.exif.UserComment")
     metadata.try_set_tag_string("Xmp.chaosbox.version", "1")
     for field, tag in XMP_FIELDS.items():
+        if field in chaos_sync.SYNC_KEYS and field not in record: continue
         value = str(record.get(field, ""))
         if field == "comment":
             value = 'lang="x-default" ' + value
@@ -1076,7 +1097,7 @@ def reserve_output(directory, name):
             suffix += 1
 
 
-def save_media(source, profile, metadata, image_width):
+def _save_media(source, profile, metadata, image_width):
     source = Path(source)
     if source.is_symlink() or not source.is_file() or source.suffix.lower() not in IMPORTS:
         raise ValueError(f"Unsupported or unavailable media file: {source}")
@@ -1124,8 +1145,11 @@ def save_media(source, profile, metadata, image_width):
             write_image_metadata(original, temporary, metadata, (width, height) if resized else None)
         # Validate the newly written metadata before replacing any user file.
         result = read_metadata(temporary)
-        if any(str(result.get(field, "")) != str(metadata.get(field, "")) for field in (*FIELDS, "created")):
-            raise ValueError("Metadata verification failed; the source file was not changed.")
+        mismatches = [field for field in (*FIELDS, "created")
+                      if str(result.get(field, "")) != str(metadata.get(field, ""))]
+        if mismatches:
+            raise ValueError("Metadata verification failed; the source file was not changed. "
+                             "Fields: " + ", ".join(mismatches))
         if target is None:
             target = reserve_output(destination, original.name if editing else original.stem + "_cb" + extension)
             reserved = True
@@ -1171,7 +1195,7 @@ def records_from(value):
     if isinstance(value, list):
         result = value
     elif isinstance(value, dict):
-        result = [value] if RECORD_KEYS.intersection(value) else list(value.values())
+        result = [value] if RECORD_KEYS.intersection(value) else [value[key] for key in sorted(value)]
     else:
         raise ValueError("Expected a JSON object or array.")
     if any(not isinstance(item, dict) for item in result):
@@ -1183,7 +1207,7 @@ def load_box(path):
     return records_from(json.loads(Path(path).read_text(encoding="utf-8-sig")))
 
 
-def save_box(path, record, selected=None):
+def _save_box(path, record, selected=None):
     path = Path(path)
     if path.is_symlink():
         raise ValueError("Box file must not be a symbolic link.")
@@ -1193,7 +1217,9 @@ def save_box(path, record, selected=None):
     if selected is None:
         selected = next((i for i, item in enumerate(records) if item.get("device", "") == record.get("device", "")), None)
     if selected is None:
-        records.append(dict(record))
+        record = dict(record)
+        record.setdefault("id", str(uuid.uuid4()))
+        records.append(record)
         selected = len(records) - 1
     else:
         item = records[selected]
@@ -1211,21 +1237,75 @@ def save_box(path, record, selected=None):
     return records, selected
 
 
-def delete_entry(path, selected=None):
-    """Delete one media file or the selected record in a JSON box."""
+def sync_store(profile):
+    def read(path):
+        raw = read_user_comment(path)
+        try:
+            record = json.loads(raw)
+            return record if isinstance(record, dict) else {"comment": raw}
+        except ValueError:
+            return {"comment": raw}
+    def write(path, record):
+        previous=path.stat()
+        temporary=path.with_name('.sync-'+uuid.uuid4().hex+path.suffix)
+        try:
+            shutil.copyfile(path,temporary)
+            if path.suffix.lower()=='.mp4': write_video_metadata(temporary,record)
+            else: write_image_metadata(path,temporary,record)
+            os.chmod(temporary,stat.S_IMODE(previous.st_mode))
+            os.utime(temporary,ns=(previous.st_atime_ns,previous.st_mtime_ns))
+            os.replace(temporary,path)
+        finally: temporary.unlink(missing_ok=True)
+    return chaos_sync.Store(profile.images, profile.data, read, write)
+
+
+def profile_for_path(path):
     path = Path(path)
-    if path.is_symlink():
-        raise ValueError("Entry must not be a symbolic link.")
-    if selected is None:
-        if path.suffix.lower() not in IMPORTS:
-            raise ValueError("Select a media file or a JSON record.")
-        path.unlink()
-        return
-    records = load_box(path)
-    if not 0 <= selected < len(records):
-        raise ValueError("The selected record no longer exists. Reopen the box.")
-    del records[selected]
-    atomic_write(path, json.dumps(records, ensure_ascii=False, indent=2) + "\n", newer=True)
+    root = next((p for p in path.parents if p.name in ('TXT', 'boxes', 'JPG')), path.parent)
+    if root.name not in ('TXT','boxes','JPG') and path.suffix.lower() in MEDIA:
+        return Profile('', '', path.parent, path.parent/'TXT', path.parent/'TXT', path.parent/'.indices', [], [])
+    data = root.parent / 'TXT' if root.name == 'JPG' else root
+    return Profile('', '', data.parent / 'JPG', data, data, data.parent / '.indices', [], [])
+
+
+def save_box(path, record, selected=None):
+    store = sync_store(profile_for_path(path))
+    with store.locked():
+        store.capture()
+        result = _save_box(path, record, selected)
+        store.capture()
+        return load_box(path), result[1]
+
+
+def save_media(source, profile, metadata, image_width):
+    store = sync_store(profile)
+    with store.locked():
+        store.capture()
+        metadata = dict(metadata)
+        if within(Path(source), profile.images):
+            relative = Path(source).resolve().relative_to(profile.images.resolve()).as_posix()
+            candidates = [op for ops in store.heads().values() for op in ops
+                          if op['kind']=='media' and op['path']==relative and op['action']=='put']
+            if len(candidates)==1:
+                metadata.update({key:candidates[0]['record'][key] for key in ('id','revision')})
+        metadata.setdefault("id", str(uuid.uuid4()))
+        result = _save_media(source, profile, metadata, image_width)
+        store.capture()
+        store.embed_media(result)
+        return result
+
+
+def delete_entry(path, selected=None):
+    path = Path(path)
+    if path.is_symlink(): raise ValueError('Entry must not be a symbolic link.')
+    store = sync_store(profile_for_path(path))
+    with store.locked():
+        store.delete(path, selected)
+
+
+def delete_box(path):
+    store=sync_store(profile_for_path(path))
+    with store.locked():store.delete_box(path)
 
 
 @dataclass
@@ -1421,7 +1501,7 @@ def load_preview(path, maximum=(1600, 1200)):
         return result.copy()
 
 
-def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
+def _legacy_upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
     import paramiko
     def check():
         if cancel.is_set():
@@ -1514,3 +1594,38 @@ def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
     finally:
         stop_watcher.set()
         client.close()
+
+
+def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
+    progress('Preparing synchronization …')
+    progress('Box: '+profile.title)
+    store = sync_store(profile)
+    with store.locked():
+        ssh = settings.ssh
+        def check():
+            if cancel.is_set(): raise Cancelled('Synchronization cancelled; retry manually.')
+        check()
+        transport = ssh.get('transport', 'sftp').lower()
+        transfer_started = False
+        try:
+            if transport in ('ssh','rsync'):
+                transfer_started = True
+                sync_transport.shell_exchange(store, ssh, transport, cancel, progress)
+            else:
+                with sync_transport.sftp_connection(ssh,cancel,progress) as sftp:
+                    transfer_started = True
+                    sync_transport.sftp_exchange(store,sftp,posixpath.join(ssh.get('sftpdatadestination',ssh['datadestination']),'.chaosbox-sync'),check,progress)
+        except Exception as error:
+            if cancel.is_set(): raise Cancelled('Synchronization cancelled; retry manually.') from error
+            if not transfer_started or isinstance(error,sync_transport.RemoteLockError): raise
+            progress('Refreshing local index after synchronization error …')
+            try: build_index(settings,progress)
+            except Exception as error: progress(f'Local index update failed: {error}')
+            raise
+        check()
+        conflicts={ident:versions for ident,versions in store.heads().items()
+                   if len(versions)>1 and versions[0]['kind']!='device'}
+        progress('Updating local search index …')
+        build_index(settings, progress)
+        progress(f'Synchronization completed. {len(conflicts)} conflict(s); all versions retained.')
+        if conflicts: progress('Resolve with: python3 sync-data.py --data PROFILE_DIRECTORY --conflicts')

@@ -618,6 +618,40 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(core.related_media(entries[0], entries), saved)
         self.assertIsNotNone(core.load_preview(saved))
 
+    def test_batch_edit_legacy_mp4_aliases_uses_new_values(self):
+        video = self.root / "legacy.mp4"
+        core.run_tool("ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=size=16x16:rate=1",
+                      "-t", "1", "-c:v", "mpeg4", str(video))
+        core.write_video_metadata(video, {"count": 2, "Anzahl": 2, "pack": "old",
+                                         "Kategorie": "TOOLS", "Kommentar": "old comment",
+                                         "custom": "preserved"})
+        original = core.read_metadata(video)
+        baseline = core.common_metadata([original])
+        updated = core.edited_metadata(original, dict(baseline, anzahl="4", package="new",
+                                       category="NEW", comment="new comment"), baseline,
+                                       mode="replace", differing_fields=core.FIELDS)
+        before = video.read_bytes()
+        saved = core.save_batch([video], self.profile, updated, 3000, records=[updated])[0]
+        actual = core.read_metadata(saved)
+        for field, expected in {"anzahl": 4, "package": "new", "category": "NEW",
+                                "comment": "new comment", "custom": "preserved"}.items():
+            self.assertEqual(actual[field], expected)
+        self.assertEqual(video.read_bytes(), before)
+        payload = json.loads(core.read_user_comment(saved))
+        self.assertFalse(set(payload) & {"count", "Anzahl", "pack", "Kategorie", "Kommentar"})
+
+    def test_failed_metadata_verification_identifies_field_and_keeps_source(self):
+        source = self.picture()
+        before = source.read_bytes()
+        write = core.write_image_metadata
+        def broken_write(original, target, record, dimensions=None):
+            write(original, target, dict(record, comment="wrong output"), dimensions)
+        with patch("core.write_image_metadata", side_effect=broken_write):
+            with self.assertRaisesRegex(ValueError, "Fields: comment"):
+                core.save_media(source, self.profile, self.record, 3000)
+        self.assertEqual(source.read_bytes(), before)
+        self.assertEqual(list(self.profile.images.rglob(".save-*")), [])
+
     def test_mp4_keys_comments_and_capture_date_survive_longer_and_shorter_updates(self):
         for location in ("udta", "moov"):
             with self.subTest(location=location):
@@ -873,50 +907,50 @@ class DesktopTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "at least one"):
             self.settings.parse('[App]\nKategorie=Empty\n')
 
-    def test_sftp_upload_is_manual_one_way_and_atomic(self):
+    def test_sftp_setup_error_is_reported_without_scanning_media(self):
+        messages=[]
+        with patch("sync_transport.sftp_connection", side_effect=TimeoutError("SFTP setup timed out")), \
+             patch("core.build_index", side_effect=AssertionError("No media scan before transfer")):
+            with self.assertRaisesRegex(TimeoutError, "SFTP setup timed out"):
+                core.upload(self.settings,self.profile,threading.Event(),messages.append)
+        self.assertEqual(messages[0], "Preparing synchronization …")
+
+    def test_remote_lock_error_is_reported_without_misleading_index_scan(self):
+        from contextlib import contextmanager
+        import sync_transport
+        @contextmanager
+        def connection(*args):yield object()
+        messages=[]
+        with patch("sync_transport.sftp_connection", connection), \
+             patch("sync_transport.sftp_exchange", side_effect=sync_transport.RemoteLockError("Remote synchronization is busy")), \
+             patch("core.build_index", side_effect=AssertionError("Lock failure must not rebuild index")):
+            with self.assertRaisesRegex(sync_transport.RemoteLockError, "busy"):
+                core.upload(self.settings,self.profile,threading.Event(),messages.append)
+        self.assertFalse(any("Reading " in message for message in messages))
+
+    def test_sftp_sync_uses_journal_and_verifies_hosts(self):
         import paramiko
         local = self.profile.images / "nested/a.jpg"
         local.parent.mkdir()
-        local.write_bytes(b"test upload")
+        Image.new("RGB",(20,10)).save(local)
         key, hosts = self.root / "key", self.root / "hosts"
-        key.write_text("not a real key")
-        hosts.write_text("not real hosts")
-        self.settings.ssh.update(keyfile=str(key), knownhosts=str(hosts))
-        remote, directory = {}, set()
-        renamed = []
-        class Sftp:
-            def get_channel(self): return types.SimpleNamespace(settimeout=lambda value: None)
-            def stat(self, path):
-                if path in directory: return types.SimpleNamespace(st_mode=0o40755, st_mtime=0)
-                if path in remote: return types.SimpleNamespace(st_mode=0o100644, st_mtime=remote[path][1])
-                raise FileNotFoundError(errno.ENOENT, "missing")
-            def mkdir(self, path): directory.add(path)
-            def put(self, source, destination, callback):
-                callback(4, 4)
-                remote[destination] = (Path(source).read_bytes(), 0)
-            def utime(self, path, times): remote[path] = (remote[path][0], times[1])
-            def posix_rename(self, source, destination):
-                renamed.append((source, destination))
-                remote[destination] = remote.pop(source)
+        key.write_text("not a real key"); hosts.write_text("not real hosts")
+        self.settings.ssh.update(keyfile=str(key),knownhosts=str(hosts))
         class Client:
-            def load_host_keys(self, path): pass
-            def set_missing_host_key_policy(self, policy):
-                assert isinstance(policy, paramiko.RejectPolicy)
-            def connect(self, host, **kwargs):
-                assert kwargs["allow_agent"] is False and kwargs["look_for_keys"] is False
-            def open_sftp(self): return Sftp()
+            def load_host_keys(self,path): pass
+            def set_missing_host_key_policy(self,policy): assert isinstance(policy,paramiko.RejectPolicy)
+            def connect(self,host,**kwargs): assert not kwargs["allow_agent"] and not kwargs["look_for_keys"]
+            def open_sftp(self): return types.SimpleNamespace(get_channel=lambda:types.SimpleNamespace(settimeout=lambda value:None))
             def close(self): pass
-        with patch.object(paramiko, "SSHClient", Client):
-            core.upload(self.settings, self.profile, threading.Event())
-            self.assertEqual(len(renamed), 1)
-            self.assertTrue(renamed[0][0].endswith(".upload"))
-            self.assertTrue(renamed[0][1].endswith("/nested/a.jpg"))
-            core.upload(self.settings, self.profile, threading.Event())
-            self.assertEqual(len(renamed), 1, "Unchanged remote must be skipped")
-            cancelled = threading.Event()
-            cancelled.set()
-            with self.assertRaises(core.Cancelled):
-                core.upload(self.settings, self.profile, cancelled)
+        with patch.object(paramiko,"SSHClient",Client), patch("sync_transport.sftp_exchange", side_effect=lambda store,*args:(store.capture(),store.apply())) as transfer:
+            core.upload(self.settings,self.profile,threading.Event())
+            self.assertEqual(transfer.call_count,1)
+            store,_,remote,*_=transfer.call_args.args
+            self.assertTrue(remote.endswith("/.chaosbox-sync"))
+            self.assertEqual(len(store.operations()),1)
+            self.assertTrue(core.read_metadata(local).get("id"))
+            cancelled=threading.Event();cancelled.set()
+            with self.assertRaises(core.Cancelled):core.upload(self.settings,self.profile,cancelled)
 
 
 if __name__ == "__main__":

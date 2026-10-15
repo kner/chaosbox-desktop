@@ -529,6 +529,7 @@ class App:
         self.media, self.box_path, self.records, self.record_index = [], None, [], None
         self.individual_paths, self.individual_index = None, 0
         self.created = ""
+        self.sync_needs_reload = False
         self.preview_path = None
         self.search_mode, self.before_search, self.last_search = False, None, None
         self.cancel_upload = threading.Event()
@@ -664,7 +665,8 @@ class App:
         menu_button = ttk.Button(header, text="☰", width=3, command=self.setup_dialog)
         menu_button.pack(side="right")
         self.controls.append(menu_button)
-        self.button(header, self.t("Upload saved files"), self.start_upload, side="right", padx=8)
+        self.button(header, self.t("Synchronize"), self.start_upload, side="right", padx=8)
+        self.button(header, self.t("Conflicts"), self.show_sync_conflicts, side="right", padx=8)
         actions = ttk.Frame(self.root, padding=(18, 0, 18, 10))
         actions.pack(fill="x")
         self.open_media_button = self.button(actions, self.t("Open JPG / MP4"), self.choose_media, side="left")
@@ -677,6 +679,7 @@ class App:
         self.clear_fields_button = self.button(actions, self.t("Clear fields"), self.clear_fields, side="left", padx=6)
         self.button(actions, "TXT", self.snippets_dialog, side="left", padx=6)
         self.delete_button = self.button(actions, self.t("Delete"), self.delete_current, side="left", padx=6)
+        self.button(actions, self.t("Delete box"), self.delete_whole_box, side="left", padx=6)
         pane = ttk.Panedwindow(self.root, orient="horizontal")
         pane.pack(fill="both", expand=True, padx=18, pady=(0, 10))
         left = ttk.Frame(pane, width=380)
@@ -937,6 +940,7 @@ class App:
     def clear(self):
         if self.busy:
             return
+        self.sync_needs_reload=False
         self.search_mode, self.before_search = False, None
         self.media, self.box_path, self.records, self.record_index = [], None, [], None
         self.individual_paths, self.individual_index = None, 0
@@ -1201,6 +1205,7 @@ class App:
                 mode = MetadataModeDialog(self.root, labels).result
                 if mode is None:
                     return
+            self.sync_needs_reload=False
             self.media_records = records
             self.media_edit_mode, self.media_differing_fields = mode, differing
             values = records[0] if len(records) == 1 else core.common_metadata(records)
@@ -1274,6 +1279,7 @@ class App:
                 raise ValueError("No records available in this JSON file.")
             return records
         def done(records):
+            self.sync_needs_reload=False
             self.individual_paths, self.individual_index = None, 0
             self.media, self.box_path, self.records = [], path, records
             self.record_index = min(selected or 0, len(records) - 1)
@@ -1303,6 +1309,9 @@ class App:
         self.task(work, done)
 
     def fill_record(self):
+        if getattr(self,"sync_needs_reload",False):
+            messagebox.showinfo("Reload entry", "Reopen the JSON file after synchronization.")
+            return
         index = self.record_index
         values = core.normalized(self.records[index])
         values["box"] = values["box"] or self.box_path.stem
@@ -1333,6 +1342,9 @@ class App:
                 self.fill_record()
 
     def save(self):
+        if getattr(self,"sync_needs_reload",False):
+            messagebox.showinfo("Reload entry", "Shared data may have changed. Reopen the entry before saving. Your form values remain here.")
+            return
         if self.busy or self.search_mode:
             return
         try:
@@ -1412,7 +1424,50 @@ class App:
             self.error(error)
         self.task(work, done, failed)
 
+    def delete_whole_box(self):
+        if getattr(self,"sync_needs_reload",False):
+            messagebox.showinfo("Reload entry", "Reopen the entry after synchronization before deleting.")
+            return
+        if self.busy or not self.box_path:return
+        if not messagebox.askyesno("Delete box", "Delete all JSON records in this box? Media remain unchanged. The deletion propagates on synchronization."):return
+        path=self.box_path
+        def work():
+            core.delete_box(path)
+            core.update_index(self.settings,[path],self.log)
+        self.task(work,lambda _:(self.clear(),self.status.set("Box deleted locally; synchronize to propagate.")))
+
+    def show_sync_conflicts(self):
+        if self.busy:return
+        store=core.sync_store(self.profile)
+        choices=[op for versions in store.heads().values() if len(versions)>1 for op in versions]
+        if not choices:
+            messagebox.showinfo("Synchronization", "No synchronization conflicts.");return
+        dialog=tk.Toplevel(self.root);dialog.title("Choose the version to keep");dialog.geometry("820x520")
+        listing=tk.Listbox(dialog,height=8);listing.pack(fill="x",padx=10,pady=10)
+        preview=tk.Text(dialog,wrap="word");preview.pack(fill="both",expand=True,padx=10)
+        for op in choices:listing.insert("end",op['action']+" · "+op['path']+" · "+op['revision'])
+        def changed(_=None):
+            indices=listing.curselection()
+            if indices:
+                preview.delete('1.0','end');preview.insert('1.0',json.dumps(choices[indices[0]],ensure_ascii=False,indent=2))
+        listing.bind('<<ListboxSelect>>',changed)
+        def resolve():
+            indices=listing.curselection()
+            if not indices:return
+            op=choices[indices[0]]
+            if not messagebox.askyesno("Resolve conflict", "Keep this version and supersede the other versions of this object? Journal history remains available.",parent=dialog):return
+            def work():
+                with store.locked():store.resolve(op['id'],op['revision'])
+                core.build_index(self.settings,self.log)
+            def done(_):
+                self.sync_needs_reload=bool(self.media or self.box_path);dialog.destroy();self.status.set("Conflict resolved locally; synchronize to propagate.")
+            self.task(work,done)
+        ttk.Button(dialog,text="Keep selected version",command=resolve).pack(pady=10)
+
     def delete_current(self):
+        if getattr(self,"sync_needs_reload",False):
+            messagebox.showinfo("Reload entry", "Reopen the entry after synchronization before deleting.")
+            return
         if self.busy or self.search_mode:
             return
         path = self.box_path if self.box_path else self.preview_path if self.media else None
@@ -1646,15 +1701,18 @@ class App:
                 self.upload_window = self.upload_text = None
         dialog.protocol("WM_DELETE_WINDOW", close)
         def finish(error=None):
+            self.sync_needs_reload=bool(self.media or self.box_path)
             self.uploading = False
             cancel.configure(text=self.t("Close"), command=close)
             if error:
                 text.insert("end", f"\n{error}\n")
                 dialog.title(self.t("Upload cancelled" if isinstance(error, core.Cancelled) else "Upload failed"))
             else:
+                self.sync_needs_reload = bool(self.media or self.box_path)
                 dialog.title(self.t("Upload completed"))
             text.see("end")
         def work():
+            self.log("Loading synchronization settings …")
             self.settings.reload()
             core.upload(self.settings, self.profile, self.cancel_upload, self.log)
         self.task(work, lambda _: finish(), finish)

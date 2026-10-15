@@ -353,24 +353,34 @@ names are retained without overwriting files.
 - **TXT** opens configured text snippets and copies the selection to the clipboard.
 - Keyboard shortcuts: Ctrl+O opens media, Ctrl+S saves, Ctrl+F enters/runs search.
 
-## Manual SSH upload
+## Manual synchronization
 
-**Upload saved files** sends saved data; it never runs automatically. Host, port,
-user, destinations, key file and known-hosts file are configured in `[SSH]`.
-The local installer generates a separate Ed25519 key pair for each installation
-in `.state/credentials/id_ed25519` and preserves it during updates. New setups
-use this key path; existing setups retain their configured key path.
-Authorize `id_ed25519.pub` on the SSH server before uploading. The installer
-copies the project's known-hosts file when available. Keys are never included in desktop source
-packages. Connections require a known host key and public-key authentication.
+**Synchronize** exchanges the shared immutable journal with Android and the
+server. `[SSH] Transport=sftp`, `rsync` or `ssh` selects SFTP, rsync over SSH,
+or tar streams over SSH. No synchronization starts automatically. Configure
+Host, Port, User, KeyFile, KnownHosts and DataDestination in setup.ini; the
+existing Setup editor can edit these values. ShellDataDestination accounts
+for a different path namespace on SSH hosts. The common root is `chaosbox-data`.
+See [SYNC-PROTOCOL.md](SYNC-PROTOCOL.md) for exact paths and the format.
 
-ssh-copy-id -i ~/ChaosBox/.state/credentials/id_ed25519.pub kner
+The local installer preserves its per-installation Ed25519 key pair under
+`.state/credentials`. Authorize its public key on the SSH server. Unknown host
+keys are rejected. Other profiles use dedicated server subtrees by default;
+explicit `[SSH.ProfileName]` overrides must match the same data set on Android.
 
-As with Android, only profile paths inside `ChaosBox` are eligible for upload;
-the default Bilderbox profile is excluded. Relative subdirectories are retained.
-Files are sent when missing remotely or locally newer, using a temporary remote
-file and atomic rename. Remote extra files are not deleted. Cancel or close the
-upload dialog to stop. The server must support OpenSSH's POSIX rename extension.
+Datensatz IDs, revisions and explicit tombstones replace timestamp comparisons.
+Deletion moves media to trash; JSON entries are merged individually. Delete box
+removes its records without deleting related media. Concurrent changes appear
+under **Conflicts**; all versions remain in the journal. The CLI can inspect
+history, restore a version, list device acknowledgments and retire a device.
+There is no automatic garbage collection. Missing files alone never delete data.
+
+```sh
+/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --transport rsync
+/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --conflicts
+/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --history OBJECT_ID
+/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --restore OBJECT_ID REVISION
+```
 
 ## Verification
 
@@ -393,14 +403,10 @@ They do not connect to the live SSH server.
 
 The companion website and `push-data`/`pull-data` scripts use the same source layout
 on both machines: media in `JPG/`, JSON sources in `TXT/` under the configured
-data root. Default SSH upload destinations are now
-`chaosbox-data/JPG` and
-`chaosbox-data/TXT`. Existing installations
+data root. The shared journal is `chaosbox-data/TXT/.chaosbox-sync`; media versions are content-addressed blobs there. Existing installations
 can override these with `ImageDestination` and `DataDestination` in their setup.ini.
 Generated website catalogs live in `.indices/web-catalog.json` below the website
 data root and are not JSON sources. Desktop keeps its shared `.indices` at the
 installation level.
 
-This host exposes the SSH htdocs directory as SFTP `/`; Desktop upload paths
-therefore use `chaosbox-data/JPG` and `chaosbox-data/TXT`, equivalent to the
-absolute SSH data-root paths used by rsync.
+This host exposes htdocs as SFTP `/`. The absolute SSH/rsync path is configured separately with ShellDataDestination; both address the same journal.
