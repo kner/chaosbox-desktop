@@ -13,7 +13,7 @@ class FileSftp:
     def rmdir(self,path):self.path(path).rmdir()
     def listdir_attr(self,path):return [types.SimpleNamespace(filename=f.name,st_mode=f.lstat().st_mode,st_size=f.stat().st_size,st_mtime=int(f.stat().st_mtime)) for f in self.path(path).iterdir()]
     def open(self,path,mode):return self.path(path).open(mode)
-    def put(self,source,path,callback):self.path(path).write_bytes(Path(source).read_bytes());callback(1,1)
+    def put(self,source,path,callback,confirm=True):self.path(path).write_bytes(Path(source).read_bytes());callback(1,1)
     def rename(self,source,target):self.path(source).rename(self.path(target))
     def remove(self,path):self.path(path).unlink()
 
@@ -193,6 +193,42 @@ if [ "$#" -eq 1 ]; then exec /bin/sh -c "$1"; else exec "$@"; fi
         self.assertTrue(all(reader.closed for reader in readers))
         self.assertFalse((self.server/'shared/transfer.lock').exists())
 
+
+    def test_parallel_uploads_are_bounded_and_failed_batch_is_resumable(self):
+        lock=threading.Lock();writers=[];active=[0,0];fail=[False]
+        class Writer(FileSftp):
+            def __init__(self,root):super().__init__(root);self.owner=threading.get_ident();self.closed=False
+            def put(self,source,path,callback,confirm=True):
+                self.assert_owner()
+                with lock:active[0]+=1;active[1]=max(active)
+                try:
+                    time.sleep(.01)
+                    if fail[0]:raise OSError('upload interrupted')
+                    return super().put(source,path,callback,confirm)
+                finally:
+                    with lock:active[0]-=1
+            def assert_owner(self):assert threading.get_ident()==self.owner
+            def rename(self,source,target):self.assert_owner();return super().rename(source,target)
+            def close(self):self.closed=True
+        def factory():
+            writer=Writer(self.server);writers.append(writer);return writer
+        atomic(self.a.data/'box.json',json.dumps([dict(device=str(i)) for i in range(32)]))
+        fail[0]=True
+        with self.assertRaisesRegex(OSError,'upload interrupted'):
+            sync_transport.sftp_exchange(self.a,FileSftp(self.server),'shared',progress=lambda _:None,reader_factory=factory)
+        self.assertFalse((self.server/'shared/checksums.json').exists())
+        self.assertFalse((self.server/'shared/transfer.lock').exists())
+        self.assertTrue(all(writer.closed for writer in writers))
+        fail[0]=False;writers.clear()
+        sync_transport.sftp_exchange(self.a,FileSftp(self.server),'shared',progress=lambda _:None,reader_factory=factory)
+        self.assertGreater(active[1],1);self.assertLessEqual(len(writers),4)
+        self.assertTrue(all(writer.closed for writer in writers))
+        self.assertEqual(len(self.a.operations()),len(list((self.server/'shared/ops').glob('*.op'))))
+        # A server that refuses worker channels must still support first upload.
+        atomic(self.a.data/'box.json',json.dumps([dict(device=str(i),comment='changed') for i in range(32)]))
+        def unavailable():raise OSError('channel limit')
+        sync_transport.sftp_exchange(self.a,FileSftp(self.server),'shared',progress=lambda _:None,reader_factory=unavailable)
+        self.assertFalse((self.server/'shared/transfer.lock').exists())
 
     def test_checksum_index_is_equal_and_transfers_only_missing_operations(self):
         class Reads(FileSftp):

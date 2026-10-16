@@ -176,18 +176,17 @@ class Profile:
 
 class Settings:
     def __init__(self, root, state_dir=None, setup=None):
+        if Path(root).expanduser().is_symlink():
+            raise ValueError("Installation directory must not be a symbolic link")
         self.root = Path(root).expanduser().resolve()
         self.state_dir = Path(state_dir).expanduser().resolve() if state_dir else self.root / ".state"
         self.path = Path(setup).expanduser().resolve() if setup else self.root / "setup.ini"
+        for owned in (self.state_dir, self.path, self.root/".indices", self.state_dir/"credentials"):
+            if not within(owned.resolve(), self.root):
+                raise ValueError("Setup and state must stay inside the installation directory")
         self.index = self.root / ".indices"
         self.title = f"Chaosbox-{self.root.name}"
         self.app_id = "chaosbox-" + hashlib.sha256(str(self.root).encode()).hexdigest()[:16]
-        # Bind defaults to both this directory and this computer. Copied setup
-        # files cannot make a second installation reuse the first one's target.
-        try: machine = Path('/etc/machine-id').read_text().strip()
-        except OSError: machine = __import__('socket').gethostname()
-        slug = re.sub(r'[^a-z0-9_-]+', '-', self.root.name.casefold()).strip('-_') or 'installation'
-        self.installation_id = slug[:40] + '-' + hashlib.sha256((machine+'\0'+str(self.root)).encode()).hexdigest()[:16]
         self.window_class = "Chaosbox-" + self.app_id.removeprefix("chaosbox-")
         self.profiles = []
         self.image_width = 3000
@@ -195,6 +194,33 @@ class Settings:
         self.language = "en"
         self.snippets = {}
         self.ssh = {}
+
+    @property
+    def installation_id(self):
+        # The generation lives ONLY in this directory: recreating the same path is a new installation.
+        identity = self.root / ".installation-id"
+        if identity.is_symlink():
+            raise ValueError("Installation identity must not be a symbolic link")
+        if not identity.exists():
+            self.root.mkdir(parents=True, exist_ok=True)
+            fd, temporary = tempfile.mkstemp(prefix=".identity-", dir=self.root)
+            try:
+                with os.fdopen(fd, "w") as stream:
+                    stream.write(str(uuid.uuid4()) + "\n")
+                    stream.flush(); os.fsync(stream.fileno())
+                try: os.link(temporary, identity)
+                except FileExistsError: pass
+            finally: os.unlink(temporary)
+        generation = str(uuid.UUID(identity.read_text().strip()))
+        try: machine = Path('/etc/machine-id').read_text().strip()
+        except OSError: machine = __import__('socket').gethostname()
+        slug = re.sub(r'[^a-z0-9_-]+', '-', self.root.name.casefold()).strip('-_') or 'installation'
+        return slug[:40] + '-' + hashlib.sha256((machine+'\0'+str(self.root)+'\0'+generation).encode()).hexdigest()[:32]
+
+    def assert_current(self):
+        identity = self.root / ".installation-id"
+        if not identity.is_file() or self.installation_id != getattr(self, "_loaded_installation_id", None):
+            raise ValueError("Installation directory was removed or reset. Close this window and reopen the installation.")
 
     def ensure(self, default_box=None):
         if not self.path.exists():
@@ -255,6 +281,8 @@ class Settings:
             values = dict(values)
             children = []
             local = directory / "setup.ini"
+            if local.is_symlink() or not within(local.resolve(),self.root):
+                raise ValueError("Profile setup must remain inside the installation")
             if config is None and (local.is_file() or local in overrides):
                 config = overrides[local] if local in overrides else local.read_text(encoding="utf-8-sig")
                 owner, selector = local, ""
@@ -282,13 +310,19 @@ class Settings:
             ssh = dict(effective.get("ssh", {}))
             ssh.update(effective.get("ssh."+identifier.casefold(),{}))
             profile_path=identifier.casefold()
-            sync_root="chaosbox-data/installations/"+self.installation_id+"/profiles/"+profile_path
-            # Upgrade the former shared defaults, including paths copied from
-            # another installation. Explicit custom servers/paths stay explicit.
-            if ssh.get('host','access983197478.webspace-data.io')=='access983197478.webspace-data.io':
-                for key in ('datadestination','sftpdatadestination','shelldatadestination','imagedestination'):
-                    ssh.pop(key,None)
+            web_root=ssh.get('webinstallation','l1').strip()
+            if any(not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*',part) for part in web_root.split('/')):
+                raise ValueError('Invalid web installation directory')
+            sync_root=web_root+"/storage/installations/"+self.installation_id+"/profiles/"+profile_path
+            # A copied setup must never reconnect a fresh directory to an old namespace.
+            for key in ('datadestination','sftpdatadestination','shelldatadestination','imagedestination'):
+                ssh.pop(key,None)
             ssh['installation']=self.installation_id
+            for key, name in (('keyfile','id_ed25519'),('knownhosts','known_hosts')):
+                default = self.state_dir/'credentials'/name
+                configured = Path(ssh.get(key,str(default))).expanduser()
+                if not configured.is_absolute(): configured = self.root/configured
+                ssh[key] = str(configured.resolve()) if within(configured.resolve(),self.root) else str(default)
             for key, value in dict(host="access983197478.webspace-data.io", port="22", user="u114229695",
                                    imagedestination=sync_root+"/JPG", datadestination=sync_root+"/TXT",
                                    keyfile=str(self.state_dir / "credentials/id_ed25519"),
@@ -334,6 +368,7 @@ class Settings:
         loaded = self._load(text)
         self.profiles, self.default, self.image_width, self.snippets, self.ssh, self.language = loaded
         self.poster = poster_settings(text)
+        self._loaded_installation_id = self.installation_id
         self.profile(getattr(self, "active", self.default))
 
     def save_text(self, text, path=None):
@@ -1623,6 +1658,7 @@ def _legacy_upload(settings, profile, cancel: threading.Event, progress=lambda _
 
 
 def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
+    settings.assert_current()
     progress('Preparing synchronization …')
     progress('Installation: '+settings.installation_id)
     progress('Box: '+profile.title)
@@ -1630,6 +1666,7 @@ def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
     with store.locked():
         ssh = settings.ssh
         def check():
+            settings.assert_current()
             if cancel.is_set(): raise Cancelled('Synchronization cancelled; retry manually.')
         check()
         transport = ssh.get('transport', 'sftp').lower()

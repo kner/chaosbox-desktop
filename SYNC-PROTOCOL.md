@@ -1,3 +1,27 @@
+## Reset-safe installation generations
+
+All current implementations keep their data below their installation directory.
+Desktop stores a random `.installation-id` generation there, and derives the server
+namespace from that generation, computer and path. Deleting and recreating even
+the same directory produces a new namespace; old remote journals are not reused.
+A copied setup.ini or an obsolete custom destination cannot override that namespace.
+
+Android's `--installdir NAME` owns `/storage/emulated/0/NAME/`: setup.ini, generation,
+profile JPG/TXT folders, journals, indexes and state. Shared legacy folders and
+private setup caches are not consulted. A fresh root is unbound: explicit
+Installation/RemoteProfile configuration is required before any download. The
+upload helper writes only this copy's setup.ini. Joining an existing Desktop
+generation is an explicit recovery/connection choice, not an automatic reset action.
+
+A web installation owns `storage/` below its installed code directory. External
+CHAOSBOX_DATA_DIR settings and storage symlinks are rejected. Removing/reinstalling
+the web directory leaves no cached data source. Legacy push/pull commands now
+require an existing --desktop-install and use only its current generation; they
+cannot select old shared journals through --source or --local-dir overrides.
+
+Stop the clients before deleting their roots. No automatic migration or deletion
+of old data is performed; old generations can remain archived on the server.
+
 # ChaosBox-Synchronisation v1
 
 Android, Desktop und Webanzeige verwenden dasselbe Journal. Der Transport
@@ -238,12 +262,12 @@ Ein späterer Abgleich repariert eine unterbrochene Veröffentlichung.
 
 ## Getrennte Desktop-Installationen
 
-Jedes Desktop-Installationsverzeichnis erhält eine eigene, von Computer und
+Jedes Desktop-Installationsverzeichnis erhält eine eigene, von einer lokalen Zufallsgeneration, Computer und
 absolutem Verzeichnis abgeleitete Installations-ID. Auch kopierte setup.ini-Dateien
 führen auf dem bestehenden Hosting nicht zum Teilen desselben Serverziels.
 Die bisherigen gemeinsamen Hosting-Pfade werden zur Laufzeit ersetzt durch:
 
-`chaosbox-data/installations/<Installations-ID>/profiles/<Profilname>/`
+`l1/storage/installations/<Installations-ID>/profiles/<Profilname>/`
 
 Darunter liegen jeweils JPG, TXT/.chaosbox-sync und .indices/web-catalog.json.
 Die ID bleibt auf demselben Computer und im selben Verzeichnis stabil. Ein

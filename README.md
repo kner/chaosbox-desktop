@@ -419,7 +419,7 @@ This host exposes htdocs as SFTP `/`. The absolute SSH/rsync path is configured 
 ## Independent installation synchronization
 
 Each installation directory and each configured Box has its own server dataset
-under `chaosbox-data/installations/<installation-id>/profiles/<box>/`. Defaults
+under `l1/storage/installations/<installation-id>/profiles/<box>/`. Defaults
 on the existing hosting are scoped even if setup.ini was copied from another
 installation. Installation IDs are bound to this computer and absolute path;
 custom destinations on other SSH servers remain explicit. Synchronization logs
@@ -433,3 +433,31 @@ The application menu, desktop shortcuts, and window/taskbar icon share the same 
 Run `./install-desktop.sh` to refresh icons for all registered installations, then
 reopen running windows. Existing desktop shortcuts copied outside the application
 menu may need to be recreated from the updated menu entry.
+
+## Installation reset contract
+
+All records, media, journals, caches, setup and UI state belong below `--installdir`.
+A random generation is stored in `.installation-id` inside that directory. Close the
+app and remove the installation directory to reset it. Recreating even the same
+path generates a new server namespace; old server journals cannot be downloaded
+through the new default target. Copying an old setup.ini does not override this.
+External setup/state paths and custom synchronization destinations are unsupported.
+Installation no longer seeds data from bundled assets or legacy folders. Existing
+installations receive a fresh namespace on their first launch with this version;
+existing local data stays local and is synchronized into that new namespace.
+
+The sync target belongs to the website installation: by default
+`l1/storage/installations/<generation>/profiles/<profile>/`. The website reads
+that same `storage/` directory. `WebInstallation=l1` in [SSH] names the website
+installation relative to the SSH home; use the same value on Android if changed.
+
+Large SFTP journal uploads and downloads use up to four independent channels,
+with automatic single-channel fallback if the server refuses extra channels.
+Files are staged and renamed under the existing transfer lock; interrupted
+transfers resume from already published immutable files. Media transfers remain sequential.
+
+In **Select JPG / MP4**, select thumbnails and click **Del Selection** to remove
+them from the dataset and their original disk locations. Confirm the displayed
+count before deletion. Recovery copies remain in local trash and sync history;
+use manual synchronization to propagate deletions to the server and Android.
+Files outside the selected dataset cannot be deleted through this button.

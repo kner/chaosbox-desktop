@@ -978,6 +978,7 @@ class App:
         self.status.set(self.t("Search index: {path}", path=self.settings.index))
 
     def save_state(self):
+        if not (self.settings.root / ".installation-id").is_file(): return
         try:
             core.atomic_write(self.state_file, json.dumps({
                 "profile": self.profile.id, "media_folders": self.media_folders}))
@@ -986,7 +987,7 @@ class App:
 
     def media_folder(self):
         folder = Path(self.media_folders.get(self.profile.id, str(self.profile.images)))
-        return folder if folder.is_dir() else self.profile.images
+        return folder if folder.is_dir() and core.within(folder.resolve(),self.settings.root) else self.profile.images
 
     def remember_media_folder(self, folder):
         self.media_folders[self.profile.id] = str(Path(folder).resolve())
@@ -1098,10 +1099,16 @@ class App:
             ttk.Button(buttons, text=self.t("Alle auswählen"), command=grid.select_all).pack(side="left", padx=6)
         ttk.Button(buttons, text=self.t("Auswahl aufheben"), command=grid.clear_selection).pack(side="left")
         ttk.Label(buttons, textvariable=count).pack(side="left", padx=8)
-        ttk.Button(buttons, text=self.t("Cancel"), command=dialog.destroy).pack(side="right")
         open_button = ttk.Button(buttons, text=self.t("Select") if on_select else self.t("Selektion editieren"),
                                  command=open_selected, state="disabled")
         open_button.pack(side="right", padx=8)
+        delete_button = None
+        if not on_select:
+            deletion_actions = ttk.Frame(dialog, padding=(12, 0, 12, 12))
+            deletion_actions.pack(fill="x")
+            delete_button = ttk.Button(deletion_actions, text=self.t("Del Selection"),
+                command=lambda: self.delete_media_selection(grid.selection(), dialog), state="disabled")
+            delete_button.pack(side="left")
         individual_button = None
         if not on_select:
             individual_button = ttk.Button(buttons, text=self.t("Einzelbilder editieren"),
@@ -1109,6 +1116,8 @@ class App:
             individual_button.pack(side="right", padx=8)
         def selection_changed():
             changed()
+            if delete_button is not None:
+                delete_button.configure(state="normal" if grid.selected else "disabled")
             if individual_button is not None:
                 individual_button.configure(state="normal" if grid.selected else "disabled")
         grid.changed = selection_changed
@@ -1116,6 +1125,41 @@ class App:
         grid.canvas.bind("<Double-Button-1>", lambda event: grid.double_click(event, open_selected))
         dialog.bind("<Escape>", lambda e: dialog.destroy())
         grid.canvas.focus_set()
+
+    def delete_media_selection(self, paths, dialog):
+        if self.busy or not paths:
+            return
+        paths = list(paths)
+        # Folder browsing may show files outside this dataset. Never delete them.
+        if any(path.is_symlink() or not core.within(path.resolve(), self.profile.images.resolve())
+               for path in paths):
+            messagebox.showerror(self.t("Del Selection"),
+                self.t("Only media inside the current dataset can be deleted."), parent=dialog)
+            return
+        if not messagebox.askyesno(self.t("Del Selection"), self.t(
+                "Remove {count} selected media file(s) from the dataset and their original disk locations? "
+                "Recovery copies remain in the local trash and sync history. "
+                "Synchronize to propagate the deletion.", count=len(paths)), parent=dialog):
+            return
+        dialog.destroy()
+        def work():
+            try:
+                for path in paths:
+                    core.delete_entry(path)
+                    if path.exists():
+                        raise ValueError(f"Media could not be removed; resolve synchronization conflicts: {path}")
+            finally:
+                core.update_index(self.settings, paths, self.log)
+        def refresh():
+            self.clear()
+            self.choose_media()
+        def done(_):
+            refresh()
+            self.status.set(self.t("Media deleted locally; synchronize to propagate."))
+        def failed(error):
+            refresh()
+            self.error(error)
+        self.task(work, done, failed)
 
     def set_preview_path(self, path):
         self.preview_path = path

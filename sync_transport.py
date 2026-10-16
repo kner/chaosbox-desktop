@@ -399,20 +399,37 @@ def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reade
         for op in store.operations().values():remember_name(op)
         for folder,suffix in [('blobs','.blob'),('ops','.op')]:
             directory=posixpath.join(remote,folder)
-            pending=sorted((store.root/folder).glob('*'+suffix))
-            for index,source in enumerate(pending,1):
+            pending=[source for source in sorted((store.root/folder).glob('*'+suffix))
+                     if source.name not in remote_files[folder]]
+            def upload(entry,writer,stopped):
+                index,source=entry
                 check()
-                if source.name in remote_files[folder]:continue
+                if stopped.is_set():raise InterruptedError('Transfer stopped')
                 temporary=posixpath.join(directory,'.'+uuid.uuid4().hex+'.tmp')
+                published=False
                 try:
                     description=names[folder].get(source.name,'Änderungsdatensatz' if folder=='ops' else 'Mediendatei')
                     label=f'Uploading {"change" if folder=="ops" else "media"} {index}/{len(pending)}: {description}'
                     progress(label)
-                    sftp.put(str(source),temporary,callback=byte_progress(label,check,progress))
-                    check();sftp.rename(temporary,posixpath.join(directory,source.name))
+                    # The complete temporary file is closed before its atomic publication.
+                    # No redundant stat after put, or remove after a successful rename.
+                    writer.put(str(source),temporary,callback=byte_progress(label,check,progress),confirm=False)
+                    check()
+                    if stopped.is_set():raise InterruptedError('Transfer stopped')
+                    writer.rename(temporary,posixpath.join(directory,source.name));published=True
                 finally:
-                    try:sftp.remove(temporary)
-                    except OSError:pass
+                    if not published:
+                        try:writer.remove(temporary)
+                        except OSError:pass
+            items=list(enumerate(pending,1))
+            factory=reader_factory
+            if factory is None and hasattr(sftp,'get_channel'):
+                factory=lambda:open_sftp_reader(sftp)
+            if folder=='ops' and factory is not None and len(items)>4:
+                progress('Uploading changes over up to 4 parallel SFTP channels …')
+                parallel_sftp_reads(items,upload,factory,sftp,check)
+            else:
+                for entry in items:upload(entry,sftp,threading.Event())
         check()
         sftp_media_projection(store,sftp,remote,mkdirs,check,progress)
         manifest=publish_sftp_manifest(store,sftp,remote,check,server_manifest)

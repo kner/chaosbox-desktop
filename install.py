@@ -88,15 +88,6 @@ def install(home=None, credentials=True, installdir=None):
         for directory in (profile.images, profile.data, profile.index):
             directory.mkdir(parents=True, exist_ok=True)
     first = settings.profiles[0]
-    if seed_assets:
-        def copy_missing(source_file, destination_file):
-            if not Path(destination_file).exists():
-                shutil.copy2(source_file, destination_file)
-            return destination_file
-        for name, destination in (("JPG", first.images), ("TXT", first.data)):
-            if (source / "assets" / name).is_dir():
-                shutil.copytree(source / "assets" / name, destination, dirs_exist_ok=True,
-                                copy_function=copy_missing)
     if credentials:
         credential_dir = state / "credentials"
         credential_dir.mkdir(mode=0o700, exist_ok=True)

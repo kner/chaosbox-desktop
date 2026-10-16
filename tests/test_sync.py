@@ -16,6 +16,19 @@ class SyncTests(unittest.TestCase):
             for folder,suffix in [('blobs','.blob'),('ops','.op')]:
                 for source in (first.root/folder).glob('*'+suffix): second.immutable(second.root/folder/source.name,source.read_bytes())
         self.a.apply();self.b.apply()
+    def test_renamed_identity_does_not_remove_another_objects_current_path(self):
+        first='00000000-0000-4000-8000-000000000001'
+        second='00000000-0000-4000-8000-000000000002'
+        payload=self.root/'payload.jpg';payload.write_bytes(b'same bytes')
+        self.a.issue('media','shared.jpg',{'id':first},payload)
+        record=self.a.issue('media','shared.jpg',{'id':second},payload)
+        self.a.issue('media','renamed.jpg',record,payload,parents=[record['revision']])
+        self.a.apply()
+        self.assertEqual((self.a.images/'shared.jpg').read_bytes(),b'same bytes')
+        self.assertEqual((self.a.images/'renamed.jpg').read_bytes(),b'same bytes')
+        self.a.apply()
+        self.assertTrue((self.a.images/'shared.jpg').exists())
+
     def test_null_comment_matches_empty_without_losing_literal_text(self):
         from chaos_sync import normalized
         for key in ('comment','kommentar','Kommentar'):

@@ -377,6 +377,7 @@ class Store:
             historical=history[ident]
             for old in historical:
                 if old['kind']!='media' or (op['action']=='put' and old['path']==op['path']): continue
+                if old['path'] in destinations and destinations[old['path']] != ident: continue
                 path=self.safe_path('media',old['path'])
                 if path.exists():
                     # Only known versions can be removed automatically; edited bytes become a conflict at capture.
