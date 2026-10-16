@@ -46,6 +46,104 @@ class Transports(unittest.TestCase):
         unrelated=self.server/'data/JPG/keep.jpg';unrelated.write_bytes(b'not synchronized')
         self.a.delete(moved);sync();self.assertFalse(target.exists());self.assertEqual(unrelated.read_bytes(),b'not synchronized')
 
+    def test_media_checkpoint_skips_content_reads_and_json_only_edits(self):
+        class Reads(FileSftp):
+            def __init__(self, root):super().__init__(root);self.reads=[];self.directories=[]
+            def open(self, path, mode):
+                if mode=='rb':self.reads.append(path)
+                return super().open(path, mode)
+            def listdir_attr(self, path):
+                self.directories.append(path)
+                return super().listdir_attr(path)
+        self.media();sftp=Reads(self.server);remote='data/TXT/.chaosbox-sync'
+        sync=lambda:sync_transport.sftp_exchange(self.a,sftp,remote,progress=lambda _:None)
+        sync();sftp.reads.clear();sftp.directories.clear()
+        sync()
+        self.assertFalse(any('/JPG/' in path for path in sftp.reads))
+        self.assertEqual(sftp.directories.count('data/JPG/SCHRAUBEN'),1)
+        record=json.loads((self.a.data/'box.json').read_text());record[0]['comment']='JSON only'
+        atomic(self.a.data/'box.json',canonical(record));sftp.reads.clear()
+        sync()
+        self.assertFalse(any('/JPG/' in path for path in sftp.reads))
+        receipt=json.loads((self.server/remote/'media-checkpoint.json').read_text())
+        self.assertEqual(receipt['media_checksum'],sync_transport.media_checksum(self.a))
+        self.assertEqual(receipt['schema'],1)
+
+    def test_checkpoint_detects_missing_media_remote_edits_and_invalid_receipts(self):
+        self.media();sftp=FileSftp(self.server);remote='data/TXT/.chaosbox-sync'
+        sync=lambda:sync_transport.sftp_exchange(self.a,sftp,remote,progress=lambda _:None)
+        sync();target=self.server/'data/JPG/SCHRAUBEN/Grüße photo.jpg'
+        receipt=self.server/remote/'media-checkpoint.json'
+        target.unlink();sync();self.assertEqual(target.read_bytes(),b'first image')
+        for content in ('{broken', '{}'):
+            receipt.write_text(content);sync()
+            self.assertEqual(json.loads(receipt.read_text())['schema'],1)
+        # Android v1 receipts are accepted as a signal to verify and enrich once.
+        value=json.loads(receipt.read_text());value.pop('inventory_checksum');value.pop('inventory_transport')
+        receipt.write_text(canonical(value));sync()
+        self.assertIn('inventory_checksum',json.loads(receipt.read_text()))
+        target.write_bytes(b'externally edited, retain me')
+        with self.assertRaisesRegex(ValueError,'Untracked remote JPG'):sync()
+        self.assertFalse(receipt.exists())
+        self.assertEqual(target.read_bytes(),b'externally edited, retain me')
+
+    def test_interrupted_media_publication_invalidates_checkpoint_and_resumes(self):
+        source=self.media();remote='data/TXT/.chaosbox-sync'
+        sync_transport.sftp_exchange(self.a,FileSftp(self.server),remote,progress=lambda _:None)
+        source.write_bytes(b'new content')
+        class BrokenMedia(FileSftp):
+            def put(self,source,path,callback,confirm=True):
+                if '/JPG/' in path:raise OSError('media transfer interrupted')
+                super().put(source,path,callback,confirm)
+        with self.assertRaisesRegex(OSError,'media transfer interrupted'):
+            sync_transport.sftp_exchange(self.a,BrokenMedia(self.server),remote,progress=lambda _:None)
+        self.assertFalse((self.server/remote/'media-checkpoint.json').exists())
+        sync_transport.sftp_exchange(self.a,FileSftp(self.server),remote,progress=lambda _:None)
+        self.assertEqual((self.server/'data/JPG/SCHRAUBEN/Grüße photo.jpg').read_bytes(),b'new content')
+        self.assertTrue((self.server/remote/'media-checkpoint.json').exists())
+
+    def test_shell_checkpoint_skips_media_hashing_and_repairs_missing_files(self):
+        import subprocess
+        self.media();self.a.capture()
+        remote=self.server/'profile/TXT/.chaosbox-sync'
+        (remote/'blobs').mkdir(parents=True)
+        import shutil
+        for blob in (self.a.root/'blobs').glob('*.blob'):shutil.copy(blob,remote/'blobs'/blob.name)
+        def publish():
+            return subprocess.run(['sh','-s'],input=sync_transport.shell_media_projection(self.a,str(remote)),
+                                  text=True,capture_output=True)
+        self.assertEqual(publish().returncode,0)
+        receipt=remote/'media-checkpoint.json'
+        self.assertEqual(json.loads(receipt.read_text())['media_checksum'],sync_transport.media_checksum(self.a))
+        # Count sha256sum invocations: only metadata is hashed on the fast path.
+        binary=self.root/'hash-bin';binary.mkdir();log=self.root/'hash-calls'
+        real=shutil.which('sha256sum')
+        wrapper=binary/'sha256sum'
+        wrapper.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> '+sync_transport.shlex.quote(str(log))+
+                           '\nexec '+sync_transport.shlex.quote(real)+' "$@"\n')
+        wrapper.chmod(0o755)
+        with patch.dict(os.environ,PATH=str(binary)+':'+os.environ['PATH']):
+            result=publish()
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('skipping remote JPG',result.stdout)
+        self.assertEqual(log.read_text().splitlines(),[''])
+        target=self.server/'profile/JPG/SCHRAUBEN/Grüße photo.jpg'
+        target.unlink();result=publish()
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(target.read_bytes(),b'first image')
+        target.write_bytes(b'external edit')
+        result=publish();self.assertNotEqual(result.returncode,0)
+        self.assertFalse(receipt.exists())
+        self.assertEqual(target.read_bytes(),b'external edit')
+
+    def test_empty_shell_projection_can_publish_checkpoint(self):
+        import subprocess
+        remote=self.server/'empty/TXT/.chaosbox-sync';remote.mkdir(parents=True)
+        result=subprocess.run(['sh','-s'],input=sync_transport.shell_media_projection(self.a,str(remote)),
+                              text=True,capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(json.loads((remote/'media-checkpoint.json').read_text())['schema'],1)
+
     def test_sftp_preserves_remote_edits_and_rejects_symlink_parent(self):
         source=self.media();sftp=FileSftp(self.server);remote='data/TXT/.chaosbox-sync'
         sync=lambda:sync_transport.sftp_exchange(self.a,sftp,remote,progress=lambda _:None)

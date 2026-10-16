@@ -461,3 +461,20 @@ them from the dataset and their original disk locations. Confirm the displayed
 count before deletion. Recovery copies remain in local trash and sync history;
 use manual synchronization to propagate deletions to the server and Android.
 Files outside the selected dataset cannot be deleted through this button.
+
+### Fast unchanged media sync
+
+Desktop SFTP, SSH and rsync save `TXT/.chaosbox-sync/media-checkpoint.json` after
+successfully publishing the current JPG/MP4 view. An unchanged media journal and
+unchanged remote file metadata skip full media content checks on subsequent syncs.
+JSON-only edits do not invalidate this checkpoint. SFTP lists each managed folder
+once instead of downloading every media file. SSH/rsync checks server-side stat
+metadata instead of hashing every media file. The first sync after upgrading,
+changing transport, or receiving a basic Android checkpoint verifies media once.
+
+Missing media or changed size/timestamps trigger full verification; unknown remote
+edits are retained and reported. Failed publication invalidates the checkpoint so
+the next sync verifies again. This metadata cache is not a tamper check: SFTP can
+miss same-size changes made within its timestamp resolution or with restored
+modification times. Remove only `media-checkpoint.json` to force content verification.
+Android can read the shared v1 fields; desktop adds its metadata fingerprint.

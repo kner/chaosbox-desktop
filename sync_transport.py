@@ -1,6 +1,7 @@
 """Transport of immutable journal entries. No source files or tombstones are deleted."""
 from pathlib import Path
 import errno
+import hashlib
 import json
 import os
 import posixpath
@@ -218,11 +219,67 @@ def media_projection(store):
     return desired,known,protected
 
 
+def media_checksum(store):
+    """Same media-only journal checksum used by Android's v1 checkpoint."""
+    media = {revision: op for revision, op in store.operations().items() if op['kind'] == 'media'}
+    return hashlib.sha256(canonical(media).encode('utf-8')).hexdigest()
+
+
+def sftp_media_inventory(sftp, images, paths, mkdirs, check):
+    """One listing per managed folder; no media content crosses the network."""
+    folders = {}
+    inventory = {}
+    for path in sorted(paths):
+        check()
+        parent = posixpath.dirname(posixpath.join(images, path))
+        if parent not in folders:
+            mkdirs(parent)
+            folders[parent] = {item.filename: item for item in sftp.listdir_attr(parent)}
+        item = folders[parent].get(posixpath.basename(path))
+        if item is not None and not stat.S_ISREG(item.st_mode):
+            raise ValueError('Unsafe remote media: ' + path)
+        inventory[path] = None if item is None else [item.st_size, int(item.st_mtime), item.st_mode]
+    return hashlib.sha256(canonical(inventory).encode('utf-8')).hexdigest()
+
+
+def sftp_checkpoint_matches(sftp, path, receipt, check):
+    try:
+        with sftp.open(path, 'rb') as stream:
+            check()
+            content = stream.read(4097)
+        return len(content) <= 4096 and json.loads(content) == receipt
+    except OSError as error:
+        if error.errno != errno.ENOENT:
+            raise
+    except (ValueError, UnicodeError):
+        pass
+    return False
+
+
+def sftp_remove_if_present(sftp, path):
+    try:
+        sftp.remove(path)
+    except OSError as error:
+        if error.errno != errno.ENOENT:
+            raise
+
+
 def sftp_media_projection(store, sftp, remote, mkdirs, check, progress):
     desired,known,protected=media_projection(store)
     images=posixpath.join(posixpath.dirname(posixpath.dirname(remote.rstrip('/'))),'JPG')
-    progress('Updating current media in remote JPG/ …')
+    progress('Checking remote media inventory …')
     mkdirs(images)
+    managed = set(known) - protected
+    checkpoint = posixpath.join(remote, 'media-checkpoint.json')
+    receipt = dict(schema=1, images=images, media_checksum=media_checksum(store),
+                   inventory_transport='sftp',
+                   inventory_checksum=sftp_media_inventory(sftp, images, managed, mkdirs, check))
+    if sftp_checkpoint_matches(sftp, checkpoint, receipt, check):
+        progress('Media journal and remote inventory unchanged; skipping remote JPG checks and transfers.')
+        return
+    # A failed publication must never leave a valid receipt behind.
+    sftp_remove_if_present(sftp, checkpoint)
+    progress('Updating current media in remote JPG/ …')
     def remote_hash(path):
         try:info=sftp.lstat(path)
         except OSError as error:
@@ -239,7 +296,8 @@ def sftp_media_projection(store, sftp, remote, mkdirs, check, progress):
         return value.hexdigest()
     # Preflight every managed path before publishing or removing anything.
     current={}
-    for path in sorted(set(known)-protected):
+    for index, path in enumerate(sorted(managed), 1):
+        progress(f'Checking remote media {index}/{len(managed)}: {path}')
         check();target=posixpath.join(images,path)
         mkdirs(posixpath.dirname(target))
         current[path]=remote_hash(target)
@@ -269,21 +327,51 @@ def sftp_media_projection(store, sftp, remote, mkdirs, check, progress):
         if path not in desired and value in known[path]:
             check();sftp.remove(posixpath.join(images,path))
 
+    receipt['inventory_checksum'] = sftp_media_inventory(sftp, images, managed, mkdirs, check)
+    temporary = posixpath.join(remote, '.media-checkpoint-' + uuid.uuid4().hex + '.tmp')
+    try:
+        with sftp.open(temporary, 'wb') as stream:
+            stream.write((canonical(receipt) + '\n').encode('utf-8'))
+        check()
+        sftp.rename(temporary, checkpoint)
+    finally:
+        sftp_remove_if_present(sftp, temporary)
+
 
 def shell_media_projection(store, remote):
     desired,known,protected=media_projection(store)
     images=posixpath.join(posixpath.dirname(posixpath.dirname(remote.rstrip('/'))),'JPG')
     q=shlex.quote
-    lines=['set -eu', 'command -v sha256sum >/dev/null']
+    lines=['set -eu', 'command -v sha256sum >/dev/null', 'command -v stat >/dev/null']
+    checked_directories=set()
     def directories(path):
         parts=[]
         while path not in ('','/','.'):
             parts.append(path);path=posixpath.dirname(path)
         for directory in reversed(parts):
+            if directory in checked_directories:continue
+            checked_directories.add(directory)
             quoted=q(directory)
             lines.append('[ ! -L '+quoted+' ] && { [ -d '+quoted+' ] || mkdir -- '+quoted+'; }')
-    # Validate paths, contents, and payloads before changing the current view.
+    # Validate parent directories and file types before trusting cached inventory.
     directories(images)
+    for path in sorted(set(known)-protected):
+        target=posixpath.join(images,path);directories(posixpath.dirname(target));target=q(target)
+        lines.append('[ ! -L '+target+' ] && { [ ! -e '+target+' ] || [ -f '+target+' ]; }')
+    lines.extend(['media_inventory() {', 'items=$(', ':'])
+    for path in sorted(set(known)-protected):
+        target=q(posixpath.join(images,path))
+        lines.append('if [ -e '+target+' ]; then stat -c '+q('%n:%s:%y:%z:%f')+' -- '+target+' || exit 1; else printf '+q('%s\n')+' '+q('missing:'+path)+'; fi')
+    lines.extend([') || return 1', 'printf '+q('%s')+' "$items" | sha256sum', '}'])
+    checkpoint=q(remote+'/media-checkpoint.json')
+    receipt=dict(schema=1, images=images, media_checksum=media_checksum(store),
+                 inventory_transport='shell', inventory_checksum='__INVENTORY__')
+    prefix,suffix=canonical(receipt).split('__INVENTORY__')
+    receipt_command='receipt=$(printf '+q('%s%s%s')+' '+q(prefix)+' "$inventory" '+q(suffix)+')'
+    lines.extend(['inventory=$(media_inventory)', 'inventory=${inventory%% *}', receipt_command,
+        'if [ ! -L '+checkpoint+' ] && [ -f '+checkpoint+' ] && [ "$(cat -- '+checkpoint+')" = "$receipt" ]; then printf '+q('%s\n')+' '+q('Media journal and remote inventory unchanged; skipping remote JPG checks and transfers.')+'; exit 0; fi',
+        'rm -f -- '+checkpoint])
+    # Validate contents and payloads before changing the current view.
     for path in sorted(set(known)-protected):
         target=posixpath.join(images,path);directories(posixpath.dirname(target));target=q(target)
         lines.append('[ ! -L '+target+' ] && { [ ! -e '+target+' ] || [ -f '+target+' ]; }')
@@ -301,12 +389,16 @@ def shell_media_projection(store, remote):
         else:
             allowed='|'.join(sorted(known[path]))
             lines.append('if [ -f '+quoted+' ]; then h=$(sha256sum -- '+quoted+'); h=${h%% *}; case "$h" in '+allowed+') rm -- '+quoted+';; esac; fi')
+    temporary=q(remote+'/.media-checkpoint-'+uuid.uuid4().hex+'.tmp')
+    lines.extend(['inventory=$(media_inventory)', 'inventory=${inventory%% *}', receipt_command,
+                  'printf '+q('%s\n')+' "$receipt" > '+temporary+' && mv -f -- '+temporary+' '+checkpoint])
     return '\n'.join(lines)
 
 
 def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reader_factory=None):
+    directories = set()
     def mkdirs(path):
-        if path in ('','/','.'): return
+        if path in ('','/','.') or path in directories: return
         mkdirs(posixpath.dirname(path))
         try:
             info=sftp.lstat(path)
@@ -314,6 +406,7 @@ def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reade
         except OSError as e:
             if e.errno!=errno.ENOENT: raise
             mkdirs(posixpath.dirname(path));sftp.mkdir(path)
+        directories.add(path)
     progress('Preparing remote journal and acquiring transfer lock …')
     check()
     mkdirs(remote)
