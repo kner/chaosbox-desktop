@@ -9,6 +9,8 @@ LANGUAGES = {
 
 _TEXT = {
     "en": {
+        "File": "File", "Modified · newest first": "Modified · newest first",
+        'Folder …': 'Folder …', 'Other …': 'Other …', 'Metadata': 'Metadata', 'All': 'All', 'None': 'None', 'Edit all': 'Edit all', 'Individual': 'Individual',
         "Kein Bild oder Video ausgewählt": "No image or video selected", "Bild oder Video auswählen": "Select an image or video",
         "JPG / MP4 auswählen": "Select JPG / MP4", "Ordner wählen …": "Choose folder …", "Klick wählt aus · Umschalt-Klick wählt einen Bereich · {action}": "Click to select · Shift-click for a range · {action}",
         "Doppelklick wählt eine Datei aus": "Double-click selects a file", "Doppelklick öffnet eine Datei": "Double-click opens a file",
@@ -32,6 +34,8 @@ _TEXT = {
         "Category": "Category", "Comment": "Comment", "Package": "Package", "Select JPG, PNG or MP4 files": "Select JPG, PNG or MP4 files", "Preview: {path}": "Preview: {path}",
     },
     "de": {
+        "File": "Datei", "Modified · newest first": "Geändert · neueste zuerst",
+        'Folder …': 'Ordner …', 'Other …': 'Andere …', 'Metadata': 'Metadaten', 'All': 'Alle', 'None': 'Keine', 'Edit all': 'Alle bearbeiten', 'Individual': 'Einzeln',
         "selected": "ausgewählt", "Select": "Auswählen", "Select media folder": "Medienordner auswählen",
         "ChaosBox": "ChaosBox", "Copy link": "Link kopieren", "JSON files": "JSON-Dateien",
         "Up": "Übergeordnet", "Double-click a folder to select it and open its media.": "Doppelklick wählt einen Ordner aus und öffnet dessen Medien.",
@@ -121,6 +125,8 @@ _TEXT = {
         "Saved locally. Use Upload to synchronize manually.": "Lokal gespeichert. Zum Synchronisieren bitte „Hochladen“ verwenden.",
     },
     "fr": {
+        "File": "Fichier", "Modified · newest first": "Modifié · plus récents en premier",
+        'Folder …': 'Dossier …', 'Other …': 'Autres …', 'Metadata': 'Métadonnées', 'All': 'Tout', 'None': 'Aucun', 'Edit all': 'Tout modifier', 'Individual': 'Individuel',
         "selected": "sélectionné(s)", "Select": "Sélectionner", "Select media folder": "Sélectionner le dossier des médias",
         "ChaosBox": "ChaosBox", "Copy link": "Copier le lien", "JSON files": "Fichiers JSON",
         "Double-click a folder to select it and open its media.": "Double-cliquez sur un dossier pour le sélectionner et afficher ses médias.",
@@ -202,6 +208,8 @@ _TEXT = {
         "Please wait for the current file operation to finish before closing.": "Attendez la fin de l’opération en cours avant de fermer.",
     },
     "it": {
+        "File": "File", "Modified · newest first": "Modificato · più recenti prima",
+        'Folder …': 'Cartella …', 'Other …': 'Altri …', 'Metadata': 'Metadati', 'All': 'Tutti', 'None': 'Nessuno', 'Edit all': 'Modifica tutti', 'Individual': 'Singoli',
         "selected": "selezionati", "Select": "Seleziona", "Select media folder": "Seleziona cartella media",
         "ChaosBox": "ChaosBox", "Copy link": "Copia collegamento", "JSON files": "File JSON",
         "Double-click a folder to select it and open its media.": "Fai doppio clic su una cartella per selezionarla e aprire i relativi file.",

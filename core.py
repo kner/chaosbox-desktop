@@ -20,12 +20,15 @@ import tempfile
 import threading
 import time
 import uuid
+import xml.etree.ElementTree as ET
 
 from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageColor
 
 import markdown_render
 import chaos_sync
 import sync_transport
+
+VERSION = Path(__file__).with_name("VERSION").read_text(encoding="utf-8").strip()
 
 def installation_icon(app_id):
     """Tint the desktop and window icon consistently for one installation."""
@@ -923,6 +926,28 @@ def legacy_image_comment(path, metadata):
     return raw.decode("utf-8").rstrip("\0")
 
 
+def image_comment(metadata, complete=False):
+    # GExiv2's generic multiple-value accessor splits lang-alt text at commas.
+    # Read the actual RDF value so punctuation and line breaks remain intact.
+    packet = metadata.try_get_xmp_packet()
+    if not packet:
+        return ""
+    root = ET.fromstring(packet)
+    dc = "{http://purl.org/dc/elements/1.1/}description"
+    rdf = "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}"
+    lang = "{http://www.w3.org/XML/1998/namespace}lang"
+    description = root.find(".//" + dc)
+    if description is None:
+        return next((node.attrib[dc] for node in root.iter() if dc in node.attrib), "")
+    alternatives = description.findall(rdf + "Alt/" + rdf + "li")
+    for item in alternatives:
+        if item.get(lang) == "x-default":
+            return "".join(item.itertext())
+    if alternatives:
+        return "" if complete else "".join(alternatives[0].itertext())
+    return "".join(description.itertext())
+
+
 def image_record(path, metadata):
     # A complete XMP record takes precedence, even when fields have been cleared.
     complete = metadata.try_has_tag("Xmp.chaosbox.version")
@@ -931,10 +956,7 @@ def image_record(path, metadata):
         if not metadata.try_has_tag(tag):
             continue
         if field == "comment":
-            alternatives = metadata.try_get_tag_multiple(tag) or []
-            value = next((value for value in alternatives if value.startswith('lang="x-default" ')),
-                         alternatives[0] if alternatives and not complete else "")
-            record[field] = re.sub(r'^lang="[^"]*" ', "", value, count=1)
+            record[field] = image_comment(metadata, complete)
         else:
             record[field] = metadata.try_get_tag_string(tag) or ""
         # Legacy aliases must not override a more recent XMP property.

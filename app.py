@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 import json
 from pathlib import Path
 import queue
@@ -12,7 +13,7 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, simpledialog
+from tkinter import ttk, messagebox, simpledialog
 
 from PIL import Image, ImageTk
 
@@ -84,7 +85,7 @@ class ImageCanvas(tk.Canvas):
         self.navigate_next = None
         self.select_media = None
         self.navigation_enabled = False
-        self.image_bounds = None
+        self.navigation_bounds = None
         self.bind("<Configure>", self.resize)
         self.bind("<Button-1>", self.navigation_click)
         self.bind("<Motion>", self.navigation_motion)
@@ -121,13 +122,13 @@ class ImageCanvas(tk.Canvas):
     def draw(self):
         self.pending = None
         self.delete("all")
-        self.image_bounds = None
+        self.navigation_bounds = None
         vw, vh = max(1, self.winfo_width()), max(1, self.winfo_height())
         if self.original is None:
             self.create_text(vw / 2, vh / 2,
                              text=self.t("Select an image or video"), fill="#cbd5e1", font=("Sans", 15))
             if self.navigation_enabled:
-                self.image_bounds = (0, 0, vw, vh)
+                self.navigation_bounds = (0, 0, vw, vh)
                 self.draw_navigation(0, 0, vw, vh)
             return
         scale = self.fit()
@@ -138,11 +139,9 @@ class ImageCanvas(tk.Canvas):
         rendered = self.original.resize((width, height), Image.Resampling.LANCZOS)
         self.photo = ImageTk.PhotoImage(rendered)
         self.create_image((vw - width) / 2, (vh - height) / 2, anchor="nw", image=self.photo)
-        left, top = (vw - width) / 2, (vh - height) / 2
-        right, bottom = left + width, top + height
         if self.navigation_enabled:
-            self.image_bounds = (left, top, right, bottom)
-            self.draw_navigation(left, top, right, bottom)
+            self.navigation_bounds = (0, 0, vw, vh)
+            self.draw_navigation(0, 0, vw, vh)
 
     def draw_navigation(self, left, top, right, bottom):
         center_y = (top + bottom) / 2
@@ -155,10 +154,10 @@ class ImageCanvas(tk.Canvas):
             self.create_text(x, center_y, text=arrow, fill="#ffd43b", font=font)
 
     def is_navigation_click(self, event):
-        if self.image_bounds is None:
+        if self.navigation_bounds is None:
             return 0
-        left, top, right, bottom = self.image_bounds
-        if not top <= event.y <= bottom:
+        left, top, right, bottom = self.navigation_bounds
+        if not (left <= event.x <= right and top <= event.y <= bottom):
             return 0
         zone = min(76, (right - left) / 2)
         if event.x <= left + zone:
@@ -207,6 +206,111 @@ class MetadataModeDialog(simpledialog.Dialog):
         ttk.Button(buttons, text=self.t("Cancel"), command=self.cancel).pack(side="left", padx=4)
         self.bind("<Return>", lambda event: choose("extend"))
         self.bind("<Escape>", self.cancel)
+
+
+class FileOpenDialog(simpledialog.Dialog):
+    """File chooser with an explicit newest-first order, independent of the OS."""
+
+    def __init__(self, parent, folder, extensions, title, multiple=False, translator=translate):
+        self.folder = Path(folder)
+        self.extensions = {suffix.casefold() for suffix in extensions}
+        self.multiple, self.t = multiple, translator
+        self.paths = {}
+        super().__init__(parent, title=title)
+
+    def body(self, master):
+        self.resizable(True, True)
+        self.location = tk.StringVar(value=str(self.folder))
+        navigation = ttk.Frame(master)
+        navigation.pack(fill="x", pady=(0, 4))
+        ttk.Button(navigation, text=self.t("Up"), command=lambda: self.browse(self.folder.parent)).pack(side="left")
+        entry = ttk.Entry(navigation, textvariable=self.location, width=70)
+        entry.pack(side="left", fill="x", expand=True, padx=(4, 0))
+        entry.bind("<Return>", self.enter_path)
+        frame = ttk.Frame(master)
+        frame.pack(fill="both", expand=True)
+        self.listing = ttk.Treeview(frame, columns=("modified",),
+                                   selectmode="extended" if self.multiple else "browse", height=20)
+        self.listing.heading("#0", text=self.t("File"))
+        self.listing.heading("modified", text=self.t("Modified · newest first"))
+        self.listing.column("#0", width=480, minwidth=120)
+        self.listing.column("modified", width=180, minwidth=150, stretch=False)
+        scroll = ttk.Scrollbar(frame, orient="vertical", command=self.listing.yview)
+        self.listing.configure(yscrollcommand=scroll.set)
+        scroll.pack(side="right", fill="y")
+        self.listing.pack(side="left", fill="both", expand=True)
+        self.listing.bind("<Double-Button-1>", self.activate)
+        self.listing.bind("<Return>", lambda event: self.ok())
+        self.browse(self.folder)
+        return self.listing
+
+    def buttonbox(self):
+        buttons = ttk.Frame(self)
+        buttons.pack(fill="x", padx=5, pady=4)
+        ttk.Button(buttons, text=self.t("Cancel"), command=self.cancel).pack(side="right")
+        ttk.Button(buttons, text=self.t("Open"), command=self.ok).pack(side="right", padx=4)
+        self.bind("<Escape>", self.cancel)
+
+    def browse(self, folder):
+        try:
+            folder = Path(folder).expanduser().resolve()
+            directories, files = [], []
+            for path in folder.iterdir():
+                if path.name.startswith("."):
+                    continue
+                info = path.stat()
+                if path.is_dir():
+                    directories.append(path)
+                elif path.is_file() and path.suffix.casefold() in self.extensions:
+                    files.append((path, info.st_mtime_ns))
+            directories.sort(key=lambda path: path.name.casefold())
+            files.sort(key=lambda item: (-item[1], item[0].name.casefold()))
+        except OSError as error:
+            messagebox.showerror(self.title(), str(error), parent=self)
+            return
+        self.folder = folder
+        self.location.set(str(folder))
+        self.listing.delete(*self.listing.get_children())
+        self.paths = {}
+        for path, modified in [(path, None) for path in directories] + files:
+            row = self.listing.insert("", "end", text=path.name + ("/" if modified is None else ""),
+                values=("" if modified is None else datetime.fromtimestamp(modified / 1e9).strftime("%Y-%m-%d %H:%M:%S"),))
+            self.paths[row] = path
+
+    def enter_path(self, event=None):
+        path = Path(self.location.get()).expanduser()
+        if not path.is_absolute():
+            path = self.folder / path
+        if path.is_dir():
+            self.browse(path)
+        else:
+            self.browse(path.parent)
+            row = next((row for row, file in self.paths.items() if file == path.resolve()), None)
+            if row is not None:
+                self.listing.selection_set(row)
+                self.ok()
+        return "break"
+
+    def activate(self, event):
+        row = self.listing.identify_row(event.y)
+        if row:
+            if row not in self.listing.selection():
+                self.listing.selection_set(row)
+            self.ok()
+        return "break"
+
+    def validate(self):
+        selected = [self.paths[row] for row in self.listing.selection()]
+        if len(selected) == 1 and selected[0].is_dir():
+            self.browse(selected[0])
+            return False
+        if not selected or any(not path.is_file() or path.suffix.casefold() not in self.extensions for path in selected):
+            return False
+        self.selected_paths = selected
+        return True
+
+    def apply(self):
+        self.result = self.selected_paths if self.multiple else self.selected_paths[0]
 
 
 class MediaFolderDialog(simpledialog.Dialog):
@@ -664,6 +768,7 @@ class App:
         self.controls.append(self.profile_picker)
         menu_button = ttk.Button(header, text="☰", width=3, command=self.setup_dialog)
         menu_button.pack(side="right")
+        ttk.Label(header, text=f"(c) kner.at · {core.VERSION}").pack(side="right", padx=6)
         self.controls.append(menu_button)
         self.button(header, self.t("Synchronize"), self.start_upload, side="right", padx=8)
         self.button(header, self.t("Conflicts"), self.show_sync_conflicts, side="right", padx=8)
@@ -1010,13 +1115,29 @@ class App:
         # Keep normal window decorations: transient dialogs can lose their
         # maximize button under the Linux window manager.
         dialog.resizable(True, True)
+        def maximize():
+            if not dialog.winfo_exists():
+                return
+            try:
+                dialog.state("zoomed")
+            except tk.TclError:
+                try:
+                    dialog.attributes("-zoomed", True)
+                except tk.TclError:
+                    pass
+        dialog.after_idle(maximize)
+        style = ttk.Style(dialog)
+        style.configure("MediaCompact.TButton", padding=(4, 2), width=0, font=("TkDefaultFont", 9))
+        style.configure("MediaCompact.TCheckbutton", padding=0, font=("TkDefaultFont", 9))
+        def compact_button(parent, **options):
+            return ttk.Button(parent, style="MediaCompact.TButton", **options)
         # The window manager may not have mapped this Toplevel yet. Grabbing
         # immediately can abort construction with "window not viewable".
         def grab_when_mapped(event):
             if event.widget is dialog and dialog.winfo_viewable():
                 dialog.grab_set()
         dialog.bind("<Map>", grab_when_mapped)
-        navigation = ttk.Frame(dialog, padding=12)
+        navigation = ttk.Frame(dialog, padding=(4, 3))
         navigation.pack(fill="x")
         def change_folder():
             chosen = MediaFolderDialog(dialog, folder, self.t).result
@@ -1030,17 +1151,14 @@ class App:
                     self.media_dialog(paths, chosen, on_select=on_select)
                 else:
                     self.choose_media()
-        ttk.Button(navigation, text=self.t("Ordner wählen …"), command=change_folder).pack(side="left")
-        ttk.Label(navigation, text=str(folder), wraplength=750).pack(side="left", padx=12)
-        toolbar = ttk.Frame(dialog, padding=12)
-        toolbar.pack(fill="x")
-        action = self.t("Doppelklick wählt eine Datei aus" if on_select else "Doppelklick öffnet eine Datei")
-        ttk.Label(toolbar, text=self.t("Klick wählt aus · Umschalt-Klick wählt einen Bereich · {action}", action=action)).pack(side="left")
+        compact_button(navigation, text=self.t("Folder …"), command=change_folder).pack(side="left")
+        ttk.Label(navigation, text=str(folder), width=1, anchor="w").pack(side="left", fill="x", expand=True, padx=3)
+        toolbar = navigation
         columns = tk.StringVar(value=str(getattr(self, "media_columns", 4)))
         picker = ttk.Combobox(toolbar, textvariable=columns, values=list(range(1, 11)),
                               state="readonly", width=3)
         picker.pack(side="right")
-        ttk.Label(toolbar, text=self.t("Spalten")).pack(side="right", padx=8)
+        ttk.Label(toolbar, text=self.t("Spalten")).pack(side="right", padx=3)
         count = tk.StringVar(value=f"0 / {len(paths)} {self.t('selected')}")
         def changed():
             if on_select and len(grid.selected) > 1:
@@ -1049,13 +1167,14 @@ class App:
             count.set(f"{len(grid.selected)} / {len(paths)} {self.t('selected')}")
             open_button.configure(state="normal" if grid.selected else "disabled")
         grid = MediaGrid(dialog, paths, folder, changed, translator=self.t)
-        grid.pack(fill="both", expand=True, padx=12)
+        grid.pack(fill="both", expand=True, padx=4)
         show_comment = tk.BooleanVar(value=getattr(self, "media_show_user_comment", False))
         def change_comment():
             self.media_show_user_comment = show_comment.get()
             grid.set_show_user_comment(self.media_show_user_comment)
-        ttk.Checkbutton(toolbar, text=self.t("Metadaten anzeigen"), variable=show_comment,
-                        command=change_comment).pack(side="right", padx=8)
+        ttk.Checkbutton(toolbar, text=self.t("Metadata"), variable=show_comment,
+                        style="MediaCompact.TCheckbutton",
+                        command=change_comment).pack(side="right", padx=3)
         change_comment()
         def change_columns(event=None):
             self.media_columns = int(columns.get())
@@ -1080,10 +1199,9 @@ class App:
             self.open_media([self.individual_paths[0]], individual=True)
         def external():
             title = self.t("Select an image or video" if on_select else "Select JPG, PNG or MP4 files")
-            chooser = filedialog.askopenfilename if on_select else filedialog.askopenfilenames
-            chosen = chooser(parent=dialog, initialdir=folder, title=title,
-                filetypes=[(self.t("Bilder und Videos"), "*.jpg *.jpeg *.JPG *.JPEG *.png *.PNG *.mp4 *.MP4"),
-                           (self.t("Alle Dateien"), "*")])
+            chosen = FileOpenDialog(dialog, folder, core.IMPORTS, title,
+                                    multiple=not on_select, translator=self.t).result
+            dialog.grab_set()
             if chosen:
                 names = [chosen] if on_select else chosen
                 self.remember_media_folder(Path(names[0]).parent)
@@ -1092,28 +1210,26 @@ class App:
                     on_select(Path(names[0]))
                 else:
                     self.open_media([Path(name) for name in names])
-        buttons = ttk.Frame(dialog, padding=12)
+        buttons = ttk.Frame(dialog, padding=(4, 3))
         buttons.pack(fill="x")
-        ttk.Button(buttons, text=self.t("Andere Dateien …"), command=external).pack(side="left")
+        compact_button(buttons, text=self.t("Other …"), command=external).pack(side="left")
         if not on_select:
-            ttk.Button(buttons, text=self.t("Alle auswählen"), command=grid.select_all).pack(side="left", padx=6)
-        ttk.Button(buttons, text=self.t("Auswahl aufheben"), command=grid.clear_selection).pack(side="left")
-        ttk.Label(buttons, textvariable=count).pack(side="left", padx=8)
-        open_button = ttk.Button(buttons, text=self.t("Select") if on_select else self.t("Selektion editieren"),
+            compact_button(buttons, text=self.t("All"), command=grid.select_all).pack(side="left", padx=3)
+        compact_button(buttons, text=self.t("None"), command=grid.clear_selection).pack(side="left")
+        ttk.Label(buttons, textvariable=count).pack(side="left", padx=3)
+        open_button = compact_button(buttons, text=self.t("Select") if on_select else self.t("Edit all"),
                                  command=open_selected, state="disabled")
-        open_button.pack(side="right", padx=8)
+        open_button.pack(side="right", padx=3)
         delete_button = None
         if not on_select:
-            deletion_actions = ttk.Frame(dialog, padding=(12, 0, 12, 12))
-            deletion_actions.pack(fill="x")
-            delete_button = ttk.Button(deletion_actions, text=self.t("Del Selection"),
+            delete_button = compact_button(buttons, text=self.t("Del Selection"),
                 command=lambda: self.delete_media_selection(grid.selection(), dialog), state="disabled")
-            delete_button.pack(side="left")
+            delete_button.pack(side="left", padx=3)
         individual_button = None
         if not on_select:
-            individual_button = ttk.Button(buttons, text=self.t("Einzelbilder editieren"),
+            individual_button = compact_button(buttons, text=self.t("Individual"),
                                            command=lambda: edit_individual(grid.selection()), state="disabled")
-            individual_button.pack(side="right", padx=8)
+            individual_button.pack(side="right", padx=3)
         def selection_changed():
             changed()
             if delete_button is not None:
@@ -1305,8 +1421,8 @@ class App:
                 else:
                     raise ValueError("Box not found or ambiguous. Clear Box to choose its JSON file.")
             else:
-                name = filedialog.askopenfilename(parent=self.root, initialdir=self.profile.data,
-                title=self.t("Open JSON"), filetypes=[(self.t("JSON files"), "*.json")])
+                name = FileOpenDialog(self.root, self.profile.data, {".json"},
+                                      self.t("Open JSON"), translator=self.t).result
                 if not name:
                     return
                 chosen = Path(name)

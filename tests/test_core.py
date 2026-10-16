@@ -54,6 +54,26 @@ class LegacyMetadataTests(unittest.TestCase):
 
 
 class MetadataBatchTests(unittest.TestCase):
+    def test_xmp_description_keeps_commas_and_complete_multiline_list(self):
+        comment = ('1. Kroatisch-Serbisch, Teil I – Lehrbuch für Anfänger\n'
+                   '   Autor: Stjepan Drilo\n\n'
+                   '2. Titel, mit Komma\n'
+                   '   Inhalt: Grüße 🎬 東京 & <Text>\n'
+                   '   Wörtlich: lang="de-DE" bleibt im Kommentar.\n')
+        with tempfile.TemporaryDirectory() as folder:
+            image = Path(folder) / "books.jpg"
+            Image.new("RGB", (20, 10)).save(image)
+            metadata = core.open_image_metadata(image)
+            metadata.try_set_tag_string("Xmp.dc.description", 'lang="de-DE" Anderer Text, ebenfalls mehrzeilig\nZweite Zeile')
+            metadata.try_set_tag_string("Xmp.dc.description", 'lang="x-default" ' + comment)
+            metadata.save_file(str(image))
+            self.assertEqual(core.read_metadata(image)["comment"], comment)
+            self.assertEqual(json.loads(core.read_user_comment(image))["comment"], comment)
+            metadata = core.open_image_metadata(image)
+            metadata.try_set_tag_string("Xmp.chaosbox.version", "1")
+            metadata.save_file(str(image))
+            self.assertEqual(core.read_metadata(image)["comment"], comment)
+
     def test_mixed_selection_preserves_order_and_reads_duplicates_once(self):
         with tempfile.TemporaryDirectory() as folder:
             image, video = Path(folder) / "unicode 東京.jpg", Path(folder) / "movie.mp4"
