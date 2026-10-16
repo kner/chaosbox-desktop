@@ -48,6 +48,31 @@ class MediaDropTests(unittest.TestCase):
         payload = self.payload([self.paths[0].as_uri()])
         self.assertEqual(media_drop_paths(self.interpreter, payload), self.paths[:1])
 
+    def test_x11_reads_fresh_selection_for_consecutive_external_drops(self):
+        interpreter = self.interpreter
+        interpreter.eval('''
+            namespace eval ::tkdnd::xdnd {
+                variable _drop_target .
+                variable _common_drag_source_types {text/uri-list}
+                proc _normalise_data {type data} {return $data}
+                proc _selection_get {args} {error "stale native reader used"}
+                proc _GetDroppedData {time} {_selection_get}
+            }
+            proc tk {args} {return x11}
+            proc selection {args} {return $::fresh_selection}
+            proc winfo {args} {error "external source"}
+            proc package {args} {return 2.6}
+        ''')
+        self.app.dnd_available = False
+        self.app.preview = self.app.open_media_button = Mock()
+        self.app.register_media_drop = Mock()
+        self.app.setup_media_drop()
+        for path in self.paths:
+            interpreter.setvar('fresh_selection', str(path))
+            data = interpreter.call('::tkdnd::xdnd::_GetDroppedData', 0)
+            self.assertEqual(self.app.drop_media(self.payload([data])), 'copy')
+            self.app.open_media.assert_called_with([path])
+
     def test_bad_mixed_batch_is_rejected_before_opening_anything(self):
         wrong = self.folder / 'not-media.json'
         wrong.write_text('{}')

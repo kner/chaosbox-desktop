@@ -714,6 +714,25 @@ class App:
             self.log(self.t("Drag and drop requires tkdnd. File selection remains available."))
             return
         self.dnd_available = True
+        if self.root.tk.call("tk", "windowingsystem") == "x11":
+            # tkdnd 2.6's native reader can retain the preceding external
+            # transfer. Tk's selection reader requests fresh XdndSelection
+            # data for each drop, including drops from other applications.
+            self.root.tk.eval('''
+                proc ::tkdnd::xdnd::_GetDroppedData {time} {
+                    variable _drop_target
+                    variable _common_drag_source_types
+                    foreach type $_common_drag_source_types {
+                        if {![catch {
+                            selection get -displayof $_drop_target \\
+                                -selection XdndSelection -type $type
+                        } result options]} {
+                            return [_normalise_data $type $result]
+                        }
+                    }
+                    return -code error "Could not read dropped media files."
+                }
+            ''')
         for widget in (self.root, self.preview, self.open_media_button):
             self.register_media_drop(widget)
 

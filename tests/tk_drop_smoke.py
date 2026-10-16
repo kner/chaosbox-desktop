@@ -39,6 +39,7 @@ def pump():
 try:
  with tempfile.TemporaryDirectory() as tmp:
   path=Path(tmp)/'image.jpg';Image.new('RGB',(50,40),'red').save(path)
+  other=Path(tmp)/'other.jpg';Image.new('RGB',(50,40),'blue').save(other)
   callback=source.register(lambda offset,length:path.as_uri()+'\r\n')
   root.tk.call('selection','handle','-selection','XdndSelection','-type','text/uri-list',source._w,callback)
   root.tk.call('selection','own','-selection','XdndSelection',source._w)
@@ -47,13 +48,14 @@ try:
   tree=subprocess.check_output(['xwininfo','-tree','-id',str(root.winfo_id())],text=True)
   parent=re.search(r'Parent window id: (0x[0-9a-f]+)',tree)[1]
   root.lift();root.update()
-  for target in [app.preview.winfo_id(),root.winfo_id(),int(parent,0)]:
-   app.clear()
+  for target, path in [(target, image) for target in [app.preview.winfo_id(),root.winfo_id(),int(parent,0)] for image in [path, other]]:
    send(target,'XdndEnter',[sid,5<<24,atom('text/uri-list'),0,0]);pump()
    px=app.preview.winfo_rootx()+200;py=app.preview.winfo_rooty()+100
    send(target,'XdndPosition',[sid,0,(px<<16)|py,0,atom('XdndActionCopy')]);pump()
    send(target,'XdndDrop',[sid,0,0,0,0]);pump()
    assert app.media==[path], (target, app.media, errors)
    assert app.preview.original is not None, app.status.get()
+   pixel=app.preview.original.getpixel((0,0))
+   assert (pixel[0] > pixel[2]) == (path.name == 'image.jpg'), (path, pixel)
  print('PASS: native drops to the preview canvas, main client and wrapper open and render the image.')
 finally:app.executor.shutdown(wait=True);root.destroy();fixture.cleanup()
