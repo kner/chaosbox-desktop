@@ -478,3 +478,12 @@ the next sync verifies again. This metadata cache is not a tamper check: SFTP ca
 miss same-size changes made within its timestamp resolution or with restored
 modification times. Remove only `media-checkpoint.json` to force content verification.
 Android can read the shared v1 fields; desktop adds its metadata fingerprint.
+
+### Drag and drop media
+
+Drag one or more JPG/JPEG, PNG or MP4 files from the file manager onto the main
+preview, the Open JPG/MP4 button, or the media-selection window. Files open using
+the same metadata workflow as the file chooser; originals stay in place until
+an explicit save. Dropping is disabled during searches and background work.
+Attaching media to a JSON record accepts one file. Native file drops use Ubuntu's
+`tkdnd` package, included in the dependency installer and Debian package dependencies.

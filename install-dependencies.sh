@@ -27,6 +27,7 @@ fi
 packages=(
     python3
     python3-tk
+    tkdnd
     python3-pil
     python3-pil.imagetk
     python3-paramiko

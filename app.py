@@ -13,6 +13,7 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
+from urllib.parse import urlsplit, unquote
 from tkinter import ttk, messagebox, simpledialog
 
 from PIL import Image, ImageTk
@@ -20,6 +21,32 @@ from PIL import Image, ImageTk
 import core
 from i18n import translate
 import markdown_render
+
+
+def media_drop_paths(interpreter, data):
+    """Decode a Tcl file list without treating filenames as Tcl commands."""
+    paths = []
+    for name in interpreter.splitlist(data):
+        if name.startswith("file:"):
+            uri = urlsplit(name)
+            if uri.netloc not in ("", "localhost") or uri.query or uri.fragment:
+                raise ValueError("Only local media files can be dropped.")
+            name = unquote(uri.path)
+        path = Path(name)
+        if path.is_absolute() and not path.exists():
+            # Ubuntu tkdnd 2.6 decodes percent-escaped UTF-8 filenames as Latin-1.
+            # Prefer the original spelling whenever it exists; repair only that
+            # old transport encoding when it identifies a real local file.
+            try:
+                repaired = Path(name.encode("latin-1").decode("utf-8"))
+                if repaired.is_file():
+                    path = repaired
+            except UnicodeError:
+                pass
+        if not path.is_absolute() or not path.is_file() or path.suffix.casefold() not in core.IMPORTS:
+            raise ValueError("Drop existing JPG, PNG or MP4 files.")
+        paths.append(path.resolve())
+    return list(dict.fromkeys(paths))
 
 
 class CommentEditor(ttk.Notebook):
@@ -126,7 +153,7 @@ class ImageCanvas(tk.Canvas):
         vw, vh = max(1, self.winfo_width()), max(1, self.winfo_height())
         if self.original is None:
             self.create_text(vw / 2, vh / 2,
-                             text=self.t("Select an image or video"), fill="#cbd5e1", font=("Sans", 15))
+                             text=self.t("Drop JPG, PNG or MP4 here, or select files."), fill="#cbd5e1", font=("Sans", 15))
             if self.navigation_enabled:
                 self.navigation_bounds = (0, 0, vw, vh)
                 self.draw_navigation(0, 0, vw, vh)
@@ -656,12 +683,13 @@ class App:
         style.configure("TLabel", font=("Sans", 11))
         for widget_class in ("TEntry", "TCombobox"):
             search_style = f"Search.{widget_class}"
-            style.configure(search_style, fieldbackground="#eeedda")
-            style.map(search_style, fieldbackground=[("disabled", "#eeedda"),
-                                                     ("readonly", "#eeedda")])
+            style.configure(search_style, fieldbackground="#fff9c4")
+            style.map(search_style, fieldbackground=[("disabled", "#fff9c4"),
+                                                     ("readonly", "#fff9c4")])
         self.build_ui()
         self.refresh_profile()
         self.clear()
+        self.setup_media_drop()
         self.root.bind("<Control-s>", lambda e: self.save())
         self.root.bind("<Control-o>", lambda e: self.choose_media())
         self.root.bind("<Control-f>", lambda e: self.search_clicked())
@@ -672,6 +700,73 @@ class App:
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.after(80, self.drain)
         self.root.after(150, self.initialize)
+
+    def setup_media_drop(self):
+        self.dnd_available = False
+        # Ubuntu's tkdnd package is normally found automatically. Also support
+        # the same package extracted into the user's local library directory.
+        local = Path.home() / ".local/lib/tkdnd2.6"
+        if local.is_dir():
+            self.root.tk.call("lappend", "auto_path", str(local))
+        try:
+            self.root.tk.call("package", "require", "tkdnd")
+        except tk.TclError:
+            self.log(self.t("Drag and drop requires tkdnd. File selection remains available."))
+            return
+        self.dnd_available = True
+        for widget in (self.root, self.preview, self.open_media_button):
+            self.register_media_drop(widget)
+
+    def register_media_drop(self, widget, dialog=None, on_select=None):
+        if not getattr(self, "dnd_available", False):
+            return
+        context = (id(self), id(dialog), id(on_select))
+        # tkdnd 2.6 can route XdndPosition to an enclosing Panedwindow/Frame
+        # instead of its nested canvas. Register the whole ancestor chain so
+        # window-addressed file-manager drops reach the same media handler.
+        target = widget
+        while target is not None:
+            if getattr(target, "_chaosbox_drop_context", None) != context:
+                drop = target.register(lambda data: self.drop_media(data, dialog, on_select))
+                action = target.register(lambda target=target: self.media_drop_action(target))
+                target.tk.call("tkdnd::drop_target", "register", target._w, "DND_Files")
+                for event in ("<<DropEnter>>", "<<DropPosition>>"):
+                    target.tk.call("bind", target._w, event, action)
+                target.tk.call("bind", target._w, "<<Drop:DND_Files>>", drop + " %D")
+                target._chaosbox_drop_context = context
+            if isinstance(target, (tk.Tk, tk.Toplevel)):
+                break
+            target = target.master
+
+    def media_drop_action(self, widget):
+        if self.busy or self.search_mode:
+            return "refuse_drop"
+        grabbed = self.root.grab_current()
+        if grabbed is not None and grabbed is not widget.winfo_toplevel():
+            return "refuse_drop"
+        return "copy"
+
+    def drop_media(self, data, dialog=None, on_select=None):
+        target = dialog if dialog is not None else self.root
+        if self.media_drop_action(target) != "copy":
+            return "refuse_drop"
+        try:
+            paths = media_drop_paths(self.root.tk, data)
+            if not paths:
+                return "refuse_drop"
+            if on_select is not None and len(paths) != 1:
+                raise ValueError(self.t("Drop one media file to attach to this JSON record."))
+        except (ValueError, OSError, tk.TclError) as error:
+            self.error(error)
+            return "refuse_drop"
+        self.remember_media_folder(paths[0].parent)
+        if dialog is not None:
+            dialog.destroy()
+        if on_select is not None:
+            on_select(paths[0])
+        else:
+            self.open_media(paths)
+        return "copy"
 
     def uppercase_category(self, *_):
         variable = self.variables["category"]
@@ -881,7 +976,7 @@ class App:
         for key, widget in self.field_widgets.items():
             widget.configure(state="disabled" if self.busy else "normal")
             if key == "comment":
-                widget.configure(background="#eeedda" if self.search_mode else "#ffffff")
+                widget.configure(background="#fff9c4" if self.search_mode else "#ffffff")
             else:
                 widget_class = "TCombobox" if key in ("category", "device") else "TEntry"
                 widget.configure(style=f"Search.{widget_class}" if self.search_mode else widget_class)
@@ -1241,6 +1336,8 @@ class App:
         grid.canvas.bind("<Double-Button-1>", lambda event: grid.double_click(event, open_selected))
         dialog.bind("<Escape>", lambda e: dialog.destroy())
         grid.canvas.focus_set()
+        self.register_media_drop(dialog, dialog, on_select)
+        self.register_media_drop(grid.canvas, dialog, on_select)
 
     def delete_media_selection(self, paths, dialog):
         if self.busy or not paths:

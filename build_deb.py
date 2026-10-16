@@ -33,7 +33,7 @@ def build(version, output):
             path.chmod(0o644)
 
         # Explicit allowlist: never package user data, SSH keys or local settings.
-        for name in ("app.py", "core.py", "chaos_sync.py", "sync_transport.py", "sync-data.py", "i18n.py", "markdown_render.py", "setup.ini"):
+        for name in ("VERSION", "app.py", "core.py", "chaos_sync.py", "sync_transport.py", "sync-data.py", "i18n.py", "markdown_render.py", "setup.ini"):
             write(f"usr/share/{PACKAGE}/{name}", (SOURCE / name).read_text())
         copy(f"usr/share/{PACKAGE}/chaosbox.png", SOURCE / "chaosbox.png")
         copy("usr/share/icons/hicolor/128x128/apps/chaosbox.png", SOURCE / "chaosbox.png")
@@ -62,7 +62,7 @@ Priority: optional
 Architecture: all
 Maintainer: ChaosBox maintainers <chaosbox@localhost>
 Installed-Size: {size}
-Depends: python3 (>= 3.10), python3-tk, python3-pil (>= 9.1), python3-pil.imagetk, python3-paramiko, python3-gi, gir1.2-gexiv2-0.10 (>= 0.14), python3-mutagen (>= 1.46), python3-markdown-it (>= 2.1), ffmpeg, fonts-dejavu-core
+Depends: python3 (>= 3.10), python3-tk, tkdnd, python3-pil (>= 9.1), python3-pil.imagetk, python3-paramiko, python3-gi, gir1.2-gexiv2-0.10 (>= 0.14), python3-mutagen (>= 1.46), python3-markdown-it (>= 2.1), ffmpeg, fonts-dejavu-core
 Description: Native ChaosBox desktop editor
  Edit image and video metadata and JSON records with a Python/Tk interface.
  Includes image viewing, search and optional manual SSH synchronization.
@@ -86,7 +86,7 @@ Description: Native ChaosBox desktop editor
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--version", default="1.0.2")
+    parser.add_argument("--version", default=(SOURCE / "VERSION").read_text().strip())
     parser.add_argument("--output", type=Path, default=SOURCE / "dist")
     args = parser.parse_args()
     print(build(args.version, args.output.resolve()))
