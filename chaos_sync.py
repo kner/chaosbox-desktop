@@ -318,6 +318,68 @@ class Store:
                     operations=self.operations()
                 if changed: atomic(path,canonical(records)+'\n')
 
+    def initialize_from_local(self, check=lambda: None, progress=lambda _: None):
+        """Make the visible local files authoritative over all received journal heads."""
+        snapshot = {}
+        sources = []
+        for kind, root, extensions in [('record', self.data, {'.json'}),
+                                       ('media', self.images, {'.jpg', '.jpeg', '.mp4'})]:
+            for path in self.sources(root, extensions):
+                check()
+                if path.name in ('records.json', 'cb.json', 'desktop-index.json'):
+                    continue
+                relative = path.relative_to(root).as_posix()
+                records = (records_from(json.loads(path.read_text(encoding='utf-8-sig')))
+                           if kind == 'record' else [self.reader(path)] if self.reader else None)
+                if records is None:
+                    raise ValueError('Media reader required')
+                sources.append((kind, relative, path))
+                for position, record in enumerate(records):
+                    ident = record.get('id') or legacy_id(kind, relative, position)
+                    uuid.UUID(ident)
+                    if ident in snapshot:
+                        raise ValueError('Duplicate local record identity: ' + relative)
+                    canonical(clean(record))  # Validate before issuing any reset operations.
+                    snapshot[ident] = (kind, relative, dict(record, id=ident))
+        heads = self.heads()
+        for ident, (kind, relative, record) in snapshot.items():
+            if any(op['kind'] != kind for op in heads.get(ident, [])):
+                raise ValueError('Record identity used for different kinds: ' + relative)
+        backup = self.root / 'reset-backups' / str(uuid.uuid4())
+        backup.mkdir(parents=True)
+        progress('Saving reset recovery backup: ' + str(backup))
+        if (self.root / 'ops').exists():
+            shutil.copytree(self.root / 'ops', backup / 'ops')
+        for kind, relative, path in sources:
+            check()
+            target = backup / kind / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, target)
+        # Prepare the full reset before publishing: cancellation cannot leave half a reset.
+        prepared = Store(self.images, backup / 'prepared')
+        prepared.device = self.device
+        prepared._capture_operations = self.operations().copy()
+        # Resolve every known branch, including deletions, against the local snapshot.
+        for ident, (kind, relative, record) in snapshot.items():
+            check()
+            payload = backup / kind / relative if kind == 'media' else None
+            prepared.issue(kind, relative, record, payload,
+                       parents=[op['revision'] for op in heads.get(ident, [])])
+        for ident, versions in heads.items():
+            check()
+            if ident in snapshot or versions[0]['kind'] == 'device':
+                continue
+            op = versions[0]
+            prepared.issue(op['kind'], op['path'], {'id': ident}, deleted=True,
+                       parents=[version['revision'] for version in versions])
+        check()
+        for folder, suffix in [('blobs', '.blob'), ('ops', '.op')]:
+            for source in (prepared.root / folder).glob('*' + suffix):
+                self.immutable(self.root / folder / source.name, source)
+        shutil.rmtree(backup / 'prepared')
+        self.checksums()
+        progress('Local files established as the synchronization baseline.')
+
     def embed_media(self,path):
         path=Path(path);relative=path.relative_to(self.images).as_posix()
         for ops in self.heads().values():

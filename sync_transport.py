@@ -17,7 +17,7 @@ import time
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from chaos_sync import digest
-from chaos_sync import Store, operation_label, canonical, checksum_manifest, valid_manifest
+from chaos_sync import Store, operation_label, canonical, checksum_manifest, valid_manifest, records_from
 
 class RemoteLockError(FileExistsError):
     """A different transfer owns the server lock; never remove it automatically."""
@@ -197,6 +197,105 @@ def publish_sftp_manifest(store, sftp, remote, check, previous=None):
         try:sftp.remove(temporary)
         except OSError:pass
     return value
+
+
+def json_projection(store):
+    """Materialize current record heads; conflicting paths keep their server copy."""
+    operations = store.operations()
+    paths = {op['path'] for op in operations.values() if op['kind'] == 'record'}
+    # Empty local JSON files have no record operations but are still user files.
+    for source in store.sources(store.data, {'.json'}):
+        if source.name in ('records.json', 'cb.json', 'desktop-index.json'):
+            continue
+        if not records_from(json.loads(source.read_text(encoding='utf-8-sig'))):
+            paths.add(source.relative_to(store.data).as_posix())
+    protected = set()
+    records = {}
+    for ident, versions in sorted(store.heads(operations).items()):
+        if versions[0]['kind'] != 'record':
+            continue
+        if len(versions) > 1:
+            protected.update(op['path'] for op in operations.values() if op['id'] == ident)
+        elif versions[0]['action'] == 'put':
+            op = versions[0]
+            records.setdefault(op['path'], []).append(op['record'])
+    return {path: (canonical(records.get(path, [])) + '\n').encode('utf-8')
+            for path in sorted(paths - protected)}
+
+
+def sftp_json_projection(store, sftp, remote, mkdirs, check, progress):
+    progress('Updating current JSON files in remote TXT/ …')
+    data = posixpath.dirname(remote.rstrip('/')) or '.'
+    desired = json_projection(store)
+    # Check all managed paths before replacing any file; unrelated paths are untouched.
+    for relative in desired:
+        check()
+        target = posixpath.join(data, relative)
+        mkdirs(posixpath.dirname(target))
+        try:
+            info = sftp.lstat(target)
+        except OSError as error:
+            if error.errno != errno.ENOENT:
+                raise
+        else:
+            if not stat.S_ISREG(info.st_mode):
+                raise ValueError('Unsafe remote JSON: ' + target)
+    for relative, content in desired.items():
+        check()
+        target = posixpath.join(data, relative)
+        try:
+            with sftp.open(target, 'rb') as stream:
+                if stream.read() == content:
+                    continue
+        except OSError as error:
+            if error.errno != errno.ENOENT:
+                raise
+        temporary = target + '.' + uuid.uuid4().hex + '.tmp'
+        try:
+            with sftp.open(temporary, 'wb') as stream:
+                stream.write(content)
+            check()
+            if hasattr(sftp, 'posix_rename'):
+                try:
+                    sftp.posix_rename(temporary, target)
+                    continue
+                except OSError as error:
+                    if error.errno not in (errno.ENOSYS, errno.EOPNOTSUPP) and 'unsupported' not in str(error).lower():
+                        raise
+            # Servers without the atomic overwrite extension require remove + rename.
+            sftp_remove_if_present(sftp, target)
+            sftp.rename(temporary, target)
+        finally:
+            sftp_remove_if_present(sftp, temporary)
+
+
+def shell_json_projection(store, remote):
+    q = shlex.quote
+    data = posixpath.dirname(remote.rstrip('/')) or '.'
+    desired = json_projection(store)
+    lines = ['set -eu']
+    checked = set()
+    for relative in desired:
+        target = posixpath.join(data, relative)
+        directory = posixpath.dirname(target)
+        parents = []
+        while directory not in ('', '/', '.'):
+            parents.append(directory)
+            directory = posixpath.dirname(directory)
+        for directory in reversed(parents):
+            if directory not in checked:
+                checked.add(directory)
+                quoted = q(directory)
+                lines.append('[ ! -L ' + quoted + ' ] && { [ -d ' + quoted + ' ] || mkdir -- ' + quoted + '; }')
+        quoted = q(target)
+        lines.append('[ ! -L ' + quoted + ' ] && { [ ! -e ' + quoted + ' ] || [ -f ' + quoted + ' ]; }')
+    for relative, content in desired.items():
+        target = q(posixpath.join(data, relative))
+        temporary = q(posixpath.join(data, relative) + '.' + uuid.uuid4().hex + '.tmp')
+        lines.append('printf ' + q('%s') + ' ' + q(content.decode('utf-8')) + ' > ' + temporary)
+        lines.append('if cmp -s -- ' + temporary + ' ' + target + '; then rm -- ' + temporary
+                     + '; else mv -f -- ' + temporary + ' ' + target + '; fi')
+    return '\n'.join(lines)
 
 
 def media_projection(store):
@@ -395,7 +494,7 @@ def shell_media_projection(store, remote):
     return '\n'.join(lines)
 
 
-def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reader_factory=None):
+def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reader_factory=None, initialize=False):
     directories = set()
     def mkdirs(path):
         if path in ('','/','.') or path in directories: return
@@ -486,7 +585,8 @@ def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reade
                     for entry in items:download(entry,sftp,threading.Event())
             progress('Validating received journal …')
             store.import_from(staging,check,progress)
-        store.capture(check,progress)
+        if initialize: store.initialize_from_local(check,progress)
+        else: store.capture(check,progress)
         store.apply(check,progress)
         store.acknowledge()
         for op in store.operations().values():remember_name(op)
@@ -525,6 +625,7 @@ def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reade
                 for entry in items:upload(entry,sftp,threading.Event())
         check()
         sftp_media_projection(store,sftp,remote,mkdirs,check,progress)
+        sftp_json_projection(store,sftp,remote,mkdirs,check,progress)
         manifest=publish_sftp_manifest(store,sftp,remote,check,server_manifest)
         progress('Local and server checksum agree; journal synchronized.')
         progress('Immutable journal exchanged over SFTP.')
@@ -532,7 +633,7 @@ def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reade
         progress('Releasing remote transfer lock …')
         sftp.rmdir(lock)
 
-def shell_exchange(store, ssh, transport, cancel, progress=print):
+def shell_exchange(store, ssh, transport, cancel, progress=print, initialize=False):
     """rsync over SSH or tar streams over SSH. Paths are quoted, keys/hosts are explicit."""
     host=ssh['host']; user=ssh['user']; port=str(ssh['port'])
     if any(c in host+user for c in '\r\n') or host.startswith('-') or user.startswith('-'): raise ValueError('Invalid SSH host/user')
@@ -582,7 +683,8 @@ def shell_exchange(store, ssh, transport, cancel, progress=print):
                 if cancel.is_set(): raise InterruptedError('Synchronization cancelled')
             progress('Validating received journal …')
             store.import_from(staging,check,progress)
-            store.capture(check,progress)
+            if initialize: store.initialize_from_local(check,progress)
+            else: store.capture(check,progress)
             store.apply(check,progress)
             store.acknowledge()
             progress('Uploading local journal over '+transport+' …')
@@ -606,6 +708,10 @@ def shell_exchange(store, ssh, transport, cancel, progress=print):
         progress('Updating current media in remote JPG/ …')
         with tempfile.TemporaryFile() as script:
             script.write(shell_media_projection(store,remote).encode('utf-8'));script.seek(0)
+            run(args+['sh -s'],stdin=script)
+        progress('Updating current JSON files in remote TXT/ …')
+        with tempfile.TemporaryFile() as script:
+            script.write(shell_json_projection(store,remote).encode('utf-8'));script.seek(0)
             run(args+['sh -s'],stdin=script)
         manifest=store.checksums()
         source=store.root/'checksums.json'

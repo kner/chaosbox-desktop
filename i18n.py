@@ -277,6 +277,14 @@ _TEXT = {
 }
 
 
+_TEXT['de'].update({
+    'Initialize sync from local files': 'Synchronisation aus lokalen Dateien initialisieren',
+    'Initialize synchronization': 'Synchronisation initialisieren',
+    'Use only the saved local JSON and media files in the selected collection as the new sync baseline?\n\nServer records and media missing locally will be marked deleted. Unsaved form edits are excluded. A local recovery backup will be kept. Other clients must synchronize before editing.':
+    'Nur die gespeicherten lokalen JSON- und Mediendateien der ausgewählten Sammlung als neuen Synchronisationsstand verwenden?\n\nLokal fehlende Datensätze und Medien werden am Server als gelöscht markiert. Ungespeicherte Formulareingaben werden nicht übernommen. Eine lokale Sicherung wird angelegt. Andere Geräte müssen vor dem Bearbeiten synchronisieren.',
+})
+
+
 def translate(text, language="en", **values):
     """Translate a UI message and interpolate its named values."""
     language = str(language or "en").lower().split("_", 1)[0].split("-", 1)[0]

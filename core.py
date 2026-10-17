@@ -1681,7 +1681,7 @@ def _legacy_upload(settings, profile, cancel: threading.Event, progress=lambda _
         client.close()
 
 
-def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
+def upload(settings, profile, cancel: threading.Event, progress=lambda _: None, initialize=False):
     settings.assert_current()
     progress('Preparing synchronization …')
     progress('Installation: '+settings.ssh['installation'])
@@ -1698,11 +1698,11 @@ def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
         try:
             if transport in ('ssh','rsync'):
                 transfer_started = True
-                sync_transport.shell_exchange(store, ssh, transport, cancel, progress)
+                sync_transport.shell_exchange(store, ssh, transport, cancel, progress, initialize=initialize)
             else:
                 with sync_transport.sftp_connection(ssh,cancel,progress) as sftp:
                     transfer_started = True
-                    sync_transport.sftp_exchange(store,sftp,posixpath.join(ssh.get('sftpdatadestination',ssh['datadestination']),'.chaosbox-sync'),check,progress)
+                    sync_transport.sftp_exchange(store,sftp,posixpath.join(ssh.get('sftpdatadestination',ssh['datadestination']),'.chaosbox-sync'),check,progress,initialize=initialize)
         except Exception as error:
             if cancel.is_set(): raise Cancelled('Synchronization cancelled; retry manually.') from error
             if not transfer_started or isinstance(error,sync_transport.RemoteLockError): raise

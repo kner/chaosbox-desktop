@@ -496,3 +496,60 @@ preview, the Open JPG/MP4 button, or the media-selection window. Existing form
 values are retained; originals stay in place until an explicit save. Dropping is disabled during searches and background work.
 Attaching media to a JSON record accepts one file. Native file drops use Ubuntu's
 `tkdnd` package, included in the dependency installer and Debian package dependencies.
+
+### Initialize synchronization from organized local files
+
+Select the collection, organize its JSON files in TXT and its JPG/MP4 files in
+JPG, then use ☰ → **Initialize sync from local files**. Save form edits first.
+The action uses the selected collection's configured server installation and
+remote profile; it does not create a new installation ID or touch other profiles.
+It receives server history without applying it, then establishes the local files
+as authoritative. Known records and media absent locally are marked deleted,
+and all known conflict branches are resolved to the local state. An empty local
+collection therefore clears the synchronized collection. Duplicate record IDs
+in local files must be resolved first.
+
+Recovery copies of local files and the received operation history are saved in
+`TXT/.chaosbox-sync/reset-backups/<unique-id>/`. Existing journal history and media
+blobs remain available. After completion, use Synchronize normally. Other devices
+should synchronize before making edits; unsynchronized offline changes can still
+produce conflicts. This action is not a permanent rejection of future changes
+from other clients. If a transfer fails, retry initialization with the same local
+files.
+
+### Clean up synchronization recovery files
+
+`cleanup-sync.py` is a standalone Python 3 script, installed alongside the app.
+Select one collection directory containing TXT and JPG. Preview is the default:
+
+```bash
+python3 ~/.local/share/chaosbox/desktop/cleanup-sync.py --data ~/CBHaushalt/Haushalt
+```
+
+To permanently remove the previewed candidates, repeat with `--apply`. By default,
+only entries older than 30 days are eligible. Use `--older-than-days 0` to include
+all ages, or another nonnegative number for a different retention period. It
+removes old `trash/` and `reset-backups/` entries and media blobs unreferenced by
+any journal operation. A directory is eligible only when all its contents are
+old enough. Both preview and deletion acquire sync locks; a running sync causes
+cleanup to stop. No collection or journal is created if the path is wrong.
+
+The script also works on server collection directories. For example, upload this
+script to the server and run there with:
+
+```bash
+python3 cleanup-sync.py --data 'l1/storage/installations/INSTALLATION_ID/profiles/haushalt'
+```
+
+Inspect the preview before adding `--apply`. Active JSON/JPG files, journal
+operations, deletion markers and every blob referenced by history are retained.
+Deleted media therefore still occupies space in historical blobs. Removing that
+history requires a coordinated protocol migration of every client, which this
+cleanup script does not perform. Other clients can upload orphan blobs again;
+cleanup is local to the chosen collection and does not propagate.
+
+Desktop synchronization also materializes current JSON record heads in the server
+collection's `TXT/` directory, for SFTP, SSH and rsync. This includes initialization
+and subsequent syncs. Moved or deleted JSON sources are written as empty arrays;
+paths involved in unresolved record conflicts keep their existing server files.
+The immutable journal remains the synchronization history.

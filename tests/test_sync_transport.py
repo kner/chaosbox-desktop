@@ -32,6 +32,28 @@ class Transports(unittest.TestCase):
         atomic(path,b'first image')
         return path
 
+    def test_sftp_initialize_removes_missing_local_media_and_resumes(self):
+        source = self.media(); sftp = FileSftp(self.server)
+        remote = 'data/TXT/.chaosbox-sync'
+        sync_transport.sftp_exchange(self.a, sftp, remote, progress=lambda _: None)
+        target = self.server / 'data/JPG/SCHRAUBEN/Grüße photo.jpg'
+        source.unlink()
+        (self.a.data / 'box.json').unlink()
+        atomic(self.a.data / 'organized.json', '[{"device":"organized"}]')
+        sync_transport.sftp_exchange(self.a, sftp, remote, progress=lambda _: None, initialize=True)
+        self.assertFalse(target.exists())
+        self.assertFalse(source.exists())
+        self.assertEqual(json.loads((self.server / 'data/TXT/box.json').read_text()), [])
+        self.assertEqual(json.loads((self.server / 'data/TXT/organized.json').read_text())[0]['device'], 'organized')
+        self.b.import_from(self.server / remote); self.b.apply()
+        self.assertFalse((self.b.data / 'box.json').exists())
+        self.assertEqual(json.loads((self.b.data / 'organized.json').read_text())[0]['device'], 'organized')
+        before = self.a.operations()
+        sync_transport.sftp_exchange(self.a, sftp, remote, progress=lambda _: None)
+        self.assertFalse(source.exists())
+        self.assertFalse(any(len(v) > 1 for v in self.a.heads().values()))
+        self.assertEqual(before, self.a.operations())
+
     def test_sftp_publishes_named_media_updates_moves_and_deletes(self):
         source=self.media();sftp=FileSftp(self.server);remote='data/TXT/.chaosbox-sync'
         sync=lambda:sync_transport.sftp_exchange(self.a,sftp,remote,progress=lambda _:None)
@@ -45,6 +67,46 @@ class Transports(unittest.TestCase):
         self.assertEqual(target.read_bytes(),b'updated image')
         unrelated=self.server/'data/JPG/keep.jpg';unrelated.write_bytes(b'not synchronized')
         self.a.delete(moved);sync();self.assertFalse(target.exists());self.assertEqual(unrelated.read_bytes(),b'not synchronized')
+
+    def test_empty_json_sources_are_published_without_record_operations(self):
+        empty = self.a.data / 'nested/bücher a2.json'
+        atomic(empty, '[]')
+        sync_transport.sftp_exchange(self.a, FileSftp(self.server), 'data/TXT/.chaosbox-sync', progress=lambda _: None, initialize=True)
+        self.assertEqual(json.loads((self.server / 'data/TXT/nested/bücher a2.json').read_text()), [])
+        self.assertFalse(any(op['path'] == 'nested/bücher a2.json' for op in self.a.operations().values()))
+        script = sync_transport.shell_json_projection(self.a, str(self.server / 'shell/TXT/.chaosbox-sync'))
+        import subprocess
+        subprocess.run(['sh', '-s'], input=script.encode(), check=True)
+        self.assertEqual(json.loads((self.server / 'shell/TXT/nested/bücher a2.json').read_text()), [])
+
+    def test_sftp_json_files_follow_nested_moves_and_edits(self):
+        sftp = FileSftp(self.server); remote = 'data/TXT/.chaosbox-sync'
+        sync = lambda: sync_transport.sftp_exchange(self.a, sftp, remote, progress=lambda _: None)
+        sync()
+        source = self.a.data / 'box.json'
+        records = json.loads(source.read_text()); records[0]['comment'] = 'changed'
+        moved = self.a.data / "nested/Grüße ' box.json"
+        atomic(moved, canonical(records)); source.unlink()
+        sync()
+        self.assertEqual(json.loads((self.server / 'data/TXT/box.json').read_text()), [])
+        self.assertEqual(json.loads((self.server / "data/TXT/nested/Grüße ' box.json").read_text())[0]['comment'], 'changed')
+        first = (self.server / "data/TXT/nested/Grüße ' box.json").stat().st_mtime_ns
+        sync()
+        self.assertEqual((self.server / "data/TXT/nested/Grüße ' box.json").stat().st_mtime_ns, first)
+
+    def test_json_projection_protects_conflicts_and_refuses_symlink(self):
+        self.a.capture()
+        op = next(iter(self.a.operations().values()))
+        self.a.issue('record', 'box.json', dict(op['record'], comment='A'), parents=[op['revision']])
+        self.a.issue('record', 'box.json', dict(op['record'], comment='B'), parents=[op['revision']])
+        self.assertEqual(sync_transport.json_projection(self.a), {})
+        self.a.resolve(op['id'], self.a.heads()[op['id']][0]['revision'])
+        outside = self.root / 'outside.json'; outside.write_text('untouched')
+        destination = self.server / 'data/TXT'; destination.mkdir(parents=True)
+        (destination / 'box.json').symlink_to(outside)
+        with self.assertRaisesRegex(ValueError, 'Unsafe remote JSON'):
+            sync_transport.sftp_exchange(self.a, FileSftp(self.server), 'data/TXT/.chaosbox-sync', progress=lambda _: None)
+        self.assertEqual(outside.read_text(), 'untouched')
 
     def test_media_checkpoint_skips_content_reads_and_json_only_edits(self):
         class Reads(FileSftp):
@@ -207,6 +269,7 @@ if [ "$#" -eq 1 ]; then exec /bin/sh -c "$1"; else exec "$@"; fi
                 remote=self.server/transport/'TXT'
                 config=dict(host='local-test',user='tester',port='22',keyfile='unused',knownhosts='unused',datadestination=str(remote))
                 sync_transport.shell_exchange(self.a,config,transport,threading.Event(),lambda _:None)
+                self.assertEqual(json.loads((remote / 'box.json').read_text())[0]['device'], 'one')
                 self.b.reader=self.a.reader
                 sync_transport.shell_exchange(self.b,config,transport,threading.Event(),lambda _:None);self.assert_received()
                 target=remote.parent/'JPG/SCHRAUBEN/Grüße photo.jpg'

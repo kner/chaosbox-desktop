@@ -1970,6 +1970,10 @@ class App:
                 messagebox.showerror(self.t("Setup"), str(error), parent=dialog)
         ttk.Button(dialog, text=self.t("Save"), command=save).pack(side="right", padx=10, pady=10)
         ttk.Button(dialog, text=self.t("Cancel"), command=dialog.destroy).pack(side="right", pady=10)
+        def initialize():
+            dialog.destroy()
+            self.initialize_sync()
+        ttk.Button(dialog, text=self.t("Initialize sync from local files"), command=initialize).pack(side="left", padx=10, pady=10)
 
     def snippets_dialog(self):
         if self.busy:
@@ -2010,7 +2014,15 @@ class App:
             names.selection_set(0)
             show()
 
-    def start_upload(self):
+    def initialize_sync(self):
+        if self.busy:
+            return
+        if not messagebox.askyesno(self.t("Initialize synchronization"),
+                self.t("Use only the saved local JSON and media files in the selected collection as the new sync baseline?\n\nServer records and media missing locally will be marked deleted. Unsaved form edits are excluded. A local recovery backup will be kept. Other clients must synchronize before editing.")):
+            return
+        self.start_upload(initialize=True)
+
+    def start_upload(self, initialize=False):
         if self.busy:
             return
         dialog = tk.Toplevel(self.root)
@@ -2047,7 +2059,7 @@ class App:
         def work():
             self.log("Loading synchronization settings …")
             self.settings.reload()
-            core.upload(self.settings, self.profile, self.cancel_upload, self.log)
+            core.upload(self.settings, self.profile, self.cancel_upload, self.log, initialize=initialize)
         self.task(work, lambda _: finish(), finish)
 
     def close(self):

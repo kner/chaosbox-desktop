@@ -43,6 +43,56 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(before,self.a.operations())
         self.assertFalse({k:v for k,v in self.a.heads().items() if len(v)>1})
 
+    def test_local_initialization_replaces_received_history_and_resumes_sync(self):
+        self.a.capture(); self.exchange()
+        original = json.loads(self.path.read_text())
+        remote = self.b.data / 'box.json'
+        records = json.loads(remote.read_text())
+        records[0]['comment'] = 'remote edit'
+        atomic(remote, canonical(records)); self.b.capture()
+        # Offline local organization removes one record and moves the other.
+        original[0]['comment'] = 'local authoritative'
+        self.path.unlink()
+        moved = self.a.data / 'organized.json'
+        atomic(moved, canonical(original[:1]))
+        self.a.import_from(self.b.root)
+        self.a.initialize_from_local(); self.a.apply(); self.exchange()
+        self.assertFalse(any(len(v) > 1 for v in self.a.heads().values()))
+        self.assertEqual(json.loads(moved.read_text())[0]['comment'], 'local authoritative')
+        self.assertEqual(json.loads((self.b.data / 'organized.json').read_text()), json.loads(moved.read_text()))
+        self.assertEqual(json.loads(remote.read_text()), [])
+        self.assertTrue(list((self.a.root / 'reset-backups').glob('*/record/organized.json')))
+        before = self.a.operations(); self.a.capture()
+        self.assertEqual(before, self.a.operations())
+        records = json.loads(moved.read_text()); records[0]['comment'] = 'normal edit'
+        atomic(moved, canonical(records)); self.a.capture(); self.exchange()
+        self.assertEqual(json.loads((self.b.data / 'organized.json').read_text())[0]['comment'], 'normal edit')
+
+    def test_cancelled_initialization_does_not_publish_partial_reset(self):
+        self.a.capture()
+        before = self.a.operations()
+        def cancel_during_preparation():
+            for folder in (self.a.root / 'reset-backups').glob('*/prepared/.chaosbox-sync/ops'):
+                if list(folder.glob('*.op')):
+                    raise InterruptedError('Cancelled')
+        with self.assertRaises(InterruptedError):
+            self.a.initialize_from_local(check=cancel_during_preparation)
+        self.assertEqual(before, self.a.operations())
+
+    def test_empty_initialization_deletes_known_records(self):
+        self.a.capture(); self.exchange(); self.path.unlink()
+        self.a.initialize_from_local(); self.a.apply(); self.exchange()
+        self.assertTrue(all(v[0]['action'] == 'delete' for v in self.a.heads().values()))
+        self.assertEqual(json.loads((self.b.data / 'box.json').read_text()), [])
+
+    def test_initialization_rejects_duplicate_ids_before_changing_history(self):
+        self.a.capture()
+        atomic(self.a.data / 'duplicate.json', self.path.read_text())
+        before = self.a.operations()
+        with self.assertRaisesRegex(ValueError, 'Duplicate local'):
+            self.a.initialize_from_local()
+        self.assertEqual(before, self.a.operations())
+
     def test_initial_idempotent(self):
         self.a.capture();self.exchange();before=self.a.operations();self.b.capture();self.exchange()
         self.assertEqual(before,self.b.operations());self.assertEqual(len(before),2)
