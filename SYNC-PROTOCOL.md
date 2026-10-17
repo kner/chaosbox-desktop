@@ -263,16 +263,20 @@ Ein späterer Abgleich repariert eine unterbrochene Veröffentlichung.
 ## Getrennte Desktop-Installationen
 
 Jedes Desktop-Installationsverzeichnis erhält eine eigene, von einer lokalen Zufallsgeneration, Computer und
-absolutem Verzeichnis abgeleitete Installations-ID. Auch kopierte setup.ini-Dateien
-führen auf dem bestehenden Hosting nicht zum Teilen desselben Serverziels.
+absolutem Verzeichnis abgeleitete lokale Installations-ID. Ohne explizite Auswahl
+wird diese als Serverziel verwendet. `[SSH] Installation=...` oder
+`[SSH.Haushalt] Installation=...` wählt ausdrücklich ein bestehendes Serverziel;
+kopierte Konfigurationen mit dieser Angabe teilen dasselbe Serverziel.
+KeyFile und KnownHosts akzeptieren absolute Pfade, `~` und relative Pfade
+zum Installationsverzeichnis. Leere Angaben verwenden `.state/credentials/`.
 Die bisherigen gemeinsamen Hosting-Pfade werden zur Laufzeit ersetzt durch:
 
 `l1/storage/installations/<Installations-ID>/profiles/<Profilname>/`
 
 Darunter liegen jeweils JPG, TXT/.chaosbox-sync und .indices/web-catalog.json.
 Die ID bleibt auf demselben Computer und im selben Verzeichnis stabil. Ein
-anderes Verzeichnis oder ein anderer Computer erhält eine andere ID. Explizite
-Ziele auf anderen SSH-Servern bleiben benutzerdefiniert.
+anderes Verzeichnis oder ein anderer Computer erhält eine andere lokale ID.
+Explizites Installation ändert nur das Serverziel, nicht die lokale Identität.
 
 Desktop zeigt die ID beim Synchronisieren an. Ohne Übertragung anzeigen:
 

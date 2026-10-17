@@ -419,10 +419,12 @@ This host exposes htdocs as SFTP `/`. The absolute SSH/rsync path is configured 
 ## Independent installation synchronization
 
 Each installation directory and each configured Box has its own server dataset
-under `l1/storage/installations/<installation-id>/profiles/<box>/`. Defaults
-on the existing hosting are scoped even if setup.ini was copied from another
-installation. Installation IDs are bound to this computer and absolute path;
-custom destinations on other SSH servers remain explicit. Synchronization logs
+under `l1/storage/installations/<installation-id>/profiles/<box>/`. Without an explicit `Installation`, the target uses the local identity bound to
+this computer and absolute path. Set `[SSH] Installation=...` (or a per-box
+`[SSH.Haushalt]` override) to synchronize an existing server installation.
+Copying a setup with an explicit Installation shares that server dataset.
+KeyFile and KnownHosts accept absolute paths, `~`, and paths relative to the
+installation root; omitted or blank values use `.state/credentials/`. Synchronization logs
 show the ID; `sync-data.py --install-dir DIR --data BOX_DIR --show-target` prints
 the effective destinations without transferring data. Android must explicitly
 select that installation in `[SSH] Installation=...`. The website selector keeps
@@ -440,8 +442,10 @@ All records, media, journals, caches, setup and UI state belong below `--install
 A random generation is stored in `.installation-id` inside that directory. Close the
 app and remove the installation directory to reset it. Recreating even the same
 path generates a new server namespace; old server journals cannot be downloaded
-through the new default target. Copying an old setup.ini does not override this.
-External setup/state paths and custom synchronization destinations are unsupported.
+through the new default target. An explicit `[SSH] Installation=...` overrides
+the server target, including when setup.ini is copied. Local identity and reset
+checks remain independent of that target. External credential paths are supported;
+external setup/state paths and custom synchronization destinations are unsupported.
 Installation no longer seeds data from bundled assets or legacy folders. Existing
 installations receive a fresh namespace on their first launch with this version;
 existing local data stays local and is synchronized into that new namespace.

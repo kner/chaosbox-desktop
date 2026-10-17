@@ -3,6 +3,43 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import core
 class InstallationSyncTests(unittest.TestCase):
+    def test_explicit_installation_and_external_credentials(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)/'desktop';root.mkdir()
+            key=Path(folder)/'id_ed25519';hosts=Path(folder)/'known_hosts'
+            settings=core.Settings(root)
+            settings.path.write_text('[Box]\nTitel=Haushalt\n[SSH]\nInstallation=shared-123\n'
+                                     f'KeyFile={key}\nKnownHosts={hosts}\n')
+            settings.reload();settings.profile(settings.default)
+            self.assertEqual(settings.ssh['installation'],'shared-123')
+            self.assertEqual(settings.ssh['datadestination'],'l1/storage/installations/shared-123/profiles/haushalt/TXT')
+            self.assertEqual(settings.ssh['keyfile'],str(key))
+            self.assertEqual(settings.ssh['knownhosts'],str(hosts))
+            self.assertNotEqual(settings.installation_id,'shared-123')
+            settings.assert_current()
+
+    def test_profile_overrides_and_relative_or_home_credentials(self):
+        with tempfile.TemporaryDirectory() as folder:
+            settings=core.Settings(folder)
+            settings.path.write_text('[Box]\nTitel=Haushalt\n[Box]\nTitel=BilderBox\n'
+                                     '[SSH]\nInstallation=shared\nKeyFile=keys/private\n'
+                                     'KnownHosts=~/.ssh/known_hosts\n'
+                                     '[SSH.Haushalt]\nInstallation=household\n')
+            settings.reload();settings.profile('Haushalt')
+            self.assertEqual(settings.ssh['installation'],'household')
+            self.assertEqual(settings.ssh['keyfile'],str(Path(folder)/'keys/private'))
+            self.assertEqual(settings.ssh['knownhosts'],str((Path.home()/'.ssh/known_hosts').resolve()))
+            settings.profile('BilderBox')
+            self.assertEqual(settings.ssh['installation'],'shared')
+
+    def test_invalid_remote_installations_are_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            settings=core.Settings(folder)
+            for identifier in ('..','../other','/absolute','a/b','a\\b','bad name'):
+                settings.path.write_text('[Box]\nTitel=Parts\n[SSH]\nInstallation='+identifier+'\n')
+                with self.assertRaisesRegex(ValueError,'Invalid SSH Installation'):
+                    settings.reload()
+
     def test_directories_and_profiles_never_share_default_targets(self):
         with tempfile.TemporaryDirectory() as folder:
             first=core.Settings(Path(folder)/'one/ChaosBox');first.ensure(default_box='ChaosBox')

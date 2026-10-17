@@ -231,7 +231,6 @@ class Settings:
             if default_box and not any(name.casefold() == "box" for name, *_ in section_blocks(text)):
                 text += f"\n[Box]\nTitel={default_box}\n"
             text += ("\n[SSH]\nHost=access983197478.webspace-data.io\nPort=22\nUser=u114229695\n"
-                     f"Installation={self.installation_id}\n"
                      f"KeyFile={self.state_dir / 'credentials/id_ed25519'}\n"
                      f"KnownHosts={self.state_dir / 'credentials/known_hosts'}\n")
             atomic_write(self.path, text)
@@ -316,16 +315,19 @@ class Settings:
             web_root=ssh.get('webinstallation','l1').strip()
             if any(not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*',part) for part in web_root.split('/')):
                 raise ValueError('Invalid web installation directory')
-            sync_root=web_root+"/storage/installations/"+self.installation_id+"/profiles/"+profile_path
-            # A copied setup must never reconnect a fresh directory to an old namespace.
+            installation = ssh.get('installation', '').strip() or self.installation_id
+            if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', installation):
+                raise ValueError('Invalid SSH Installation: use letters, digits, underscores or hyphens.')
+            sync_root=web_root+"/storage/installations/"+installation+"/profiles/"+profile_path
+            # Destinations are derived from the selected installation and profile.
             for key in ('datadestination','sftpdatadestination','shelldatadestination','imagedestination'):
                 ssh.pop(key,None)
-            ssh['installation']=self.installation_id
+            ssh['installation']=installation
             for key, name in (('keyfile','id_ed25519'),('knownhosts','known_hosts')):
                 default = self.state_dir/'credentials'/name
-                configured = Path(ssh.get(key,str(default))).expanduser()
+                configured = Path(ssh.get(key, '').strip() or str(default)).expanduser()
                 if not configured.is_absolute(): configured = self.root/configured
-                ssh[key] = str(configured.resolve()) if within(configured.resolve(),self.root) else str(default)
+                ssh[key] = str(configured.resolve())
             for key, value in dict(host="access983197478.webspace-data.io", port="22", user="u114229695",
                                    imagedestination=sync_root+"/JPG", datadestination=sync_root+"/TXT",
                                    keyfile=str(self.state_dir / "credentials/id_ed25519"),
@@ -1682,7 +1684,7 @@ def _legacy_upload(settings, profile, cancel: threading.Event, progress=lambda _
 def upload(settings, profile, cancel: threading.Event, progress=lambda _: None):
     settings.assert_current()
     progress('Preparing synchronization …')
-    progress('Installation: '+settings.installation_id)
+    progress('Installation: '+settings.ssh['installation'])
     progress('Box: '+profile.title)
     store = sync_store(profile)
     with store.locked():

@@ -1259,18 +1259,20 @@ class App:
         dialog.bind("<Map>", grab_when_mapped)
         navigation = ttk.Frame(dialog, padding=(4, 3))
         navigation.pack(fill="x")
+        def open_folder(chosen):
+            extensions = core.IMPORTS if on_select else core.MEDIA
+            def loaded(paths):
+                self.remember_media_folder(chosen)
+                dialog.destroy()
+                self.media_dialog(paths, chosen, on_select=on_select)
+            self.task(lambda: sorted(core.files(chosen, extensions, recursive=False),
+                                     key=lambda path: path.stat().st_mtime_ns, reverse=True), loaded)
         def change_folder():
             chosen = MediaFolderDialog(dialog, folder, self.t).result
             dialog.grab_set()
             if chosen:
-                self.remember_media_folder(chosen)
-                dialog.destroy()
-                if on_select:
-                    paths = sorted(core.files(chosen, core.IMPORTS, recursive=False),
-                                   key=lambda path: path.stat().st_mtime_ns, reverse=True)
-                    self.media_dialog(paths, chosen, on_select=on_select)
-                else:
-                    self.choose_media()
+                open_folder(chosen)
+        compact_button(navigation, text=self.t("Up"), command=lambda: open_folder(folder.parent)).pack(side="left")
         compact_button(navigation, text=self.t("Folder …"), command=change_folder).pack(side="left")
         ttk.Label(navigation, text=str(folder), width=1, anchor="w").pack(side="left", fill="x", expand=True, padx=3)
         toolbar = navigation
@@ -1286,6 +1288,30 @@ class App:
                 grid.redraw()
             count.set(f"{len(grid.selected)} / {len(paths)} {self.t('selected')}")
             open_button.configure(state="normal" if grid.selected else "disabled")
+        try:
+            subfolders = sorted((path for path in folder.iterdir()
+                                 if path.is_dir() and not path.name.startswith('.')),
+                                key=lambda path: path.name.casefold())
+        except OSError as error:
+            subfolders = []
+            self.error(error)
+        if subfolders:
+            folders = ttk.Frame(dialog, padding=(4, 3))
+            folders.pack(fill="x")
+            listing = tk.Listbox(folders, height=min(4, len(subfolders)), exportselection=False)
+            scroll = ttk.Scrollbar(folders, orient="vertical", command=listing.yview)
+            listing.configure(yscrollcommand=scroll.set)
+            scroll.pack(side="right", fill="y")
+            listing.pack(side="left", fill="x", expand=True)
+            for path in subfolders:
+                listing.insert("end", path.name + "/")
+            def enter_subfolder(event=None):
+                selected = listing.curselection()
+                if selected:
+                    open_folder(subfolders[selected[0]])
+                return "break"
+            listing.bind("<Double-Button-1>", enter_subfolder)
+            listing.bind("<Return>", enter_subfolder)
         grid = MediaGrid(dialog, paths, folder, changed, translator=self.t)
         grid.pack(fill="both", expand=True, padx=4)
         show_comment = tk.BooleanVar(value=getattr(self, "media_show_user_comment", False))
