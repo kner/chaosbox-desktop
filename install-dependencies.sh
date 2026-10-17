@@ -28,6 +28,8 @@ packages=(
     python3
     python3-tk
     tkdnd
+    xvfb
+    xauth
     python3-pil
     python3-pil.imagetk
     python3-paramiko
@@ -44,3 +46,18 @@ packages=(
 "${apt[@]}" install -y "${packages[@]}"
 
 "$script_dir/run-desktop.sh" --check
+
+# Loading tkdnd requires Tk and an X display. Check the system installation in
+# an isolated display so installation also works over SSH and without a desktop.
+xvfb-run -a /usr/bin/python3 - <<'PYTHON'
+import tkinter as tk
+
+root = tk.Tk()
+root.withdraw()
+try:
+    version = root.tk.call("package", "require", "tkdnd")
+    root.tk.call("tkdnd::drop_target", "register", root._w, "DND_Files")
+    print(f"Drag and drop ready: tkdnd {version}")
+finally:
+    root.destroy()
+PYTHON

@@ -16,7 +16,9 @@ Install all runtime dependencies on Ubuntu 24.04 from the repository root:
 ```
 
 The script installs the Ubuntu packages and checks that the application can
-load its dependencies. It uses `sudo` when needed. Then launch the app with:
+load its dependencies, including registering a native file-drop target with
+`tkdnd`. The drag-and-drop check uses a virtual X display (`xvfb` and `xauth`),
+so it also runs without a desktop session. It uses `sudo` when needed. Then launch the app with:
 
 ```bash
 ./run-desktop.sh
@@ -485,9 +487,12 @@ Android can read the shared v1 fields; desktop adds its metadata fingerprint.
 
 ### Drag and drop media
 
+Dropping media into the editor preserves all current text fields, including the
+comment. The dropped files become the selected media; their embedded metadata
+does not replace the form.
+
 Drag one or more JPG/JPEG, PNG or MP4 files from the file manager onto the main
-preview, the Open JPG/MP4 button, or the media-selection window. Files open using
-the same metadata workflow as the file chooser; originals stay in place until
-an explicit save. Dropping is disabled during searches and background work.
+preview, the Open JPG/MP4 button, or the media-selection window. Existing form
+values are retained; originals stay in place until an explicit save. Dropping is disabled during searches and background work.
 Attaching media to a JSON record accepts one file. Native file drops use Ubuntu's
 `tkdnd` package, included in the dependency installer and Debian package dependencies.

@@ -722,15 +722,39 @@ class App:
                 proc ::tkdnd::xdnd::_GetDroppedData {time} {
                     variable _drop_target
                     variable _common_drag_source_types
-                    foreach type $_common_drag_source_types {
-                        if {![catch {
-                            selection get -displayof $_drop_target \\
-                                -selection XdndSelection -type $type
-                        } result options]} {
-                            return [_normalise_data $type $result]
+                    # selection get services the X event loop. Nautilus can
+                    # send XdndLeave while its data is being fetched; tkdnd 2.6
+                    # clears the active drop context before its drop handler
+                    # resumes. Preserve that context until data retrieval ends.
+                    foreach name {_types _typelist _actionlist _pressedkeys
+                                  _action _common_drag_source_types
+                                  _common_drop_target_types _drag_source _drop_target} {
+                        upvar #0 ::tkdnd::xdnd::$name state
+                        if {[info exists state]} {set saved($name) $state}
+                    }
+                    try {
+                        foreach type $_common_drag_source_types {
+                            if {![catch {
+                                selection get -displayof $_drop_target \\
+                                    -selection XdndSelection -type $type
+                            } result options]} {
+                                # Tk can return unknown selection types as a list
+                                # of byte values. tkdnd 2.6's URI decoder has a
+                                # missing bracket and silently treats those bytes
+                                # as individual filenames instead.
+                                if {[string match text/uri-list* $type] &&
+                                    [regexp {^\\s*(?:0[xX][0-9a-fA-F]+|-?[0-9]+)(?:\\s+(?:0[xX][0-9a-fA-F]+|-?[0-9]+))*\\s*$} $result]} {
+                                    set result [encoding convertfrom utf-8 [binary format c* $result]]
+                                }
+                                return [_normalise_data $type $result]
+                            }
+                        }
+                        return -code error "Could not read dropped media files."
+                    } finally {
+                        foreach name [array names saved] {
+                            set ::tkdnd::xdnd::$name $saved($name)
                         }
                     }
-                    return -code error "Could not read dropped media files."
                 }
             ''')
         for widget in (self.root, self.preview, self.open_media_button):
@@ -784,7 +808,7 @@ class App:
         if on_select is not None:
             on_select(paths[0])
         else:
-            self.open_media(paths)
+            self.open_media(paths, preserve_fields=True)
         return "copy"
 
     def uppercase_category(self, *_):
@@ -1494,7 +1518,7 @@ class App:
         except Exception as error:
             return None, self.t("Preview unavailable: {error}", error=error)
 
-    def open_media(self, paths, individual=False):
+    def open_media(self, paths, individual=False, preserve_fields=False):
         if any(path.suffix.lower() not in core.IMPORTS for path in paths):
             self.error(self.t("Select JPG, PNG or MP4 files."))
             return
@@ -1507,7 +1531,7 @@ class App:
             records, (image, warning) = result
             differing = core.differing_metadata_fields(records)
             mode = "replace"
-            if differing:
+            if differing and not preserve_fields:
                 labels = [self.profile.labels[core.FIELDS.index(field)] or core.LABELS[core.FIELDS.index(field)]
                           for field in differing]
                 mode = MetadataModeDialog(self.root, labels).result
@@ -1520,7 +1544,8 @@ class App:
             self.media_baseline = dict(values)
             self.media, self.box_path, self.records, self.record_index = list(dict.fromkeys(paths)), None, [], None
             self.field_widgets["device"].configure(values=[])
-            self.fill(values)
+            if not preserve_fields:
+                self.fill(values)
             self.set_preview_path(paths[0])
             self.preview.set_image(image)
             if self.individual_paths:

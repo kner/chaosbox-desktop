@@ -4,7 +4,7 @@ import sys
 import tempfile
 import tkinter as tk
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app import App, media_drop_paths
 
@@ -25,7 +25,7 @@ class MediaDropTests(unittest.TestCase):
         self.app.error = Mock()
         self.app.open_media = Mock()
         self.app.remember_media_folder = Mock()
-        self.app.t = lambda text: text
+        self.app.t = lambda text, **values: text.format(**values)
 
     def tearDown(self):
         self.temp.cleanup()
@@ -37,7 +37,7 @@ class MediaDropTests(unittest.TestCase):
         payload = self.payload(self.paths + self.paths)
         self.assertEqual(media_drop_paths(self.interpreter, payload), self.paths)
         self.assertEqual(self.app.drop_media(payload), 'copy')
-        self.app.open_media.assert_called_once_with(self.paths)
+        self.app.open_media.assert_called_once_with(self.paths, preserve_fields=True)
         self.app.error.assert_not_called()
 
     def test_ubuntu_tkdnd_utf8_filename_compatibility(self):
@@ -71,7 +71,65 @@ class MediaDropTests(unittest.TestCase):
             interpreter.setvar('fresh_selection', str(path))
             data = interpreter.call('::tkdnd::xdnd::_GetDroppedData', 0)
             self.assertEqual(self.app.drop_media(self.payload([data])), 'copy')
-            self.app.open_media.assert_called_with([path])
+            self.app.open_media.assert_called_with([path], preserve_fields=True)
+
+    def test_external_uri_selection_as_bytes_or_text(self):
+        interpreter = self.interpreter
+        # Exercise the installed Ubuntu decoder, including its broken byte-list
+        # conversion, and XdndLeave arriving during selection retrieval.
+        library = Path('/usr/lib/tkdnd2.6/tkdnd_unix.tcl')
+        if not library.is_file():
+            self.skipTest('Ubuntu tkdnd 2.6 is not installed')
+        interpreter.eval('proc package {args} {return 2.6}; proc bind {args} {}')
+        interpreter.call('source', str(library.with_name('tkdnd.tcl')))
+        interpreter.call('namespace', 'eval', '::tkdnd', ('source', str(library)))
+        interpreter.eval('''
+            set ::tkdnd::xdnd::_drop_target .
+            set ::tkdnd::xdnd::_common_drag_source_types {text/uri-list}
+            proc tk {args} {return x11}
+            proc package {args} {return 2.6}
+            proc selection {args} {
+                ::tkdnd::xdnd::_HandleXdndLeave
+                return $::fresh_selection
+            }
+        ''')
+        self.app.preview = self.app.open_media_button = Mock()
+        self.app.register_media_drop = Mock()
+        self.app.setup_media_drop()
+        for path in self.paths:
+            uri = path.as_uri() + '\r\n'
+            for payload in (uri, tuple(uri.encode('utf-8')),
+                            ' '.join(hex(byte) for byte in uri.encode('utf-8'))):
+                with self.subTest(path=path, payload_type=type(payload).__name__):
+                    interpreter.setvar('fresh_selection', payload)
+                    data = interpreter.call('::tkdnd::xdnd::_GetDroppedData', 0)
+                    self.assertEqual(interpreter.getvar('::tkdnd::xdnd::_drop_target'), '.')
+                    self.assertEqual(interpreter.splitlist(
+                        interpreter.getvar('::tkdnd::xdnd::_common_drag_source_types')),
+                        ('text/uri-list',))
+                    self.assertEqual(self.app.drop_media(data), 'copy')
+                    self.app.open_media.assert_called_with([path], preserve_fields=True)
+
+    def test_open_dropped_media_keeps_all_fields_and_comment(self):
+        self.app.fill = Mock()
+        self.app.preview = Mock()
+        self.app.preview_result = Mock(return_value=(None, ''))
+        self.app.field_widgets = {'device': Mock()}
+        self.app.selected = Mock()
+        self.app.set_preview_path = Mock()
+        self.app.created = 'existing creation date'
+        self.app.task = lambda work, done: done(work())
+        originals = [{'device': 'image metadata'}, {'device': 'different metadata'}]
+        with patch('app.core.read_metadata_batch', return_value=originals), \
+             patch('app.MetadataModeDialog') as dialog:
+            App.open_media(self.app, self.paths, preserve_fields=True)
+        self.app.fill.assert_not_called()
+        dialog.assert_not_called()
+        self.assertEqual(self.app.created, 'existing creation date')
+        self.assertEqual(self.app.media, self.paths)
+        self.assertEqual(self.app.media_records, originals)
+        self.assertEqual(self.app.media_edit_mode, 'replace')
+        self.app.preview.set_image.assert_called_once_with(None)
 
     def test_bad_mixed_batch_is_rejected_before_opening_anything(self):
         wrong = self.folder / 'not-media.json'
