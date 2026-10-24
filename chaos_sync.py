@@ -461,6 +461,10 @@ class Store:
                     materialized[op['revision']]=self.materialized()[op['revision']]
         # Merge records individually; unrelated edits in the same JSON file survive.
         paths={op['path'] for op in operations.values() if op['kind']=='record'}
+        protected={op['path'] for op in operations.values() if op['kind']=='record' and op['id'] in conflicts}
+        for source in self.sources(self.data, {'.json'}):
+            if source.name not in ('records.json','cb.json','desktop-index.json') and json.loads(source.read_text(encoding='utf-8-sig')) == []:
+                paths.add(source.relative_to(self.data).as_posix())
         record_heads={}
         for ident,ops in sorted(heads.items()):
             op=ops[0]
@@ -479,6 +483,9 @@ class Store:
                 ident=record.get('id') or legacy_id('record',relative,i)
                 if ident not in heads or ident in conflicts: keep.append(record)
             keep.extend(record_heads.get(relative,[]))
+            if not keep:
+                if path.exists() and relative not in protected: self.trash(path,'records')
+                continue
             if existing!=keep:
                 if path.exists(): self.trash(path,'records')
                 atomic(path,canonical(keep)+'\n')

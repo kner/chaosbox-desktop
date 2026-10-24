@@ -124,8 +124,8 @@ die Programme oder die CLI und werden als action=delete übertragen.
 Eine alte Offline-Kopie wird damit nicht wieder zum aktuellen Stand.
 
 - Einzelne JSON-Datensätze werden unabhängig voneinander gelöscht und gemischt.
-- „Delete box“ markiert alle enthaltenen Datensätze zur Löschung. Eine leere
-  JSON-Liste darf als Dateihülle verbleiben.
+- „Delete box“ markiert alle enthaltenen Datensätze zur Löschung. Leere
+  JSON-Dateien werden entfernt; die Löschmarkierungen bleiben im Journal.
 - Zugeordnete Medien werden beim Löschen einer Box nicht mitgelöscht.
 - Medien werden lokal in den Papierkorb verschoben. Frühere JSON-Stände und
   ersetzte Medien bleiben ebenfalls wiederherstellbar.

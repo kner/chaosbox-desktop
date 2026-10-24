@@ -43,7 +43,7 @@ class Transports(unittest.TestCase):
         sync_transport.sftp_exchange(self.a, sftp, remote, progress=lambda _: None, initialize=True)
         self.assertFalse(target.exists())
         self.assertFalse(source.exists())
-        self.assertEqual(json.loads((self.server / 'data/TXT/box.json').read_text()), [])
+        self.assertFalse((self.server / 'data/TXT/box.json').exists())
         self.assertEqual(json.loads((self.server / 'data/TXT/organized.json').read_text())[0]['device'], 'organized')
         self.b.import_from(self.server / remote); self.b.apply()
         self.assertFalse((self.b.data / 'box.json').exists())
@@ -68,16 +68,16 @@ class Transports(unittest.TestCase):
         unrelated=self.server/'data/JPG/keep.jpg';unrelated.write_bytes(b'not synchronized')
         self.a.delete(moved);sync();self.assertFalse(target.exists());self.assertEqual(unrelated.read_bytes(),b'not synchronized')
 
-    def test_empty_json_sources_are_published_without_record_operations(self):
+    def test_empty_json_sources_are_removed_without_record_operations(self):
         empty = self.a.data / 'nested/bücher a2.json'
         atomic(empty, '[]')
         sync_transport.sftp_exchange(self.a, FileSftp(self.server), 'data/TXT/.chaosbox-sync', progress=lambda _: None, initialize=True)
-        self.assertEqual(json.loads((self.server / 'data/TXT/nested/bücher a2.json').read_text()), [])
+        self.assertFalse((self.server / 'data/TXT/nested/bücher a2.json').exists())
         self.assertFalse(any(op['path'] == 'nested/bücher a2.json' for op in self.a.operations().values()))
         script = sync_transport.shell_json_projection(self.a, str(self.server / 'shell/TXT/.chaosbox-sync'))
         import subprocess
         subprocess.run(['sh', '-s'], input=script.encode(), check=True)
-        self.assertEqual(json.loads((self.server / 'shell/TXT/nested/bücher a2.json').read_text()), [])
+        self.assertFalse((self.server / 'shell/TXT/nested/bücher a2.json').exists())
 
     def test_sftp_json_files_follow_nested_moves_and_edits(self):
         sftp = FileSftp(self.server); remote = 'data/TXT/.chaosbox-sync'
@@ -88,11 +88,23 @@ class Transports(unittest.TestCase):
         moved = self.a.data / "nested/Grüße ' box.json"
         atomic(moved, canonical(records)); source.unlink()
         sync()
-        self.assertEqual(json.loads((self.server / 'data/TXT/box.json').read_text()), [])
+        self.assertFalse((self.server / 'data/TXT/box.json').exists())
         self.assertEqual(json.loads((self.server / "data/TXT/nested/Grüße ' box.json").read_text())[0]['comment'], 'changed')
         first = (self.server / "data/TXT/nested/Grüße ' box.json").stat().st_mtime_ns
         sync()
         self.assertEqual((self.server / "data/TXT/nested/Grüße ' box.json").stat().st_mtime_ns, first)
+
+    def test_shell_removes_deleted_and_legacy_empty_box_without_resurrection(self):
+        import subprocess
+        self.a.capture()
+        remote=self.server/'shell/TXT/.chaosbox-sync'
+        def project():
+            subprocess.run(['sh','-s'],input=sync_transport.shell_json_projection(self.a,str(remote)).encode(),check=True)
+        project();target=remote.parent/'box.json';self.assertTrue(target.exists())
+        self.a.delete_box(self.a.data/'box.json');project();self.assertFalse(target.exists())
+        atomic(target,'[]');project();self.assertFalse(target.exists())
+        project();self.assertFalse(target.exists())
+        self.assertTrue(any(op['action']=='delete' for op in self.a.operations().values()))
 
     def test_json_projection_protects_conflicts_and_refuses_symlink(self):
         self.a.capture()
@@ -236,7 +248,7 @@ class Transports(unittest.TestCase):
         self.a.delete(self.a.data/'box.json',0)
         sync_transport.sftp_exchange(self.a,sftp,'shared',progress=lambda _:None)
         sync_transport.sftp_exchange(self.b,sftp,'shared',progress=lambda _:None);self.b.apply()
-        self.assertEqual(json.loads((self.b.data/'box.json').read_text()),[])
+        self.assertFalse((self.b.data/'box.json').exists())
         self.assertFalse((self.server/'shared/transfer.lock').exists())
         (self.server/'shared/transfer.lock').mkdir()
         with self.assertRaises(FileExistsError):sync_transport.sftp_exchange(self.a,sftp,'shared')

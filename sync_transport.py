@@ -17,7 +17,7 @@ import time
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from chaos_sync import digest
-from chaos_sync import Store, operation_label, canonical, checksum_manifest, valid_manifest, records_from
+from chaos_sync import Store, operation_label, canonical, checksum_manifest, valid_manifest
 
 class RemoteLockError(FileExistsError):
     """A different transfer owns the server lock; never remove it automatically."""
@@ -203,11 +203,11 @@ def json_projection(store):
     """Materialize current record heads; conflicting paths keep their server copy."""
     operations = store.operations()
     paths = {op['path'] for op in operations.values() if op['kind'] == 'record'}
-    # Empty local JSON files have no record operations but are still user files.
+    # Include legacy empty files for removal; journal tombstones remain intact.
     for source in store.sources(store.data, {'.json'}):
         if source.name in ('records.json', 'cb.json', 'desktop-index.json'):
             continue
-        if not records_from(json.loads(source.read_text(encoding='utf-8-sig'))):
+        if json.loads(source.read_text(encoding='utf-8-sig')) == []:
             paths.add(source.relative_to(store.data).as_posix())
     protected = set()
     records = {}
@@ -219,7 +219,7 @@ def json_projection(store):
         elif versions[0]['action'] == 'put':
             op = versions[0]
             records.setdefault(op['path'], []).append(op['record'])
-    return {path: (canonical(records.get(path, [])) + '\n').encode('utf-8')
+    return {path: (canonical(records[path]) + '\n').encode('utf-8') if records.get(path) else None
             for path in sorted(paths - protected)}
 
 
@@ -243,6 +243,11 @@ def sftp_json_projection(store, sftp, remote, mkdirs, check, progress):
     for relative, content in desired.items():
         check()
         target = posixpath.join(data, relative)
+        if content is None:
+            try: sftp.remove(target)
+            except OSError as error:
+                if error.errno != errno.ENOENT: raise
+            continue
         try:
             with sftp.open(target, 'rb') as stream:
                 if stream.read() == content:
@@ -291,6 +296,9 @@ def shell_json_projection(store, remote):
         lines.append('[ ! -L ' + quoted + ' ] && { [ ! -e ' + quoted + ' ] || [ -f ' + quoted + ' ]; }')
     for relative, content in desired.items():
         target = q(posixpath.join(data, relative))
+        if content is None:
+            lines.append('rm -f -- ' + target)
+            continue
         temporary = q(posixpath.join(data, relative) + '.' + uuid.uuid4().hex + '.tmp')
         lines.append('printf ' + q('%s') + ' ' + q(content.decode('utf-8')) + ' > ' + temporary)
         lines.append('if cmp -s -- ' + temporary + ' ' + target + '; then rm -- ' + temporary

@@ -550,6 +550,6 @@ cleanup is local to the chosen collection and does not propagate.
 
 Desktop synchronization also materializes current JSON record heads in the server
 collection's `TXT/` directory, for SFTP, SSH and rsync. This includes initialization
-and subsequent syncs. Moved or deleted JSON sources are written as empty arrays;
+and subsequent syncs. Empty, moved or deleted JSON sources are removed;
 paths involved in unresolved record conflicts keep their existing server files.
 The immutable journal remains the synchronization history.

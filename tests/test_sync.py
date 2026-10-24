@@ -60,7 +60,7 @@ class SyncTests(unittest.TestCase):
         self.assertFalse(any(len(v) > 1 for v in self.a.heads().values()))
         self.assertEqual(json.loads(moved.read_text())[0]['comment'], 'local authoritative')
         self.assertEqual(json.loads((self.b.data / 'organized.json').read_text()), json.loads(moved.read_text()))
-        self.assertEqual(json.loads(remote.read_text()), [])
+        self.assertFalse(remote.exists())
         self.assertTrue(list((self.a.root / 'reset-backups').glob('*/record/organized.json')))
         before = self.a.operations(); self.a.capture()
         self.assertEqual(before, self.a.operations())
@@ -83,7 +83,7 @@ class SyncTests(unittest.TestCase):
         self.a.capture(); self.exchange(); self.path.unlink()
         self.a.initialize_from_local(); self.a.apply(); self.exchange()
         self.assertTrue(all(v[0]['action'] == 'delete' for v in self.a.heads().values()))
-        self.assertEqual(json.loads((self.b.data / 'box.json').read_text()), [])
+        self.assertFalse((self.b.data / 'box.json').exists())
 
     def test_initialization_rejects_duplicate_ids_before_changing_history(self):
         self.a.capture()
@@ -133,10 +133,33 @@ class SyncTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.a.apply()
     def test_whole_box_delete_and_restore(self):
         self.a.capture();self.exchange();before=json.loads(self.path.read_text());self.a.delete_box(self.path);self.exchange()
-        self.assertEqual(json.loads(self.path.read_text()),[])
+        self.assertFalse(self.path.exists())
         old=next(op for op in self.a.operations().values() if op['id']==before[0]['id'] and op['action']=='put')
         self.a.restore(old['id'],old['revision']);self.exchange()
         self.assertEqual(len(json.loads(self.path.read_text())),1)
+    def test_legacy_empty_files_are_trashed_but_reserved_files_stay(self):
+        empty=self.a.data/'nested/empty.json';atomic(empty,' [ ] \n')
+        reserved=self.a.data/'records.json';atomic(reserved,'[]')
+        self.a.capture();before=self.a.operations();self.a.apply()
+        self.assertFalse(empty.exists());self.assertTrue(reserved.exists())
+        self.assertEqual(before,self.a.operations())
+        self.assertTrue(list((self.a.root/'trash').rglob('empty.json')))
+
+    def test_whole_box_stays_absent_after_stale_client_sync(self):
+        self.a.capture();self.exchange();self.a.delete_box(self.path)
+        self.b.capture();self.exchange();self.b.capture();self.exchange()
+        self.assertFalse(self.path.exists());self.assertFalse((self.b.data/'box.json').exists())
+        self.assertTrue(all(v[0]['action']=='delete' for v in self.a.heads().values()))
+
+    def test_empty_conflict_path_is_preserved(self):
+        self.a.capture();op=next(iter(self.a.operations().values()))
+        self.a.issue('record','box.json',dict(op['record'],comment='A'),parents=[op['revision']])
+        self.a.issue('record','box.json',op['record'],deleted=True,parents=[op['revision']])
+        other=next(v[0] for i,v in self.a.heads().items() if i!=op['id'])
+        self.a.issue('record','box.json',other['record'],deleted=True)
+        atomic(self.path,'[]');self.a.apply()
+        self.assertEqual(self.path.read_text(),'[]')
+
     def test_cycles_rejected(self):
         self.a.capture();operations=self.a.operations();revision,op=next(iter(operations.items()));op['parents']=[revision]
         atomic(self.a.root/'ops'/(revision+'.op'),canonical(op))
