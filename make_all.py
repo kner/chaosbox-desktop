@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install Desktop, deploy Web, synchronize and publish an installation APK."""
+"""Install Desktop, deploy Web, synchronize and publish installation APK and Desktop installers."""
 import argparse
 from pathlib import Path
 import re
@@ -11,6 +11,7 @@ import threading
 import zipfile
 
 import core
+import build_user_installer
 import sync_transport
 
 ROOT = Path(__file__).resolve().parent
@@ -48,10 +49,6 @@ def ensure_server_key(ssh):
 
 def android_setup(settings, android):
     """Use the shared Box format, commenting only settings Android does not consume."""
-    import importlib.util
-    spec = importlib.util.spec_from_file_location('configure_sync', android / 'configure-adb-sync.py')
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
     text = core.english_setup(settings.path.read_text(encoding='utf-8-sig'))
     lines = list(core.logical_lines(text))
     output = []
@@ -77,9 +74,7 @@ def android_setup(settings, android):
             else:
                 output.append(line)
     text = '\n'.join(output).rstrip() + '\n'
-    for profile in settings.profiles:
-        text = module.update_setup(text, profile.options[2]['installation'], profile.id.casefold(), profile.id)
-    return text
+    return build_user_installer.bind_sync_targets(text, settings.profiles)
 
 
 def upload_file(sftp, source, destination):
@@ -113,7 +108,7 @@ def _make_all(name, install_dir, android, web):
     for file in (android / 'sign.sh', android / 'configure-adb-sync.py', web / 'scripts/upload-exif.sh'):
         if not file.is_file():
             raise ValueError(f'Datei fehlt: {file}')
-    print(f'[1/5] Desktop installieren: {install_dir}', flush=True)
+    print(f'[1/6] Desktop installieren: {install_dir}', flush=True)
     run(ROOT / 'install-desktop.sh', '--installdir', install_dir)
     settings = core.Settings(install_dir)
     settings.reload()
@@ -131,7 +126,7 @@ def _make_all(name, install_dir, android, web):
             raise ValueError(f'SSH-Datei fehlt: {ssh[key]}')
     web_root = ssh.get('webinstallation', 'l1')
     ensure_server_key(ssh)
-    print('[2/5] Web-Anwendung hochladen', flush=True)
+    print('[2/6] Web-Anwendung hochladen', flush=True)
     # Use the existing uploader with the installation’s explicit SSH identity.
     with tempfile.TemporaryDirectory(prefix='kbox-ssh-') as temp:
         wrapper = Path(temp) / 'ssh'
@@ -142,11 +137,11 @@ def _make_all(name, install_dir, android, web):
         import os
         run('bash', web / 'scripts/upload-exif.sh', ssh['user'] + '@' + ssh['host'], web_root,
             env={**os.environ, 'PATH': temp + ':' + os.environ.get('PATH', '')})
-    print('[3/5] Alle Boxen synchronisieren', flush=True)
+    print('[3/6] Alle Boxen synchronisieren', flush=True)
     for profile in settings.profiles:
         settings.profile(profile.id)
         core.upload(settings, profile, threading.Event(), print)
-    print('[4/5] Signierte APK mit Installations-Setup bauen', flush=True)
+    print('[4/6] Signierte APK mit Installations-Setup bauen', flush=True)
     apk_name = f'KBox-{name}-{versions[0].replace(".", "")}.apk'
     with tempfile.TemporaryDirectory(prefix='kbox-android-') as temp:
         stage = Path(temp) / 'android'
@@ -166,10 +161,14 @@ def _make_all(name, install_dir, android, web):
         released = android / 'released' / apk_name
         released.parent.mkdir(exist_ok=True)
         shutil.copy2(built, released)
-    print('[5/5] APK nach storage/apk hochladen', flush=True)
+    print('[5/6] Desktop-Benutzer-Installer mit Installations-Setup bauen', flush=True)
+    desktop_release = build_user_installer.build(ROOT / 'released', name=name, setup=settings.path)
+    print('[6/6] APK und Desktop-Installer veröffentlichen', flush=True)
     with sync_transport.sftp_connection(ssh, threading.Event(), print) as sftp:
         upload_file(sftp, released, f'{web_root}/storage/apk/{apk_name}')
-    print(f'Fertig: {install_dir}\nAPK: {released}\nServer: {web_root}/storage/apk/{apk_name}')
+        for artifact in (desktop_release, desktop_release.with_suffix('.run.sha256')):
+            upload_file(sftp, artifact, f'{web_root}/storage/desktop/{artifact.name}')
+    print(f'Fertig: {install_dir}\nAPK: {released}\nDesktop-Installer: {desktop_release}\nServer: {web_root}/storage/apk/{apk_name}\nDesktop-Download: {web_root}/storage/desktop/{desktop_release.name}')
 
 
 def make_all(name, install_dir, android, web):

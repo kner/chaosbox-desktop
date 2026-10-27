@@ -68,3 +68,50 @@ class UninstallTests(unittest.TestCase):
             self.assertEqual(root, home / "ChaosBox")
             self.assertEqual(removed, [])
             self.assertEqual(list(home.iterdir()), [])
+
+    def test_downloaded_bilder7_uninstaller_preserves_other_installations_and_data(self):
+        import os
+        import subprocess
+        from unittest.mock import patch
+        import install
+        import build_user_uninstaller
+        if os.getuid() == 0:
+            self.skipTest('Uninstaller requires a normal user')
+        with tempfile.TemporaryDirectory(prefix='uninstall test ') as temp:
+            home = Path(temp) / 'recipient home'
+            home.mkdir()
+            (home / '.config').mkdir()
+            (home / '.config/user-dirs.dirs').write_text('XDG_DESKTOP_DIR="$HOME/My Desktop"\n')
+            env = {**os.environ, 'HOME': str(home), 'XDG_CONFIG_HOME': str(home / '.config')}
+            with patch.dict(os.environ, env):
+                other = install.install(home, credentials=False, installdir=home / 'KBox-Bilder8')
+                targets = [install.install(home, credentials=False, installdir=home / directory)
+                           for directory in ('Kbox-Bilder7', 'KBox-Bilder7')]
+            preserved = {}
+            for _, setup, _ in targets:
+                for name in ('Box/JPG/photo.jpg', '.state/credentials/private-key'):
+                    path = setup.parent / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b'preserve')
+                for path in setup.parent.rglob('*'):
+                    if path.is_file():
+                        preserved[path] = path.read_bytes()
+            other_files = {p: p.read_bytes() for p in (other[0] / 'run-desktop.sh', other[1], other[2],
+                           home / '.local/bin/KBox-Bilder8', home / 'My Desktop/KBox-Bilder8.desktop')}
+            package = build_user_uninstaller.build('Bilder7', Path(temp) / 'downloads')
+            for _ in range(2):
+                subprocess.run(['sh', str(package)], env=env, check=True, capture_output=True)
+            for target, _, desktop in targets:
+                self.assertFalse((target / 'run-desktop.sh').exists())
+                self.assertFalse(desktop.exists())
+                self.assertFalse((home / '.local/share/chaosbox/icons' / f'{target.name}.png').exists())
+            self.assertFalse((home / '.local/bin/KBox-Bilder7').exists())
+            self.assertFalse((home / '.local/bin/chaosbox').exists())
+            self.assertFalse((home / 'My Desktop/KBox-Bilder7.desktop').exists())
+            self.assertEqual({p: p.read_bytes() for p in preserved}, preserved)
+            self.assertEqual({p: p.read_bytes() for p in other_files}, other_files)
+            self.assertTrue((home / '.local/share/chaosbox/desktop/app.py').exists())
+            with patch.dict(os.environ, env):
+                uninstall.uninstall(home, home / 'KBox-Bilder8')
+            self.assertFalse((home / '.local/share/chaosbox/desktop/VERSION').exists())
+            self.assertFalse((home / '.local/share/chaosbox/desktop/sync_transport.py').exists())

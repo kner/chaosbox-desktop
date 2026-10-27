@@ -56,7 +56,7 @@ class MakeAllTests(unittest.TestCase):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            install = root / 'Kbox-Bilder'
+            install = root / 'Kbox-Bilder5'
             install.mkdir()
             credentials = install / '.state/credentials'
             credentials.mkdir(parents=True)
@@ -94,17 +94,48 @@ class MakeAllTests(unittest.TestCase):
                     output = stage / 'released'
                     output.mkdir()
                     version = (make_all.ROOT / 'VERSION').read_text().strip().replace('.', '')
-                    with zipfile.ZipFile(output / f'KBox-Bilder-{version}.apk', 'w') as archive:
+                    with zipfile.ZipFile(output / f'KBox-Bilder5-{version}.apk', 'w') as archive:
                         archive.writestr('assets/initial/Setup/setup.ini', setup)
+
+            original_build = make_all.build_user_installer.build
+            published = []
+
+            def desktop_build(output, name, setup):
+                import io
+                import json
+                import tarfile
+                events.append('desktop')
+                self.assertEqual(name, 'Bilder5')
+                self.assertEqual(setup, install / 'setup.ini')
+                self.assertEqual(output, make_all.ROOT / 'released')
+                artifact = original_build(root / 'desktop-released', name=name, setup=setup)
+                data = artifact.read_bytes()
+                with tarfile.open(fileobj=io.BytesIO(data[data.index(b'\x1f\x8b'):]), mode='r:gz') as archive:
+                    defaults = json.loads(archive.extractfile('install-defaults.json').read())
+                    self.assertEqual(defaults['directory'], 'KBox-Bilder5')
+                    self.assertIn('Title=Bilder', archive.extractfile('setup.ini').read().decode())
+                    self.assertNotIn('id_ed25519', archive.getnames())
+                return artifact
+
+            def publish(sftp, source, destination):
+                events.append('publish')
+                self.assertTrue(source.is_file())
+                published.append(destination)
 
             with patch.object(make_all, 'ensure_server_key'), \
                  patch.object(make_all, 'run', side_effect=command), \
                  patch.object(make_all.shutil, 'copytree', side_effect=copy_sources), \
                  patch.object(core, 'upload', side_effect=lambda *args: events.append('sync')), \
                  patch.object(make_all.sync_transport, 'sftp_connection', return_value=contextlib.nullcontext(Mock())), \
-                 patch.object(make_all, 'upload_file', side_effect=lambda *args: events.append('publish')):
-                make_all._make_all('Bilder', install, android, web)
-            self.assertEqual(events, ['install', 'web', 'sync', 'apk', 'publish'])
+                 patch.object(make_all.build_user_installer, 'build', side_effect=desktop_build), \
+                 patch.object(make_all, 'upload_file', side_effect=publish):
+                make_all._make_all('Bilder5', install, android, web)
+            self.assertEqual(events, ['install', 'web', 'sync', 'apk', 'desktop', 'publish', 'publish', 'publish'])
+            version = (make_all.ROOT / 'VERSION').read_text().strip()
+            self.assertEqual(published, [
+                f'l1/storage/apk/KBox-Bilder5-{version.replace(".", "")}.apk',
+                f'l1/storage/desktop/KBox-Bilder5_{version}_user.run',
+                f'l1/storage/desktop/KBox-Bilder5_{version}_user.run.sha256'])
 
     def test_installer_seeds_sibling_host_keys_and_preserves_existing_file(self):
         import install

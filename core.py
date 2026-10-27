@@ -36,6 +36,9 @@ def installation_icon(app_id):
         icon = original.convert("RGBA")
     # Hash the full ID so similar installation names get unrelated colors.
     shift = int.from_bytes(hashlib.sha256(app_id.encode("utf-8")).digest()[:2], "big") % 256
+    numbered = re.fullmatch(r"KBox-.*?([0-9]+)", app_id)
+    if numbered:
+        shift = (int(numbered.group(1)) * 97) % 256
     hue, saturation, value = icon.convert("RGB").convert("HSV").split()
     hue = hue.point([(level + shift) % 256 for level in range(256)])
     tinted = Image.merge("HSV", (hue, saturation, value)).convert("RGBA")
@@ -214,6 +217,7 @@ class Settings:
         self.title = ("KBox-" + self.root.name[5:] if self.root.name.casefold().startswith("kbox-")
                       else f"Chaosbox-{self.root.name}")
         self.app_id = "chaosbox-" + hashlib.sha256(str(self.root).encode()).hexdigest()[:16]
+        self.icon_id = self.title if self.root.name.casefold().startswith("kbox-") else self.app_id
         self.window_class = "Chaosbox-" + self.app_id.removeprefix("chaosbox-")
         self.profiles = []
         self.image_width = 3000

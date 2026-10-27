@@ -181,7 +181,7 @@ Do not delete remote extra files. Support cancellation and report failures witho
 Provide:
 - Launch and dependency-check scripts.
 - A per-user installer with an application-menu entry.
-- An architecture-independent Debian package builder.
+- A downloadable per-user installer with a launcher in `~/.local/bin`.
 - Application icons.
 - A README covering installation, configuration, operation, and testing.
 

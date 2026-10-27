@@ -72,32 +72,6 @@ installation's launcher and application menu entry. Shared application files
 are removed after the last installation's launcher is removed. All directories,
 box data, `setup.ini`, indexes, UI state and SSH credentials remain intact.
 Run it once for each installation you want to uninstall. Repeated runs are safe.
-For a Debian installation, use `sudo apt remove chaosbox-desktop` instead.
-
-## Debian package (Ubuntu 24.04)
-
-Build an architecture-independent installer using the system Python and dpkg:
-
-```bashssh-copy-id -i ~/ChaosBox/.state/credentials/id_ed25519.pub kner
-cd desktop
-/usr/bin/python3 build_deb.py
-sudo apt install ./released/chaosbox-desktop_3.15_all.deb
-```
-
-Launch **ChaosBox Desktop** from the application menu or run `/usr/bin/chaosbox`.
-The package installs to `/usr/share/chaosbox-desktop`; apt installs its runtime
-dependencies. It includes the current preview and file-operation behavior.
-Settings and media remain in the user's home directory and survive removal with
-`sudo apt remove chaosbox-desktop`. SSH credentials are not included.
-
-An earlier per-user installation can leave a second menu entry. The old entry
-uses `~/.local/share/chaosbox`; `/usr/bin/chaosbox` always starts the Debian build.
-To use only the Debian menu entry, remove the old
-`~/.local/share/applications/chaosbox.desktop` launcher.
-
-For subsequent releases use `build_deb.py --version VERSION`. The `released` folder
-contains the `.deb` and a SHA-256 checksum file.
-
 ## Data and settings
 
 `--installdir` selects an independent installation, defaulting to `~/ChaosBox`.
@@ -495,7 +469,7 @@ Drag one or more JPG/JPEG, PNG or MP4 files from the file manager onto the main
 preview, the Open JPG/MP4 button, or the media-selection window. Existing form
 values are retained; originals stay in place until an explicit save. Dropping is disabled during searches and background work.
 Attaching media to a JSON record accepts one file. Native file drops use Ubuntu's
-`tkdnd` package, included in the dependency installer and Debian package dependencies.
+`tkdnd` package, included in the dependency installer.
 
 ### Initialize synchronization from organized local files
 
@@ -573,8 +547,12 @@ Aus diesem Projekt starten (die Geschwisterprojekte `chaosbox-android` und
    `[Box]`-Abschnitte mit `Title`, `ImageWidth`, `Fields` und `Categories`.
    `ImageWidth` wird pro Box vererbt oder überschrieben.
    Desktop-Einstellungen ohne Android-Unterstützung bleiben auskommentiert.
-5. Veröffentlicht `chaosbox-android/released/KBox-Bilder-<Version-ohne-Punkt>.apk`
-   unter `l1/storage/apk/` mit abschließender atomarer Umbenennung.
+5. Baut den Desktop-Benutzer-Installer mit derselben zentralen setup.ini unter
+   `chaosbox-desktop/released/KBox-Bilder_<Version>_user.run` samt SHA-256-Prüfsumme.
+6. Veröffentlicht die APK unter `l1/storage/apk/` und den Desktop-Installer samt
+   Prüfsumme unter `l1/storage/desktop/` mit abschließender atomarer Umbenennung.
+   Auf der Homepage erscheint er unter „Linux-Installer“. Nach der Installation
+   startet das eigene farbige Desktop-Symbol die zugehörige Box.
 
 Für eine bestehende Installation an einem anderen Ort:
 
@@ -622,3 +600,17 @@ Setup keys are English: `Title`, `Fields`, `Categories`. Legacy `Titel`, `Felder
 Desktop installations named `Kbox-NAME` or `KBox-NAME` display `KBox-NAME`
 in the window, application header and application menu. Reinstall to refresh an
 existing menu entry, then reopen running windows.
+
+## Benutzer-Installer (ohne sudo)
+
+`python3 build_user_installer.py` erstellt `released/chaosbox-desktop_3.16_user.run` und eine SHA-256-Prüfsumme. Mit `sh chaosbox-desktop_3.16_user.run` installieren. Der Startbefehl liegt unter `~/.local/bin/chaosbox`, die Programmdateien unter `~/.local/share/chaosbox/desktop`. Vorhandene Boxen werden aktualisiert und ihre Einstellungen beibehalten. Benötigte Systembibliotheken können mit dem beiliegenden `install-dependencies.sh` eingerichtet werden. Der Installer prüft sie vor der Installation.
+
+Ein Installer für eine bestimmte Installation wird mit `python3 build_user_installer.py --name Bilder3 --setup ~/Kbox-Bilder3/setup.ini` gebaut. `KBox-Bilder3_3.16_user.run` installiert gezielt nach `~/KBox-Bilder3` und zeigt den Namen **KBox-Bilder3** an. Das Setup wird eingebettet; SSH-Dateipfade werden relativ zur Zielinstallation gesetzt. Private Schlüssel werden nicht übernommen, bekannte Hostschlüssel schon. Updates erhalten das vorhandene Setup der Zielinstallation.
+
+Für mehrere Installationen jeweils separat bauen: `python3 build_user_installer.py --name Bilder3 --setup ~/Kbox-Bilder3/setup.ini` und `python3 build_user_installer.py --name Bilder4 --setup ~/Kbox-Bilder4/setup.ini`. Jeder Download enthält sein eigenes Setup. Jede Installation erhält ein eigenes farbiges Icon im Anwendungsmenü und auf dem Desktop sowie einen eigenen Startbefehl `~/.local/bin/KBox-Bilder3` bzw. `~/.local/bin/KBox-Bilder4`. Der Desktop-Ordner wird aus `user-dirs.dirs` übernommen (sonst `~/Desktop`). Falls die Desktop-Umgebung es verlangt, beim ersten Start „Start erlauben“ wählen.
+
+`./KBox-make-all.sh Bilder5` erzeugt und veröffentlicht entsprechend `KBox-Bilder5_<Version>_user.run` mit dem Setup aus `~/Kbox-Bilder5/setup.ini` sowie die passende APK. Jeder Name bekommt einen separaten Download und ein eigenes Desktop-Symbol.
+
+Desktop-Benutzer-Installer binden jede Box über `[SSH.<Title>]` mit explizitem `Installation=` und `RemoteProfile=` an denselben Server-Datenbestand wie die Quellinstallation und die APK. Die lokale Installationsidentität und SSH-Schlüssel bleiben eigenständig. Bereits vorhandene Ziel-setups bleiben bei Updates erhalten.
+
+Ein eigenständiger Deinstaller wird mit `python3 build_user_uninstaller.py Bilder7` als `released/KBox-Bilder7_uninstall.run` gebaut. Nach dem Download ohne sudo mit `sh KBox-Bilder7_uninstall.run` starten. Er entfernt die Bilder7-Startbefehle, Desktop- und Menüeinträge sowie Icons. Gemeinsam verwendeter Programmcode bleibt erhalten, solange andere Installationen ihn benötigen. Box-Daten, Setup und SSH-Schlüssel bleiben erhalten.
