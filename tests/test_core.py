@@ -981,7 +981,7 @@ class DesktopTests(unittest.TestCase):
             def connect(self,host,**kwargs): assert not kwargs["allow_agent"] and not kwargs["look_for_keys"]
             def open_sftp(self): return types.SimpleNamespace(get_channel=lambda:types.SimpleNamespace(settimeout=lambda value:None))
             def close(self): pass
-        with patch.object(paramiko,"SSHClient",Client), patch("sync_transport.sftp_exchange", side_effect=lambda store,*args:(store.capture(),store.apply())) as transfer:
+        with patch.object(paramiko,"SSHClient",Client), patch("sync_transport.sftp_exchange", side_effect=lambda store,*args,**kwargs:(store.capture(),store.apply())) as transfer:
             core.upload(self.settings,self.profile,threading.Event())
             self.assertEqual(transfer.call_count,1)
             store,_,remote,*_=transfer.call_args.args

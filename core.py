@@ -101,6 +101,27 @@ def logical_lines(text):
         raise ValueError("A text snippet is missing its closing quote.")
 
 
+def english_setup(text):
+    """Canonical English setup keys; never translate user values or snippet bodies."""
+    lines = list(logical_lines(text))
+    section = ''
+    changed = False
+    names = {'titel': 'Title', 'felder': 'Fields', 'kategorie': 'Categories'}
+    for index, raw in enumerate(lines):
+        line = raw.strip()
+        if line.startswith('[') and line.endswith(']'):
+            section = line[1:-1].strip().casefold()
+        elif section in ('app', 'box'):
+            match = re.match(r'^(\s*(?:[;#]\s*)?)(Titel|Felder|Kategorie)(\s*=)', raw, re.I)
+            if match:
+                lines[index] = match[1] + names[match[2].casefold()] + match[3] + raw[match.end():]
+                changed = True
+    if not changed:
+        return text
+    result = '\n'.join(lines) + ('\n' if text.endswith('\n') else '')
+    return result.replace('\n', '\r\n') if '\r\n' in text else result
+
+
 def section_blocks(text):
     """Preserve repeated sections and their line positions for targeted edits."""
     blocks = []
@@ -114,6 +135,8 @@ def section_blocks(text):
         elif blocks and line and not line.startswith(("#", ";")) and "=" in line:
             key, value = line.split("=", 1)
             key = key.strip() if blocks[-1][0].casefold() == "textsnippets" else key.strip().casefold()
+            if blocks[-1][0].casefold() in ("app", "box"):
+                key = {"title": "titel", "fields": "felder", "categories": "kategorie"}.get(key, key)
             blocks[-1][1][key] = value.strip()
     return blocks
 
@@ -188,7 +211,8 @@ class Settings:
             if not within(owned.resolve(), self.root):
                 raise ValueError("Setup and state must stay inside the installation directory")
         self.index = self.root / ".indices"
-        self.title = f"Chaosbox-{self.root.name}"
+        self.title = ("KBox-" + self.root.name[5:] if self.root.name.casefold().startswith("kbox-")
+                      else f"Chaosbox-{self.root.name}")
         self.app_id = "chaosbox-" + hashlib.sha256(str(self.root).encode()).hexdigest()[:16]
         self.window_class = "Chaosbox-" + self.app_id.removeprefix("chaosbox-")
         self.profiles = []
@@ -229,7 +253,7 @@ class Settings:
         if not self.path.exists():
             text = DEFAULT_SETUP.read_text(encoding="utf-8")
             if default_box and not any(name.casefold() == "box" for name, *_ in section_blocks(text)):
-                text += f"\n[Box]\nTitel={default_box}\n"
+                text += f"\n[Box]\nTitle={default_box}\n"
             text += ("\n[SSH]\nHost=access983197478.webspace-data.io\nPort=22\nUser=u114229695\n"
                      f"KeyFile={self.state_dir / 'credentials/id_ed25519'}\n"
                      f"KnownHosts={self.state_dir / 'credentials/known_hosts'}\n")
@@ -259,7 +283,7 @@ class Settings:
                         title = values.get("titel", "").strip()
                         if (not title or title in (".", "..") or "/" in title or "\\" in title
                                 or title.casefold() in ("jpg", "txt", ".indices", ".state", "setup.ini")):
-                            raise ValueError("Each Box needs a Titel that is a single non-reserved folder name.")
+                            raise ValueError("Each Box needs a Title that is a single non-reserved folder name.")
                         boxes.append((title, values))
                     else:
                         app.update(values)
@@ -302,7 +326,7 @@ class Settings:
             poster = poster_settings(self._text(effective))
             labels = values.get("felder", ",".join(LABELS)).split(",")
             if len(labels) > 7:
-                raise ValueError(f"{identifier}: Felder has more than seven positions.")
+                raise ValueError(f"{identifier}: Fields has more than seven positions.")
             translated = {"anzahl": "Quantity", "kategorie": "Category", "kommentar": "Comment"}
             labels = [translated.get(label.strip().casefold(), label.strip()) for label in labels]
             labels += [""] * (7 - len(labels))
@@ -356,7 +380,7 @@ class Settings:
 
         defaults, boxes, globals_ = read_config(text)
         if not boxes:
-            raise ValueError("Setup must contain at least one [Box] section with Titel=.")
+            raise ValueError("Setup must contain at least one [Box] section with Title=.")
         for title, entries in boxes:
             visit(self.root / title, title, dict(defaults, **entries), globals_, self.path, title)
         first = profiles[0]
@@ -377,6 +401,7 @@ class Settings:
         self.profile(getattr(self, "active", self.default))
 
     def save_text(self, text, path=None):
+        text = english_setup(text)
         path = Path(path) if path else self.path
         root_text = text if path == self.path else self.path.read_text(encoding="utf-8-sig")
         self._load(root_text, {path: text})
@@ -409,11 +434,11 @@ class Settings:
                          if (not current.section_name and block[0].casefold() == "app")
                          or (current.section_name and block[0].casefold() == "box"
                              and block[1].get("titel", "").casefold() == current.section_name.casefold())), None)
-        value = "Kategorie=" + ", ".join(current.categories + additions)
+        value = "Categories=" + ", ".join(current.categories + additions)
         if selected:
             _, _, start, end = selected
             key = next((i for i in range(start + 1, end)
-                        if lines[i].split("=", 1)[0].strip().casefold() == "kategorie"), None)
+                        if lines[i].split("=", 1)[0].strip().casefold() in ("kategorie", "categories")), None)
             if key is None:
                 lines.insert(end, value)
             else:

@@ -99,7 +99,7 @@ def install(home=None, credentials=True, installdir=None):
                             "-C", settings.app_id, "-f", str(key)], check=True)
         os.chmod(key, 0o600)
         # Host identities may be shared; private authentication keys may not.
-        assets = source.parent / "app/src/main/assets"
+        assets = source.parent / "chaosbox-android/app/src/main/assets"
         for name in ("known_hosts",):
             destination = credential_dir / name
             if not destination.exists() and (assets / name).is_file():

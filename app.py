@@ -1938,7 +1938,7 @@ class App:
         ttk.Label(dialog, text=str(setup_path), padding=10).pack(anchor="w")
         text = tk.Text(dialog, wrap="none", undo=True, font=("Monospace", 11))
         text.pack(fill="both", expand=True, padx=10)
-        setup_text = setup_path.read_text(encoding="utf-8")
+        setup_text = core.english_setup(setup_path.read_text(encoding="utf-8"))
         if setup_path == self.settings.path:
             if not any(name.casefold() == "poster" for name in core.sections(setup_text)):
                 poster = self.settings.poster

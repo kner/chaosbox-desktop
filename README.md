@@ -130,23 +130,23 @@ JSON records retain their `.json` extension inside the `TXT` folder.
 The **Setup** button edits the active project's configuration. `[App]` configures
 inherited defaults at installation level and box overrides in local setup files.
 `Standard=` is no longer used. Repeated
-`[Box]` sections declare projects; `Titel` is the folder name. `JPG=` and `Daten=`
+`[Box]` sections declare projects; `Title` is the folder name. `JPG=` and `Daten=`
 are removed because the subfolders are always `JPG` and `TXT`.
 
 ```ini
 [App]
 ImageWidth=2048
-Felder=Box,Quantity,Device,Alias,Category,Comment,Package
-Kategorie=Werkzeug,Elektronik
+Fields=Box,Quantity,Device,Alias,Category,Comment,Package
+Categories=Werkzeug,Elektronik
 
 [Box]
-Titel=Bilderbox
-Felder=Box,,,Tags,Category,Comment
-Kategorie=Familie,Berg,Urlaub
+Title=Bilderbox
+Fields=Box,,,Tags,Category,Comment
+Categories=Familie,Berg,Urlaub
 
 [Box]
-Titel=Chaosbox1
-Kategorie=Haushalt,Garten
+Title=Chaosbox1
+Categories=Haushalt,Garten
 ```
 
 Set `ImageWidth` (1–20000 pixels) centrally in `[App]`. Each `[Box]` inherits
@@ -553,3 +553,72 @@ collection's `TXT/` directory, for SFTP, SSH and rsync. This includes initializa
 and subsequent syncs. Empty, moved or deleted JSON sources are removed;
 paths involved in unresolved record conflicts keep their existing server files.
 The immutable journal remains the synchronization history.
+
+## Gesamtablauf: Desktop, Web und Android
+
+Aus diesem Projekt starten (die Geschwisterprojekte `chaosbox-android` und
+`chaosbox-kner-at` müssen daneben liegen):
+
+```bash
+./KBox-make-all.sh Bilder
+```
+
+1. Installiert/aktualisiert Desktop für `~/Kbox-Bilder` mit dem bestehenden Installer.
+2. Lädt die Web-Anwendung zum Server aus den SSH-Einstellungen hoch (standardmäßig
+   die Website sync-kner.at, Verzeichnis `l1`). Die Server-setup.ini bleibt erhalten.
+3. Synchronisiert alle in der Installation konfigurierten Boxen bidirektional.
+4. Baut eine signierte Release-APK mit der zentralen setup.ini dieser Installation;
+   jede Box erhält explizit ihre Desktop-Installations-ID und ihr RemoteProfile.
+   Desktop und Android verwenden dieselben `[App]`-Defaults und wiederholten
+   `[Box]`-Abschnitte mit `Title`, `ImageWidth`, `Fields` und `Categories`.
+   `ImageWidth` wird pro Box vererbt oder überschrieben.
+   Desktop-Einstellungen ohne Android-Unterstützung bleiben auskommentiert.
+5. Veröffentlicht `chaosbox-android/released/KBox-Bilder-<Version-ohne-Punkt>.apk`
+   unter `l1/storage/apk/` mit abschließender atomarer Umbenennung.
+
+Für eine bestehende Installation an einem anderen Ort:
+
+```bash
+./KBox-make-all.sh Bilder --installdir ~/CBBilder
+```
+
+Das Skript führt echte Uploads durch. Vorhandene lokale Einstellungen und Daten
+bleiben erhalten. Eine neue Installation erhält das Standardsetup des Installers.
+Der Installer übernimmt vorhandene Hostschlüssel aus dem Android-Projekt.
+Vor dem ersten Upload prüft der Gesamtbuild den Installationsschlüssel und
+autorisiert ihn bei Bedarf mit `ssh-copy-id` über eine bestehende Anmeldung
+per SSH-Schlüssel oder SSH-Agent. Alle SSH-Aufrufe laufen ohne Passwortabfrage
+(`BatchMode=yes`). Ohne bestehende Anmeldung muss der öffentliche
+Installationsschlüssel einmal auf dem Server autorisiert werden. Fehlen diese Voraussetzungen, bricht das Skript ab; anschließend mit
+demselben Aufruf fortsetzen. Android-Build und Signierung verwenden die vorhandene
+Toolchain und `signing-keys` aus dem Android-Projekt. Die Produktversion muss in
+allen drei Projekten übereinstimmen.
+
+Die APK enthält den privaten SSH-Schlüssel und die bekannten Hostschlüssel dieser
+Installation und ist deshalb nur für deren berechtigte Benutzer bestimmt.
+Android übernimmt das eingebettete Setup und die Zugangsdaten bei einer frischen
+Installation; vorhandene Android-Einstellungen werden bei Updates beibehalten.
+Der Build nutzt ein temporäres Android-Projekt und verändert die Setup-Vorlage
+im Quellprojekt nicht. Unterstützt werden Boxen aus der zentralen setup.ini mit
+einem gemeinsamen Webserver und gemeinsamen SSH-Zugangsdaten; verschachtelte
+Boxen und lokale Box-setup.ini werden vor dem Upload mit einer Fehlermeldung
+abgewiesen. Bei einem Fehler stoppen die folgenden Schritte; bereits abgeschlossene
+Installationen, Uploads und Synchronisationen werden nicht zurückgerollt.
+
+
+Desktop and Android share the same setup entries: `[App]` supplies defaults,
+repeated `[Box]` sections use `Title` as the folder name, and `ImageWidth`,
+`Fields` and `Categories` inherit from `[App]` with per-box overrides. The first
+Box is the default; Android can remember a different selection. Both use
+`[TextSnippets]`, `[SSH]` and `[SSH.<Title>]`. The APK export keeps this format
+and comments out Desktop-only `Language`, `editor`, `[Poster]` and SSH transport
+options. Local credential paths are omitted from the APK setup.
+Android migrates its former `[App.Name]`, `Standard` and `[ImageSize] LIMIT`
+entries when the setup is opened/saved; original folder IDs and SSH targets
+are preserved. No data folders are renamed by this migration.
+
+Setup keys are English: `Title`, `Fields`, `Categories`. Legacy `Titel`, `Felder`, and `Kategorie` remain readable; saving a setup converts these keys while preserving values, comments and text snippets. Section names are already English and remain unchanged.
+
+Desktop installations named `Kbox-NAME` or `KBox-NAME` display `KBox-NAME`
+in the window, application header and application menu. Reinstall to refresh an
+existing menu entry, then reopen running windows.
