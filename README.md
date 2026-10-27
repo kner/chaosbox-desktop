@@ -81,7 +81,7 @@ Build an architecture-independent installer using the system Python and dpkg:
 ```bashssh-copy-id -i ~/ChaosBox/.state/credentials/id_ed25519.pub kner
 cd desktop
 /usr/bin/python3 build_deb.py
-sudo apt install ./dist/chaosbox-desktop_1.0.2_all.deb
+sudo apt install ./released/chaosbox-desktop_3.15_all.deb
 ```
 
 Launch **ChaosBox Desktop** from the application menu or run `/usr/bin/chaosbox`.
@@ -95,7 +95,7 @@ uses `~/.local/share/chaosbox`; `/usr/bin/chaosbox` always starts the Debian bui
 To use only the Debian menu entry, remove the old
 `~/.local/share/applications/chaosbox.desktop` launcher.
 
-For subsequent releases use `build_deb.py --version VERSION`. The `dist` folder
+For subsequent releases use `build_deb.py --version VERSION`. The `released` folder
 contains the `.deb` and a SHA-256 checksum file.
 
 ## Data and settings

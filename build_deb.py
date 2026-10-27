@@ -87,6 +87,6 @@ Description: Native ChaosBox desktop editor
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", default=(SOURCE / "VERSION").read_text().strip())
-    parser.add_argument("--output", type=Path, default=SOURCE / "dist")
+    parser.add_argument("--output", type=Path, default=SOURCE / "released")
     args = parser.parse_args()
     print(build(args.version, args.output.resolve()))

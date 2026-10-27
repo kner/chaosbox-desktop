@@ -5,3 +5,5 @@ __pycache__/
 /CBHaushalt/
 
 /.make-all.lock
+
+/released/
