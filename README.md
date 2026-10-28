@@ -556,11 +556,8 @@ Aus diesem Projekt starten (die Geschwisterprojekte `chaosbox-android` und
    Auf der Homepage erscheint er unter „Linux-Installer“. Nach der Installation
    startet das eigene farbige Desktop-Symbol die zugehörige Box.
 
-Für eine bestehende Installation an einem anderen Ort:
-
-```bash
-./KBox-make-all.sh Bilder --installdir ~/CBBilder
-```
+Der Name bestimmt das Installationsverzeichnis: `Bilder` verwendet immer
+`~/Kbox-Bilder`. Ein abweichendes Verzeichnis kann nicht angegeben werden.
 
 Das Skript führt echte Uploads durch. Vorhandene lokale Einstellungen und Daten
 bleiben erhalten. Eine neue Installation erhält das Standardsetup des Installers.

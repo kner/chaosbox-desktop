@@ -188,12 +188,11 @@ def make_all(name, install_dir, android, web):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('name', help='z.B. Bilder → ~/Kbox-Bilder und Android KBox-Bilder')
-    parser.add_argument('--installdir', type=Path, help='Abweichende lokale Installation')
     args = parser.parse_args()
     if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]{0,39}', args.name):
         parser.error('NAME: Buchstabe, danach Buchstaben/Ziffern/_/-, maximal 40 Zeichen')
     try:
-        make_all(args.name, (args.installdir or Path.home() / f'Kbox-{args.name}').expanduser().resolve(),
+        make_all(args.name, (Path.home() / f'Kbox-{args.name}').resolve(),
                  ROOT.parent / 'chaosbox-android', ROOT.parent / 'chaosbox-kner-at')
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         parser.exit(1, f'Abgebrochen: {error}\n')
