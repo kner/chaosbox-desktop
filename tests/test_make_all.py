@@ -74,7 +74,7 @@ class MakeAllTests(unittest.TestCase):
             events = []
 
             def copy_sources(source, stage, **kwargs):
-                (stage / 'app/src/main/assets/initial/Setup').mkdir(parents=True)
+                (stage / 'app/src/main').mkdir(parents=True)
 
             def command(*args, **kwargs):
                 if str(args[0]).endswith('install-desktop.sh'):
@@ -89,7 +89,8 @@ class MakeAllTests(unittest.TestCase):
                     assets = stage / 'app/src/main/assets'
                     self.assertEqual((assets / 'android_copy').read_text(), 'test credential')
                     self.assertEqual((assets / 'known_hosts').read_text(), 'test credential')
-                    setup = (assets / 'initial/Setup/setup.ini').read_text()
+                    self.assertFalse((assets / 'initial/Setup/setup.ini').exists())
+                    setup = Path(kwargs['env']['KBOX_SETUP_FILE']).read_text()
                     self.assertIn('RemoteProfile=bilder', setup)
                     output = stage / 'released'
                     output.mkdir()

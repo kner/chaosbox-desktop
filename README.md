@@ -617,3 +617,5 @@ Desktop-Benutzer-Installer binden jede Box über `[SSH.<Title>]` mit explizitem 
 Ein eigenständiger Deinstaller wird mit `python3 build_user_uninstaller.py Bilder7` als `released/KBox-Bilder7_uninstall.run` gebaut. Nach dem Download ohne sudo mit `sh KBox-Bilder7_uninstall.run` starten. Er entfernt die Bilder7-Startbefehle, Desktop- und Menüeinträge sowie Icons. Gemeinsam verwendeter Programmcode bleibt erhalten, solange andere Installationen ihn benötigen. Box-Daten, Setup und SSH-Schlüssel bleiben erhalten.
 
 Jeder Aufruf von `./KBox-make-all.sh NAME` erzeugt und veröffentlicht auch `KBox-NAME_uninstall.run`. Beispielsweise steht nach `./KBox-make-all.sh Bilder5` zusätzlich `KBox-Bilder5_uninstall.run` auf der Homepage unter „Linux-Installer“ bereit. Deinstaller erhalten Nutzerdaten und Einstellungen.
+
+KBox-make-all erzeugt die Android-setup.ini ausschließlich aus der Desktop-Installation und übergibt sie als externe Datei über `KBOX_SETUP_FILE` an den Android-Build. Im Android-Projekt wird keine Konfigurationsvorlage mehr gepflegt.

@@ -150,11 +150,14 @@ def _make_all(name, install_dir, android, web):
         for directory in ('.tooling', 'signing-keys'):
             (stage / directory).symlink_to(android / directory, target_is_directory=True)
         assets = stage / 'app/src/main/assets'
-        (assets / 'initial/Setup/setup.ini').write_text(setup, encoding='utf-8')
+        assets.mkdir(parents=True, exist_ok=True)
+        setup_file = Path(temp) / 'setup.ini'
+        setup_file.write_text(setup, encoding='utf-8')
         # Android seeds installation-owned credentials from these asset names.
         shutil.copyfile(ssh['keyfile'], assets / 'android_copy')
         shutil.copyfile(ssh['knownhosts'], assets / 'known_hosts')
-        run('bash', stage / 'sign.sh', '--installdir', name)
+        run('bash', stage / 'sign.sh', '--installdir', name,
+            env={**os.environ, 'KBOX_SETUP_FILE': str(setup_file)})
         built = stage / 'released' / apk_name
         with zipfile.ZipFile(built) as archive:
             if archive.read('assets/initial/Setup/setup.ini').decode('utf-8') != setup:
