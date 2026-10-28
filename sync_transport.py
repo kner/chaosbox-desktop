@@ -223,55 +223,84 @@ def json_projection(store):
             for path in sorted(paths - protected)}
 
 
-def sftp_json_projection(store, sftp, remote, mkdirs, check, progress):
+def sftp_json_projection(store, sftp, remote, mkdirs, check, progress, reader_factory=None):
     progress('Updating current JSON files in remote TXT/ …')
     data = posixpath.dirname(remote.rstrip('/')) or '.'
     desired = json_projection(store)
-    # Check all managed paths before replacing any file; unrelated paths are untouched.
+    # One inventory per directory replaces a network stat for every JSON file.
+    # Complete preflight before any worker changes files.
+    inventories = {}
+    current = {}
     for relative in desired:
         check()
         target = posixpath.join(data, relative)
-        mkdirs(posixpath.dirname(target))
-        try:
-            info = sftp.lstat(target)
-        except OSError as error:
-            if error.errno != errno.ENOENT:
-                raise
-        else:
-            if not stat.S_ISREG(info.st_mode):
-                raise ValueError('Unsafe remote JSON: ' + target)
-    for relative, content in desired.items():
+        directory = posixpath.dirname(target)
+        if directory not in inventories:
+            mkdirs(directory)
+            inventories[directory] = {item.filename: item for item in sftp.listdir_attr(directory)}
+        info = inventories[directory].get(posixpath.basename(target))
+        if info is not None and not stat.S_ISREG(info.st_mode):
+            raise ValueError('Unsafe remote JSON: ' + target)
+        current[relative] = info
+
+    def publish(entry, writer, stopped):
+        index, (relative, content) = entry
         check()
+        if stopped.is_set():
+            raise InterruptedError('Transfer stopped')
+        progress(f'Checking remote JSON {index}/{len(desired)}: {relative}')
         target = posixpath.join(data, relative)
+        info = current[relative]
         if content is None:
-            try: sftp.remove(target)
+            if info is not None:
+                sftp_remove_if_present(writer, target)
+            return
+        # A different size cannot have the desired contents; avoid downloading it.
+        if info is not None and info.st_size == len(content):
+            try:
+                with writer.open(target, 'rb') as stream:
+                    if hasattr(stream, 'prefetch'):
+                        stream.prefetch(file_size=info.st_size, max_concurrent_requests=16)
+                    if stream.read() == content:
+                        return
             except OSError as error:
-                if error.errno != errno.ENOENT: raise
-            continue
-        try:
-            with sftp.open(target, 'rb') as stream:
-                if stream.read() == content:
-                    continue
-        except OSError as error:
-            if error.errno != errno.ENOENT:
-                raise
+                if error.errno != errno.ENOENT:
+                    raise
         temporary = target + '.' + uuid.uuid4().hex + '.tmp'
+        published = False
         try:
-            with sftp.open(temporary, 'wb') as stream:
+            with writer.open(temporary, 'wb') as stream:
                 stream.write(content)
             check()
-            if hasattr(sftp, 'posix_rename'):
+            if stopped.is_set():
+                raise InterruptedError('Transfer stopped')
+            if hasattr(writer, 'posix_rename'):
                 try:
-                    sftp.posix_rename(temporary, target)
-                    continue
+                    writer.posix_rename(temporary, target)
+                    published = True
+                    return
                 except OSError as error:
                     if error.errno not in (errno.ENOSYS, errno.EOPNOTSUPP) and 'unsupported' not in str(error).lower():
                         raise
             # Servers without the atomic overwrite extension require remove + rename.
-            sftp_remove_if_present(sftp, target)
-            sftp.rename(temporary, target)
+            if info is not None:
+                sftp_remove_if_present(writer, target)
+            writer.rename(temporary, target)
+            published = True
         finally:
-            sftp_remove_if_present(sftp, temporary)
+            if not published:
+                sftp_remove_if_present(writer, temporary)
+
+    items = list(enumerate(desired.items(), 1))
+    factory = reader_factory
+    if factory is None and hasattr(sftp, 'get_channel'):
+        factory = lambda: open_sftp_reader(sftp)
+    if factory is not None and len(items) > 4:
+        progress('Updating JSON files over up to 4 parallel SFTP channels …')
+        parallel_sftp_reads(items, publish, factory, sftp, check)
+    else:
+        for entry in items:
+            publish(entry, sftp, threading.Event())
 
 
 def shell_json_projection(store, remote):
@@ -396,6 +425,9 @@ def sftp_media_projection(store, sftp, remote, mkdirs, check, progress):
         import hashlib
         value=hashlib.sha256()
         with sftp.open(path,'rb') as stream:
+            # Batch remote reads instead of waiting one round trip per chunk.
+            if hasattr(stream, 'prefetch'):
+                stream.prefetch(file_size=info.st_size, max_concurrent_requests=16)
             while True:
                 check();chunk=stream.read(65536)
                 if not chunk:break
@@ -626,14 +658,15 @@ def sftp_exchange(store, sftp, remote, check=lambda: None, progress=print, reade
             factory=reader_factory
             if factory is None and hasattr(sftp,'get_channel'):
                 factory=lambda:open_sftp_reader(sftp)
-            if folder=='ops' and factory is not None and len(items)>4:
-                progress('Uploading changes over up to 4 parallel SFTP channels …')
+            if factory is not None and len(items)>4:
+                label = 'media' if folder == 'blobs' else 'changes'
+                progress(f'Uploading {label} over up to 4 parallel SFTP channels …')
                 parallel_sftp_reads(items,upload,factory,sftp,check)
             else:
                 for entry in items:upload(entry,sftp,threading.Event())
         check()
         sftp_media_projection(store,sftp,remote,mkdirs,check,progress)
-        sftp_json_projection(store,sftp,remote,mkdirs,check,progress)
+        sftp_json_projection(store,sftp,remote,mkdirs,check,progress,reader_factory)
         manifest=publish_sftp_manifest(store,sftp,remote,check,server_manifest)
         progress('Local and server checksum agree; journal synchronized.')
         progress('Immutable journal exchanged over SFTP.')

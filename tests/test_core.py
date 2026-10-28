@@ -858,7 +858,7 @@ class DesktopTests(unittest.TestCase):
             import shlex
             command = shlex.split((target / "run-desktop.sh").read_text().splitlines()[-1])
             self.assertEqual(command[2], str(home / ".local/share/chaosbox/desktop/app.py"))
-            self.assertEqual(command[command.index("--installdir") + 1], str(setup.parent))
+            self.assertEqual(command[3], str(setup.parent))
             self.assertFalse((setup.parent / "JPG").exists())
             self.assertFalse((setup.parent / "TXT").exists())
             self.assertTrue(all(profile.images.is_dir() and profile.data.is_dir() for profile in settings.profiles))
@@ -874,7 +874,7 @@ class DesktopTests(unittest.TestCase):
         launcher = first[0] / "run-desktop.sh"
         old_app = first[0] / "desktop/app.py"
         core.atomic_write(old_app, 'raise RuntimeError("Obsolete runtime")\n')
-        launcher.write_text(launcher.read_text().replace(shlex.quote(str(shared)), shlex.quote(str(old_app))))
+        launcher.write_text(launcher.read_text().replace(shlex.quote(str(shared)), shlex.quote(str(old_app))).replace(shlex.quote(str(first[1].parent)), "--installdir " + shlex.quote(str(first[1].parent))))
         original_setup = first[1].read_bytes()
         original_menu = first[2].read_bytes()
         source_app = Path(install.__file__).resolve().with_name("app.py")
@@ -885,7 +885,7 @@ class DesktopTests(unittest.TestCase):
                 second = install.install(home, credentials=False, installdir=home / f"second box {version}")
             for target, setup, _ in (first, second):
                 output = subprocess.check_output([str(target / "run-desktop.sh"), "--extra", "argument with spaces"], text=True)
-                self.assertEqual(json.loads(output), [version, ["--installdir", str(setup.parent),
+                self.assertEqual(json.loads(output), [version, [str(setup.parent),
                                                                "--extra", "argument with spaces"]])
             self.assertEqual(first[1].read_bytes(), original_setup)
             self.assertEqual(first[2].read_bytes(), original_menu)
@@ -911,7 +911,7 @@ class DesktopTests(unittest.TestCase):
         for target, setup, desktop in results:
             command = shlex.split((target / "run-desktop.sh").read_text().splitlines()[-1])
             self.assertEqual(command[2], str(shared))
-            self.assertEqual(command[command.index("--installdir") + 1], str(setup.parent))
+            self.assertEqual(command[3], str(setup.parent))
             self.assertIn("[Desktop Entry]", desktop.read_text())
         for path, contents in preserved.items():
             self.assertEqual(path.read_bytes(), contents)

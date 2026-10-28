@@ -96,8 +96,8 @@ for an installation at `/x/y/cb2`:
 ./run-desktop.sh ~/cb2 --newindex
 ```
 
-The installation directory can be passed directly, or with `--installdir=~/cb2`.
-`--data-root` is replaced by `--installdir`. The index is always in `.indices`
+Pass the installation directory as the positional argument shown above.
+The index is always in `.indices`
 inside the installation. `--state-dir` and `--setup` remain optional overrides.
 JSON records retain their `.json` extension inside the `TXT` folder.
 
@@ -535,6 +535,7 @@ Aus diesem Projekt starten (die Geschwisterprojekte `chaosbox-android` und
 
 ```bash
 ./KBox-make-all.sh Bilder
+# Names may also contain hyphens, e.g. Bilder-5.
 ```
 
 1. Installiert/aktualisiert Desktop für `~/Kbox-Bilder` mit dem bestehenden Installer.
@@ -619,3 +620,9 @@ Ein eigenständiger Deinstaller wird mit `python3 build_user_uninstaller.py Bild
 Jeder Aufruf von `./KBox-make-all.sh NAME` erzeugt und veröffentlicht auch `KBox-NAME_uninstall.run`. Beispielsweise steht nach `./KBox-make-all.sh Bilder5` zusätzlich `KBox-Bilder5_uninstall.run` auf der Homepage unter „Linux-Installer“ bereit. Deinstaller erhalten Nutzerdaten und Einstellungen.
 
 KBox-make-all erzeugt die Android-setup.ini ausschließlich aus der Desktop-Installation und übergibt sie als externe Datei über `KBOX_SETUP_FILE` an den Android-Build. Im Android-Projekt wird keine Konfigurationsvorlage mehr gepflegt.
+
+SFTP uploads batches of media payloads over up to four independent channels,
+falling back to the main channel when the server refuses additional channels.
+Remote image checksum reads use bounded prefetching to reduce round trips.
+Remote TXT JSON updates also use up to four channels, list each parent directory
+once, and download existing JSON only when its size matches the desired content.

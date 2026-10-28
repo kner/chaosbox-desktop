@@ -9,7 +9,7 @@ SOURCE = Path(__file__).resolve().parent
 
 
 def build(name, output=None):
-    if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,39}', name):
+    if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]{0,39}', name):
         raise ValueError('Invalid installation name')
     output = Path(output) if output else SOURCE / 'released'
     output.mkdir(parents=True, exist_ok=True)

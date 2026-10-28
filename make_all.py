@@ -190,8 +190,8 @@ def main():
     parser.add_argument('name', help='z.B. Bilder → ~/Kbox-Bilder und Android KBox-Bilder')
     parser.add_argument('--installdir', type=Path, help='Abweichende lokale Installation')
     args = parser.parse_args()
-    if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,39}', args.name):
-        parser.error('NAME: Buchstabe, danach Buchstaben/Ziffern/_, maximal 40 Zeichen')
+    if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]{0,39}', args.name):
+        parser.error('NAME: Buchstabe, danach Buchstaben/Ziffern/_/-, maximal 40 Zeichen')
     try:
         make_all(args.name, (args.installdir or Path.home() / f'Kbox-{args.name}').expanduser().resolve(),
                  ROOT.parent / 'chaosbox-android', ROOT.parent / 'chaosbox-kner-at')

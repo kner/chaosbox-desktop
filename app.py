@@ -2078,16 +2078,12 @@ class App:
 def main():
     parser = argparse.ArgumentParser(description="ChaosBox desktop editor")
     parser.add_argument("directory", nargs="?", type=Path, help="Installation directory (default: ~/ChaosBox)")
-    parser.add_argument("--installdir", type=Path,
-                        help="Installation directory containing setup.ini, projects and index (default: ~/ChaosBox)")
     parser.add_argument("--state-dir", type=Path, help="Override installation-local .state directory")
     parser.add_argument("--setup", type=Path)
     parser.add_argument("--newindex", action="store_true", help="Rebuild the shared search index for all profiles")
     parser.add_argument("--check", action="store_true", help="Check dependencies without opening a window or changing data")
     args = parser.parse_args()
-    if args.directory is not None and args.installdir is not None:
-        parser.error("Use either a directory argument or --installdir, not both.")
-    installdir = args.directory or args.installdir or Path.home() / "ChaosBox"
+    installdir = args.directory or Path.home() / "ChaosBox"
     if args.check:
         import shutil
         import paramiko

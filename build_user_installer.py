@@ -62,7 +62,7 @@ def bind_sync_targets(text, profiles):
 
 
 def build(output=None, name=None, setup=None):
-    if name is not None and not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,39}', name):
+    if name is not None and not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]{0,39}', name):
         raise ValueError('Invalid installation name')
     if setup is not None and name is None:
         raise ValueError('A setup requires an installation name')

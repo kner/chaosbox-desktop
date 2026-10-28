@@ -56,7 +56,6 @@ class InstallationCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             for arguments, expected in (([], home / "ChaosBox"),
-                                        (["--installdir", str(home / "cb1"), "--newindex"], home / "cb1"),
                                         ([str(home / "cb2")], home / "cb2"),
                                         ([str(home / "cb2"), "--newindex"], home / "cb2")):
                 with self.subTest(arguments=arguments), patch("sys.argv", ["app.py", *arguments]), \

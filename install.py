@@ -45,6 +45,8 @@ def installed_roots(home):
                 if argument.startswith("--installdir="):
                     root = Path(argument.split("=", 1)[1]).expanduser()
                     break
+            if root is None and len(command) > 3 and command[2].endswith("/app.py"):
+                root = Path(command[3]).expanduser()
             # Stale launchers must not recreate removed installations.
             if root is not None and root.is_absolute() and (root / "setup.ini").is_file():
                 root = root.resolve()
@@ -90,6 +92,7 @@ def install(home=None, credentials=True, installdir=None):
         script = existing.read_text(encoding="utf-8")
         migrated = "".join(new_command + line[len(old_command):] if line.startswith(old_command) else line
                            for line in script.splitlines(keepends=True))
+        migrated = migrated.replace(" --installdir=", " ").replace(" --installdir ", " ")
         if migrated != script:
             core.atomic_write(existing, migrated, mode=0o755)
     icon = shared.parent / "icons" / f"{settings.app_id}.png"
@@ -99,7 +102,7 @@ def install(home=None, credentials=True, installdir=None):
     launcher = target / "run-desktop.sh"
     script = ('#!/usr/bin/env bash\nset -euo pipefail\n'
               f'exec /usr/bin/python3 {shlex.quote(str(shared / "app.py"))} '
-              f'--installdir {shlex.quote(str(settings.root))} "$@"\n')
+              f'{shlex.quote(str(settings.root))} "$@"\n')
     core.atomic_write(launcher, script, mode=0o755)
     command = home / ".local/bin/chaosbox"
     core.atomic_write(command, '#!/bin/sh\nexec ' + shlex.quote(str(launcher)) + ' "$@"\n', mode=0o755)

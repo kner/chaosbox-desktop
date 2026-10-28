@@ -367,6 +367,75 @@ if [ "$#" -eq 1 ]; then exec /bin/sh -c "$1"; else exec "$@"; fi
         self.assertFalse((self.server/'shared/transfer.lock').exists())
 
 
+    def test_json_projection_batches_inventory_and_parallelizes_content_checks(self):
+        directory=self.server/'data/TXT';directory.mkdir(parents=True)
+        desired={f'box-{i}.json':b'[1]\n' for i in range(12)}
+        for name,content in desired.items():atomic(directory/name,content)
+        # Same-size external changes must still be detected and repaired.
+        atomic(directory/'box-0.json',b'[2]\n')
+        atomic(directory/'box-1.json',b'[]\n')
+        original=(directory/'box-2.json').stat().st_mtime_ns
+        lock=threading.Lock();active=[0,0];writers=[];listings=[];reads=[]
+        class Writer(FileSftp):
+            def __init__(self,root):
+                super().__init__(root);self.owner=threading.get_ident();self.closed=False
+            def listdir_attr(self,path):
+                listings.append(path);return super().listdir_attr(path)
+            def open(self,path,mode):
+                assert threading.get_ident()==self.owner
+                if mode=='rb':reads.append(path)
+                with lock:active[0]+=1;active[1]=max(active)
+                try:
+                    time.sleep(.01);return super().open(path,mode)
+                finally:
+                    with lock:active[0]-=1
+            def close(self):self.closed=True
+        def factory():
+            writer=Writer(self.server);writers.append(writer);return writer
+        primary=Writer(self.server)
+        def project(factory):
+            with patch.object(sync_transport,'json_projection',return_value=desired):
+                sync_transport.sftp_json_projection(None,primary,'data/TXT/.chaosbox-sync',
+                    lambda path:None,lambda:None,lambda _:None,reader_factory=factory)
+        project(factory)
+        self.assertEqual(listings,['data/TXT'])
+        self.assertNotIn('data/TXT/box-1.json',reads)
+        self.assertGreater(active[1],1);self.assertLessEqual(active[1],4)
+        self.assertTrue(all(writer.closed for writer in writers))
+        self.assertEqual((directory/'box-2.json').stat().st_mtime_ns,original)
+        for name,content in desired.items():self.assertEqual((directory/name).read_bytes(),content)
+        # Hosts refusing worker channels must still complete the JSON projection.
+        def unavailable():raise OSError('channel limit')
+        atomic(directory/'box-0.json',b'[3]\n')
+        project(unavailable)
+        self.assertEqual((directory/'box-0.json').read_bytes(),desired['box-0.json'])
+
+    def test_media_payload_uploads_use_parallel_channels(self):
+        lock=threading.Lock();active=[0,0];writers=[]
+        class Writer(FileSftp):
+            def __init__(self, root):
+                super().__init__(root);self.owner=threading.get_ident();self.closed=False
+            def put(self, source, path, callback, confirm=True):
+                assert threading.get_ident()==self.owner
+                with lock:active[0]+=1;active[1]=max(active)
+                try:
+                    time.sleep(.01)
+                    return super().put(source,path,callback,confirm)
+                finally:
+                    with lock:active[0]-=1
+            def close(self):self.closed=True
+        def factory():
+            writer=Writer(self.server);writers.append(writer);return writer
+        self.a.reader=lambda path:dict(device=path.stem)
+        for i in range(12):atomic(self.a.images/f'image-{i}.jpg',f'image {i}'.encode())
+        sync_transport.sftp_exchange(self.a,FileSftp(self.server),'data/TXT/.chaosbox-sync',
+                                     progress=lambda _:None,reader_factory=factory)
+        self.assertGreater(active[1],1)
+        self.assertLessEqual(active[1],4)
+        self.assertTrue(all(writer.closed for writer in writers))
+        for i in range(12):
+            self.assertEqual((self.server/f'data/JPG/image-{i}.jpg').read_bytes(),f'image {i}'.encode())
+
     def test_parallel_uploads_are_bounded_and_failed_batch_is_resumable(self):
         lock=threading.Lock();writers=[];active=[0,0];fail=[False]
         class Writer(FileSftp):
