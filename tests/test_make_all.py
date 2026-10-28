@@ -97,6 +97,7 @@ class MakeAllTests(unittest.TestCase):
                     with zipfile.ZipFile(output / f'KBox-Bilder5-{version}.apk', 'w') as archive:
                         archive.writestr('assets/initial/Setup/setup.ini', setup)
 
+            original_uninstaller_build = make_all.build_user_uninstaller.build
             original_build = make_all.build_user_installer.build
             published = []
 
@@ -117,6 +118,15 @@ class MakeAllTests(unittest.TestCase):
                     self.assertNotIn('id_ed25519', archive.getnames())
                 return artifact
 
+            def uninstaller_build(name, output):
+                events.append('uninstaller')
+                self.assertEqual(name, 'Bilder5')
+                self.assertEqual(output, make_all.ROOT / 'released')
+                artifact = original_uninstaller_build(name, root / 'desktop-released')
+                self.assertEqual(artifact.name, 'KBox-Bilder5_uninstall.run')
+                self.assertIn('KBox-Bilder5', artifact.read_text())
+                return artifact
+
             def publish(sftp, source, destination):
                 events.append('publish')
                 self.assertTrue(source.is_file())
@@ -128,14 +138,18 @@ class MakeAllTests(unittest.TestCase):
                  patch.object(core, 'upload', side_effect=lambda *args: events.append('sync')), \
                  patch.object(make_all.sync_transport, 'sftp_connection', return_value=contextlib.nullcontext(Mock())), \
                  patch.object(make_all.build_user_installer, 'build', side_effect=desktop_build), \
+                 patch.object(make_all.build_user_uninstaller, 'build', side_effect=uninstaller_build), \
                  patch.object(make_all, 'upload_file', side_effect=publish):
                 make_all._make_all('Bilder5', install, android, web)
-            self.assertEqual(events, ['install', 'web', 'sync', 'apk', 'desktop', 'publish', 'publish', 'publish'])
+            self.assertEqual(events, ['install', 'web', 'sync', 'apk', 'desktop', 'uninstaller',
+                                      'publish', 'publish', 'publish', 'publish', 'publish'])
             version = (make_all.ROOT / 'VERSION').read_text().strip()
             self.assertEqual(published, [
                 f'l1/storage/apk/KBox-Bilder5-{version.replace(".", "")}.apk',
                 f'l1/storage/desktop/KBox-Bilder5_{version}_user.run',
-                f'l1/storage/desktop/KBox-Bilder5_{version}_user.run.sha256'])
+                f'l1/storage/desktop/KBox-Bilder5_{version}_user.run.sha256',
+                'l1/storage/desktop/KBox-Bilder5_uninstall.run',
+                'l1/storage/desktop/KBox-Bilder5_uninstall.run.sha256'])
 
     def test_installer_seeds_sibling_host_keys_and_preserves_existing_file(self):
         import install

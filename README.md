@@ -548,9 +548,10 @@ Aus diesem Projekt starten (die Geschwisterprojekte `chaosbox-android` und
    `ImageWidth` wird pro Box vererbt oder überschrieben.
    Desktop-Einstellungen ohne Android-Unterstützung bleiben auskommentiert.
 5. Baut den Desktop-Benutzer-Installer mit derselben zentralen setup.ini unter
-   `chaosbox-desktop/released/KBox-Bilder_<Version>_user.run` samt SHA-256-Prüfsumme.
-6. Veröffentlicht die APK unter `l1/storage/apk/` und den Desktop-Installer samt
-   Prüfsumme unter `l1/storage/desktop/` mit abschließender atomarer Umbenennung.
+   `chaosbox-desktop/released/KBox-Bilder_<Version>_user.run` und den passenden
+   Deinstaller `chaosbox-desktop/released/KBox-Bilder_uninstall.run`, jeweils samt SHA-256-Prüfsumme.
+6. Veröffentlicht die APK unter `l1/storage/apk/` und Desktop-Installer sowie Deinstaller samt
+   Prüfsummen unter `l1/storage/desktop/` mit abschließender atomarer Umbenennung.
    Auf der Homepage erscheint er unter „Linux-Installer“. Nach der Installation
    startet das eigene farbige Desktop-Symbol die zugehörige Box.
 
@@ -614,3 +615,5 @@ Für mehrere Installationen jeweils separat bauen: `python3 build_user_installer
 Desktop-Benutzer-Installer binden jede Box über `[SSH.<Title>]` mit explizitem `Installation=` und `RemoteProfile=` an denselben Server-Datenbestand wie die Quellinstallation und die APK. Die lokale Installationsidentität und SSH-Schlüssel bleiben eigenständig. Bereits vorhandene Ziel-setups bleiben bei Updates erhalten.
 
 Ein eigenständiger Deinstaller wird mit `python3 build_user_uninstaller.py Bilder7` als `released/KBox-Bilder7_uninstall.run` gebaut. Nach dem Download ohne sudo mit `sh KBox-Bilder7_uninstall.run` starten. Er entfernt die Bilder7-Startbefehle, Desktop- und Menüeinträge sowie Icons. Gemeinsam verwendeter Programmcode bleibt erhalten, solange andere Installationen ihn benötigen. Box-Daten, Setup und SSH-Schlüssel bleiben erhalten.
+
+Jeder Aufruf von `./KBox-make-all.sh NAME` erzeugt und veröffentlicht auch `KBox-NAME_uninstall.run`. Beispielsweise steht nach `./KBox-make-all.sh Bilder5` zusätzlich `KBox-Bilder5_uninstall.run` auf der Homepage unter „Linux-Installer“ bereit. Deinstaller erhalten Nutzerdaten und Einstellungen.

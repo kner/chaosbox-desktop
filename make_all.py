@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install Desktop, deploy Web, synchronize and publish installation APK and Desktop installers."""
+"""Install Desktop, deploy Web, synchronize and publish installation APK, Desktop installer and uninstaller."""
 import argparse
 from pathlib import Path
 import re
@@ -12,6 +12,7 @@ import zipfile
 
 import core
 import build_user_installer
+import build_user_uninstaller
 import sync_transport
 
 ROOT = Path(__file__).resolve().parent
@@ -161,14 +162,16 @@ def _make_all(name, install_dir, android, web):
         released = android / 'released' / apk_name
         released.parent.mkdir(exist_ok=True)
         shutil.copy2(built, released)
-    print('[5/6] Desktop-Benutzer-Installer mit Installations-Setup bauen', flush=True)
+    print('[5/6] Desktop-Installer und Deinstaller bauen', flush=True)
     desktop_release = build_user_installer.build(ROOT / 'released', name=name, setup=settings.path)
-    print('[6/6] APK und Desktop-Installer veröffentlichen', flush=True)
+    uninstaller_release = build_user_uninstaller.build(name, ROOT / 'released')
+    print('[6/6] APK, Desktop-Installer und Deinstaller veröffentlichen', flush=True)
     with sync_transport.sftp_connection(ssh, threading.Event(), print) as sftp:
         upload_file(sftp, released, f'{web_root}/storage/apk/{apk_name}')
-        for artifact in (desktop_release, desktop_release.with_suffix('.run.sha256')):
+        for artifact in (desktop_release, desktop_release.with_suffix('.run.sha256'),
+                         uninstaller_release, uninstaller_release.with_suffix('.run.sha256')):
             upload_file(sftp, artifact, f'{web_root}/storage/desktop/{artifact.name}')
-    print(f'Fertig: {install_dir}\nAPK: {released}\nDesktop-Installer: {desktop_release}\nServer: {web_root}/storage/apk/{apk_name}\nDesktop-Download: {web_root}/storage/desktop/{desktop_release.name}')
+    print(f'Fertig: {install_dir}\nAPK: {released}\nDesktop-Installer: {desktop_release}\nDesktop-Deinstaller: {uninstaller_release}\nServer: {web_root}/storage/apk/{apk_name}\nDesktop-Download: {web_root}/storage/desktop/{desktop_release.name}')
 
 
 def make_all(name, install_dir, android, web):
