@@ -41,8 +41,15 @@ def bind_sync_targets(text, profiles):
     import core
     for profile in profiles:
         section = 'SSH.' + profile.id
-        values = {'installation': ('Installation', profile.options[2]['installation']),
-                  'remoteprofile': ('RemoteProfile', profile.id.casefold())}
+        ssh = profile.options[2]
+        values = {
+            'host': ('Host', ssh['host']),
+            'port': ('Port', ssh['port']),
+            'user': ('User', ssh['user']),
+            'webinstallation': ('WebInstallation', ssh.get('webinstallation', 'l1')),
+            'installation': ('Installation', ssh['installation']),
+            'remoteprofile': ('RemoteProfile', profile.id.casefold()),
+        }
         lines = list(core.logical_lines(text))
         blocks = [block for block in core.section_blocks(text) if block[0].casefold() == section.casefold()]
         if blocks:

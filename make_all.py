@@ -106,6 +106,9 @@ def _make_all(name, install_dir, android, web):
     versions = [(p / 'VERSION').read_text().strip() for p in (ROOT, android, web)]
     if len(set(versions)) != 1:
         raise ValueError('VERSION muss in allen drei Projekten identisch sein.')
+    if not (install_dir / 'setup.ini').is_file():
+        raise ValueError(f'Installation-setup.ini fehlt: {install_dir / "setup.ini"}. '
+                         'Gesamtbuild abgebrochen, damit keine APK mit Standardkonfiguration entsteht.')
     for file in (android / 'sign.sh', android / 'configure-adb-sync.py', web / 'scripts/upload-exif.sh'):
         if not file.is_file():
             raise ValueError(f'Datei fehlt: {file}')

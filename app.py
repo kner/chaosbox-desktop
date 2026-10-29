@@ -236,12 +236,14 @@ class MetadataModeDialog(simpledialog.Dialog):
 
 
 class FileOpenDialog(simpledialog.Dialog):
-    """File chooser with an explicit newest-first order, independent of the OS."""
+    """File chooser with an explicit order, independent of the OS."""
 
-    def __init__(self, parent, folder, extensions, title, multiple=False, translator=translate):
+    def __init__(self, parent, folder, extensions, title, multiple=False, translator=translate,
+                 alphabetical=False):
         self.folder = Path(folder)
         self.extensions = {suffix.casefold() for suffix in extensions}
         self.multiple, self.t = multiple, translator
+        self.alphabetical = alphabetical
         self.paths = {}
         super().__init__(parent, title=title)
 
@@ -259,7 +261,7 @@ class FileOpenDialog(simpledialog.Dialog):
         self.listing = ttk.Treeview(frame, columns=("modified",),
                                    selectmode="extended" if self.multiple else "browse", height=20)
         self.listing.heading("#0", text=self.t("File"))
-        self.listing.heading("modified", text=self.t("Modified · newest first"))
+        self.listing.heading("modified", text="" if self.alphabetical else self.t("Modified · newest first"))
         self.listing.column("#0", width=480, minwidth=120)
         self.listing.column("modified", width=180, minwidth=150, stretch=False)
         scroll = ttk.Scrollbar(frame, orient="vertical", command=self.listing.yview)
@@ -291,7 +293,10 @@ class FileOpenDialog(simpledialog.Dialog):
                 elif path.is_file() and path.suffix.casefold() in self.extensions:
                     files.append((path, info.st_mtime_ns))
             directories.sort(key=lambda path: path.name.casefold())
-            files.sort(key=lambda item: (-item[1], item[0].name.casefold()))
+            if self.alphabetical:
+                files.sort(key=lambda item: item[0].name.casefold())
+            else:
+                files.sort(key=lambda item: (-item[1], item[0].name.casefold()))
         except OSError as error:
             messagebox.showerror(self.title(), str(error), parent=self)
             return
@@ -301,7 +306,7 @@ class FileOpenDialog(simpledialog.Dialog):
         self.paths = {}
         for path, modified in [(path, None) for path in directories] + files:
             row = self.listing.insert("", "end", text=path.name + ("/" if modified is None else ""),
-                values=("" if modified is None else datetime.fromtimestamp(modified / 1e9).strftime("%Y-%m-%d %H:%M:%S"),))
+                values=("" if modified is None or self.alphabetical else datetime.fromtimestamp(modified / 1e9).strftime("%Y-%m-%d %H:%M:%S"),))
             self.paths[row] = path
 
     def enter_path(self, event=None):
@@ -1595,7 +1600,7 @@ class App:
                     raise ValueError("Box not found or ambiguous. Clear Box to choose its JSON file.")
             else:
                 name = FileOpenDialog(self.root, self.profile.data, {".json"},
-                                      self.t("Open JSON"), translator=self.t).result
+                                      self.t("Open JSON"), translator=self.t, alphabetical=True).result
                 if not name:
                     return
                 chosen = Path(name)

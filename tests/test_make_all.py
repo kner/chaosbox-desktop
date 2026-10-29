@@ -32,6 +32,10 @@ class MakeAllTests(unittest.TestCase):
             self.assertEqual(blocks['ssh.bilder']['installation'], settings.installation_id)
             self.assertEqual(blocks['ssh.haus']['installation'], 'shared-house')
             self.assertEqual(blocks['ssh.haus']['remoteprofile'], 'haus')
+            self.assertEqual(blocks['ssh.bilder']['host'], 'access983197478.webspace-data.io')
+            self.assertEqual(blocks['ssh.bilder']['port'], '22')
+            self.assertEqual(blocks['ssh.bilder']['user'], 'u114229695')
+            self.assertEqual(blocks['ssh.bilder']['webinstallation'], 'l1')
             self.assertNotIn('/private', text)
             self.assertEqual(text.count('[Box]'), 2)
             self.assertIn('; Language=de', text)
@@ -58,6 +62,17 @@ class MakeAllTests(unittest.TestCase):
         sftp.posix_rename.assert_not_called()
         sftp.remove.assert_called_once()
 
+    def test_missing_installation_setup_stops_before_installing_defaults(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            android, web = root / 'android', root / 'web'
+            (web / 'scripts').mkdir(parents=True)
+            for project in (android, web):
+                project.mkdir(exist_ok=True)
+                (project / 'VERSION').write_text((make_all.ROOT / 'VERSION').read_text())
+            with self.assertRaisesRegex(ValueError, 'Installation-setup.ini fehlt'):
+                make_all._make_all('Haushalt', root / 'Kbox-Haushalt', android, web)
+
     def test_pipeline_order_and_apk_setup(self):
         import contextlib
         import zipfile
@@ -70,7 +85,9 @@ class MakeAllTests(unittest.TestCase):
             credentials.mkdir(parents=True)
             for file in ('id_ed25519', 'known_hosts'):
                 (credentials / file).write_text('test credential')
-            (install / 'setup.ini').write_text('[App]\n[Box]\nTitel=Bilder\n')
+            (install / 'setup.ini').write_text('[App]\n[Box]\nTitel=Bilder\n[SSH]\n'
+                                               'Host=sync.example\nPort=2222\nUser=roland\n'
+                                               'WebInstallation=l2\nInstallation=house-source\n')
             android, web = root / 'android', root / 'web'
             android.mkdir()
             (web / 'scripts').mkdir(parents=True)
@@ -100,6 +117,8 @@ class MakeAllTests(unittest.TestCase):
                     self.assertFalse((assets / 'initial/Setup/setup.ini').exists())
                     setup = Path(kwargs['env']['KBOX_SETUP_FILE']).read_text()
                     self.assertIn('RemoteProfile=bilder', setup)
+                    self.assertIn('[SSH.Bilder]\nHost=sync.example\nPort=2222\nUser=roland\n'
+                                  'WebInstallation=l2\nInstallation=house-source\nRemoteProfile=bilder', setup)
                     output = stage / 'released'
                     output.mkdir()
                     version = (make_all.ROOT / 'VERSION').read_text().strip().replace('.', '')
@@ -154,11 +173,11 @@ class MakeAllTests(unittest.TestCase):
                                       'publish', 'publish', 'publish', 'publish', 'publish'])
             version = (make_all.ROOT / 'VERSION').read_text().strip()
             self.assertEqual(published, [
-                f'l1/storage/apk/KBox-Bilder-5-{version.replace(".", "")}.apk',
-                f'l1/storage/desktop/KBox-Bilder-5_{version}_user.run',
-                f'l1/storage/desktop/KBox-Bilder-5_{version}_user.run.sha256',
-                'l1/storage/desktop/KBox-Bilder-5_uninstall.run',
-                'l1/storage/desktop/KBox-Bilder-5_uninstall.run.sha256'])
+                f'l2/storage/apk/KBox-Bilder-5-{version.replace(".", "")}.apk',
+                f'l2/storage/desktop/KBox-Bilder-5_{version}_user.run',
+                f'l2/storage/desktop/KBox-Bilder-5_{version}_user.run.sha256',
+                'l2/storage/desktop/KBox-Bilder-5_uninstall.run',
+                'l2/storage/desktop/KBox-Bilder-5_uninstall.run.sha256'])
 
     def test_installer_seeds_sibling_host_keys_and_preserves_existing_file(self):
         import install
