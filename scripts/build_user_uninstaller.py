@@ -5,7 +5,7 @@ import hashlib
 from pathlib import Path
 import re
 
-SOURCE = Path(__file__).resolve().parent
+SOURCE = Path(__file__).resolve().parent.parent
 
 
 def build(name, output=None):
@@ -14,7 +14,7 @@ def build(name, output=None):
     output = Path(output) if output else SOURCE / 'released'
     output.mkdir(parents=True, exist_ok=True)
     package = output / f'KBox-{name}_uninstall.run'
-    source = (SOURCE / 'uninstall.py').read_text().split('if __name__ == "__main__":')[0]
+    source = (SOURCE / 'scripts/uninstall.py').read_text().split('if __name__ == "__main__":')[0]
     version = (SOURCE / 'VERSION').read_text().strip()
     script = '#!/bin/sh\nset -eu\nexec /usr/bin/python3 - "$@" <<\'CHAOSBOX_UNINSTALL_PY\'\n'
     script += source

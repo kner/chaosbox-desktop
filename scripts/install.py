@@ -8,7 +8,10 @@ import shlex
 import shutil
 import subprocess
 from pathlib import Path
+import sys
 
+PROJECT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT / "src"))
 import core
 
 
@@ -66,12 +69,13 @@ def install_all(home=None, credentials=True, installdir=None):
 
 def install(home=None, credentials=True, installdir=None):
     home = Path.home() if home is None else Path(home)
-    source = Path(__file__).resolve().parent
+    source = PROJECT
+    payload = source / "src"
     settings = core.Settings(installdir if installdir is not None else home / "ChaosBox")
     seed_assets = not settings.path.exists()
     settings.root.mkdir(parents=True, exist_ok=True)
     if seed_assets and (source / "install-defaults.json").is_file():
-        core.atomic_write(settings.path, (source / "setup.ini").read_bytes())
+        core.atomic_write(settings.path, (payload / "setup.ini").read_bytes())
         settings.reload()
     elif seed_assets:
         settings.ensure(default_box="ChaosBox")
@@ -80,7 +84,10 @@ def install(home=None, credentials=True, installdir=None):
     shared = home / ".local/share/chaosbox/desktop"
     shared.mkdir(parents=True, exist_ok=True)
     for name in ("VERSION", "app.py", "core.py", "chaos_sync.py", "sync_transport.py", "sync-data.py", "cleanup-sync.py", "i18n.py", "markdown_render.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
-        core.atomic_write(shared / name, (source / name).read_bytes(), mode=0o644)
+        origin = source / "VERSION" if name == "VERSION" else payload / name
+        if name in ("sync-data.py", "cleanup-sync.py"):
+            origin = source / "scripts" / name
+        core.atomic_write(shared / name, origin.read_bytes(), mode=0o644)
     installations = shared.parent / "installations"
     target = installations / settings.app_id
     target.mkdir(parents=True, exist_ok=True)
@@ -128,7 +135,7 @@ def install(home=None, credentials=True, installdir=None):
                             "-C", settings.app_id, "-f", str(key)], check=True)
         os.chmod(key, 0o600)
         # Host identities may be shared; private authentication keys may not.
-        assets = source.parent / "chaosbox-android/app/src/main/assets"
+        assets = PROJECT.parent / "chaosbox-android/app/src/main/assets"
         for name in ("known_hosts",):
             destination = credential_dir / name
             seed = source / "initial_known_hosts"

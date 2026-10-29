@@ -761,7 +761,7 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(install.install(home, credentials=False), (target, setup, launcher))
         self.assertEqual(asset.read_text(), "User content")
         self.assertEqual(setup.read_bytes(), setup_before)
-        self.assertEqual(shared_app.read_bytes(), Path(install.__file__).with_name("app.py").read_bytes())
+        self.assertEqual(shared_app.read_bytes(), Path(install.__file__).resolve().parent.parent.joinpath("src/app.py").read_bytes())
         settings.reload()
         self.assertIn("KEEP THIS", settings.profile(settings.default).categories)
         self.assertFalse((home / ".config/chaosbox/credentials/android_copy").exists())
@@ -877,7 +877,7 @@ class DesktopTests(unittest.TestCase):
         launcher.write_text(launcher.read_text().replace(shlex.quote(str(shared)), shlex.quote(str(old_app))).replace(shlex.quote(str(first[1].parent)), "--installdir " + shlex.quote(str(first[1].parent))))
         original_setup = first[1].read_bytes()
         original_menu = first[2].read_bytes()
-        source_app = Path(install.__file__).resolve().with_name("app.py")
+        source_app = Path(install.__file__).resolve().parent.parent / "src/app.py"
         read_bytes = Path.read_bytes
         for version in ("new version", "next version"):
             runtime = f'import json, sys\nprint(json.dumps([{version!r}, sys.argv[1:]]))\n'.encode()
@@ -907,7 +907,7 @@ class DesktopTests(unittest.TestCase):
         results = install.install_all(home)
         self.assertEqual(set(results), set(installed))
         self.assertFalse((home / "ChaosBox").exists())
-        self.assertEqual(shared.read_bytes(), Path(install.__file__).with_name("app.py").read_bytes())
+        self.assertEqual(shared.read_bytes(), Path(install.__file__).resolve().parent.parent.joinpath("src/app.py").read_bytes())
         for target, setup, desktop in results:
             command = shlex.split((target / "run-desktop.sh").read_text().splitlines()[-1])
             self.assertEqual(command[2], str(shared))

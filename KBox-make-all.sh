@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-exec /usr/bin/python3 "$script_dir/make_all.py" "$@"
+exec /usr/bin/python3 "$script_dir/scripts/make_all.py" "$@"

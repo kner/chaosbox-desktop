@@ -28,7 +28,10 @@ import markdown_render
 import chaos_sync
 import sync_transport
 
-VERSION = Path(__file__).with_name("VERSION").read_text(encoding="utf-8").strip()
+_version_file = Path(__file__).resolve().parent / "VERSION"
+if not _version_file.is_file():
+    _version_file = Path(__file__).resolve().parent.parent / "VERSION"
+VERSION = _version_file.read_text(encoding="utf-8").strip()
 
 def installation_icon(app_id):
     """Tint the desktop and window icon consistently for one installation."""

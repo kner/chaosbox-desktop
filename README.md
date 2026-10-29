@@ -12,7 +12,7 @@ configured language.
 Install all runtime dependencies on Ubuntu 24.04 from the repository root:
 
 ```bash
-./install-dependencies.sh
+./scripts/install-dependencies.sh
 ```
 
 The script installs the Ubuntu packages and checks that the application can
@@ -21,20 +21,20 @@ load its dependencies, including registering a native file-drop target with
 so it also runs without a desktop session. It uses `sudo` when needed. Then launch the app with:
 
 ```bash
-./run-desktop.sh
+./scripts/run-desktop.sh
 ```
 
 To install for the current user, run:
 
 ```bash
-./install-desktop.sh
+./scripts/install-desktop.sh
 ```
 
 Each installation gets its own application menu entry; all boxes use one shared application:
 
 ```bash
-./install-desktop.sh --installdir=~/cb1
-./install-desktop.sh --installdir=~/cb2
+./scripts/install-desktop.sh --installdir=~/cb1
+./scripts/install-desktop.sh --installdir=~/cb2
 ```
 
 Without `--installdir`, the installer detects all registered installations and
@@ -64,7 +64,7 @@ No administrator privileges are needed when dependencies are already present.
 To uninstall a per-user installation, close its windows and run:
 
 ```bash
-./uninstall-desktop.sh --installdir=~/cb1
+./scripts/uninstall-desktop.sh --installdir=~/cb1
 ```
 
 Without `--installdir`, this selects `~/ChaosBox`. The script removes that
@@ -92,8 +92,8 @@ for an installation at `/x/y/cb2`:
 ```
 
 ```bash
-./run-desktop.sh ~/cb2
-./run-desktop.sh ~/cb2 --newindex
+./scripts/run-desktop.sh ~/cb2
+./scripts/run-desktop.sh ~/cb2 --newindex
 ```
 
 Pass the installation directory as the positional argument shown above.
@@ -357,16 +357,16 @@ history, restore a version, list device acknowledgments and retire a device.
 There is no automatic garbage collection. Missing files alone never delete data.
 
 ```sh
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --transport rsync
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --conflicts
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --history OBJECT_ID
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --restore OBJECT_ID REVISION
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --transport rsync
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --conflicts
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --history OBJECT_ID
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --restore OBJECT_ID REVISION
 ```
 
 ## Verification
 
 ```bash
-/usr/bin/python3 -m unittest discover -s tests -v
+/usr/bin/python3 -m unittest discover -v
 /usr/bin/python3 tests/tk_smoke.py
 /usr/bin/python3 tests/tk_markdown_smoke.py
 ```
@@ -408,7 +408,7 @@ searches and image links within the chosen dataset. See SYNC-PROTOCOL.md.
 
 Desktop installations use individual icon colors derived from their installation ID.
 The application menu, desktop shortcuts, and window/taskbar icon share the same color.
-Run `./install-desktop.sh` to refresh icons for all registered installations, then
+Run `./scripts/install-desktop.sh` to refresh icons for all registered installations, then
 reopen running windows. Existing desktop shortcuts copied outside the application
 menu may need to be recreated from the updated menu entry.
 
@@ -602,17 +602,17 @@ existing menu entry, then reopen running windows.
 
 ## Benutzer-Installer (ohne sudo)
 
-`python3 build_user_installer.py` erstellt `released/chaosbox-desktop_3.16_user.run` und eine SHA-256-Prüfsumme. Mit `sh chaosbox-desktop_3.16_user.run` installieren. Der Startbefehl liegt unter `~/.local/bin/chaosbox`, die Programmdateien unter `~/.local/share/chaosbox/desktop`. Vorhandene Boxen werden aktualisiert und ihre Einstellungen beibehalten. Benötigte Systembibliotheken können mit dem beiliegenden `install-dependencies.sh` eingerichtet werden. Der Installer prüft sie vor der Installation.
+`python3 scripts/build_user_installer.py` erstellt `released/chaosbox-desktop_3.16_user.run` und eine SHA-256-Prüfsumme. Mit `sh chaosbox-desktop_3.16_user.run` installieren. Der Startbefehl liegt unter `~/.local/bin/chaosbox`, die Programmdateien unter `~/.local/share/chaosbox/desktop`. Vorhandene Boxen werden aktualisiert und ihre Einstellungen beibehalten. Benötigte Systembibliotheken können mit dem beiliegenden `install-dependencies.sh` eingerichtet werden. Der Installer prüft sie vor der Installation.
 
-Ein Installer für eine bestimmte Installation wird mit `python3 build_user_installer.py --name Bilder3 --setup ~/Kbox-Bilder3/setup.ini` gebaut. `KBox-Bilder3_3.16_user.run` installiert gezielt nach `~/KBox-Bilder3` und zeigt den Namen **KBox-Bilder3** an. Das Setup wird eingebettet; SSH-Dateipfade werden relativ zur Zielinstallation gesetzt. Private Schlüssel werden nicht übernommen, bekannte Hostschlüssel schon. Updates erhalten das vorhandene Setup der Zielinstallation.
+Ein Installer für eine bestimmte Installation wird mit `python3 scripts/build_user_installer.py --name Bilder3 --setup ~/Kbox-Bilder3/setup.ini` gebaut. `KBox-Bilder3_3.16_user.run` installiert gezielt nach `~/KBox-Bilder3` und zeigt den Namen **KBox-Bilder3** an. Das Setup wird eingebettet; SSH-Dateipfade werden relativ zur Zielinstallation gesetzt. Private Schlüssel werden nicht übernommen, bekannte Hostschlüssel schon. Updates erhalten das vorhandene Setup der Zielinstallation.
 
-Für mehrere Installationen jeweils separat bauen: `python3 build_user_installer.py --name Bilder3 --setup ~/Kbox-Bilder3/setup.ini` und `python3 build_user_installer.py --name Bilder4 --setup ~/Kbox-Bilder4/setup.ini`. Jeder Download enthält sein eigenes Setup. Jede Installation erhält ein eigenes farbiges Icon im Anwendungsmenü und auf dem Desktop sowie einen eigenen Startbefehl `~/.local/bin/KBox-Bilder3` bzw. `~/.local/bin/KBox-Bilder4`. Der Desktop-Ordner wird aus `user-dirs.dirs` übernommen (sonst `~/Desktop`). Falls die Desktop-Umgebung es verlangt, beim ersten Start „Start erlauben“ wählen.
+Für mehrere Installationen jeweils separat bauen: `python3 scripts/build_user_installer.py --name Bilder3 --setup ~/Kbox-Bilder3/setup.ini` und `python3 scripts/build_user_installer.py --name Bilder4 --setup ~/Kbox-Bilder4/setup.ini`. Jeder Download enthält sein eigenes Setup. Jede Installation erhält ein eigenes farbiges Icon im Anwendungsmenü und auf dem Desktop sowie einen eigenen Startbefehl `~/.local/bin/KBox-Bilder3` bzw. `~/.local/bin/KBox-Bilder4`. Der Desktop-Ordner wird aus `user-dirs.dirs` übernommen (sonst `~/Desktop`). Falls die Desktop-Umgebung es verlangt, beim ersten Start „Start erlauben“ wählen.
 
 `./KBox-make-all.sh Bilder5` erzeugt und veröffentlicht entsprechend `KBox-Bilder5_<Version>_user.run` mit dem Setup aus `~/Kbox-Bilder5/setup.ini` sowie die passende APK. Jeder Name bekommt einen separaten Download und ein eigenes Desktop-Symbol.
 
 Desktop-Benutzer-Installer binden jede Box über `[SSH.<Title>]` mit explizitem `Installation=` und `RemoteProfile=` an denselben Server-Datenbestand wie die Quellinstallation und die APK. Die lokale Installationsidentität und SSH-Schlüssel bleiben eigenständig. Bereits vorhandene Ziel-setups bleiben bei Updates erhalten.
 
-Ein eigenständiger Deinstaller wird mit `python3 build_user_uninstaller.py Bilder7` als `released/KBox-Bilder7_uninstall.run` gebaut. Nach dem Download ohne sudo mit `sh KBox-Bilder7_uninstall.run` starten. Er entfernt die Bilder7-Startbefehle, Desktop- und Menüeinträge sowie Icons. Gemeinsam verwendeter Programmcode bleibt erhalten, solange andere Installationen ihn benötigen. Box-Daten, Setup und SSH-Schlüssel bleiben erhalten.
+Ein eigenständiger Deinstaller wird mit `python3 scripts/build_user_uninstaller.py Bilder7` als `released/KBox-Bilder7_uninstall.run` gebaut. Nach dem Download ohne sudo mit `sh KBox-Bilder7_uninstall.run` starten. Er entfernt die Bilder7-Startbefehle, Desktop- und Menüeinträge sowie Icons. Gemeinsam verwendeter Programmcode bleibt erhalten, solange andere Installationen ihn benötigen. Box-Daten, Setup und SSH-Schlüssel bleiben erhalten.
 
 Jeder Aufruf von `./KBox-make-all.sh NAME` erzeugt und veröffentlicht auch `KBox-NAME_uninstall.run`. Beispielsweise steht nach `./KBox-make-all.sh Bilder5` zusätzlich `KBox-Bilder5_uninstall.run` auf der Homepage unter „Linux-Installer“ bereit. Deinstaller erhalten Nutzerdaten und Einstellungen.
 

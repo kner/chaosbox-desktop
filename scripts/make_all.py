@@ -2,6 +2,7 @@
 """Install Desktop, deploy Web, synchronize and publish installation APK, Desktop installer and uninstaller."""
 import argparse
 from pathlib import Path
+import sys
 import re
 import shlex
 import shutil
@@ -10,12 +11,13 @@ import tempfile
 import threading
 import zipfile
 
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "scripts"))
 import core
 import build_user_installer
 import build_user_uninstaller
 import sync_transport
-
-ROOT = Path(__file__).resolve().parent
 
 
 def run(*args, **kwargs):
@@ -113,7 +115,7 @@ def _make_all(name, install_dir, android, web):
         if not file.is_file():
             raise ValueError(f'Datei fehlt: {file}')
     print(f'[1/6] Desktop installieren: {install_dir}', flush=True)
-    run(ROOT / 'install-desktop.sh', '--installdir', install_dir)
+    run(ROOT / 'scripts/install-desktop.sh', '--installdir', install_dir)
     settings = core.Settings(install_dir)
     settings.reload()
     for profile in settings.profiles:

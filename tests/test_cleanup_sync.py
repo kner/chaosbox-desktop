@@ -9,7 +9,7 @@ import time
 import unittest
 from contextlib import redirect_stdout
 
-spec = importlib.util.spec_from_file_location('cleanup_sync', Path(__file__).resolve().parents[1] / 'cleanup-sync.py')
+spec = importlib.util.spec_from_file_location('cleanup_sync', Path(__file__).resolve().parents[1] / 'scripts/cleanup-sync.py')
 cleanup = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = cleanup
 spec.loader.exec_module(cleanup)

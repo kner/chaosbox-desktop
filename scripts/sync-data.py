@@ -4,6 +4,9 @@ import argparse
 import json
 from pathlib import Path
 import threading
+import sys
+project_src = Path(__file__).resolve().parent.parent / 'src'
+sys.path.insert(0, str(project_src if project_src.is_dir() else Path(__file__).resolve().parent))
 import core
 import chaos_sync
 p=argparse.ArgumentParser(description=__doc__)

@@ -8,11 +8,11 @@ import io
 from pathlib import Path
 import tarfile
 
-SOURCE = Path(__file__).resolve().parent
-FILES = ('VERSION', 'app.py', 'core.py', 'chaos_sync.py', 'sync_transport.py',
-         'sync-data.py', 'cleanup-sync.py', 'i18n.py', 'markdown_render.py',
-         'setup.ini', 'chaosbox.svg', 'chaosbox.png', 'install.py',
-         'install-desktop.sh', 'run-desktop.sh', 'install-dependencies.sh', 'README.md')
+SOURCE = Path(__file__).resolve().parent.parent
+FILES = ('VERSION', 'src/app.py', 'src/core.py', 'src/chaos_sync.py', 'src/sync_transport.py',
+         'scripts/sync-data.py', 'scripts/cleanup-sync.py', 'src/i18n.py', 'src/markdown_render.py',
+         'src/setup.ini', 'src/chaosbox.svg', 'src/chaosbox.png', 'scripts/install.py',
+         'scripts/install-desktop.sh', 'scripts/run-desktop.sh', 'scripts/install-dependencies.sh', 'README.md')
 
 
 def installation_setup(setup):
@@ -69,6 +69,8 @@ def bind_sync_targets(text, profiles):
 
 
 def build(output=None, name=None, setup=None):
+    import sys
+    sys.path.insert(0, str(SOURCE / 'src'))
     if name is not None and not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]{0,39}', name):
         raise ValueError('Invalid installation name')
     if setup is not None and name is None:
@@ -87,7 +89,7 @@ fi
 stage=$(mktemp -d)
 trap 'rm -rf -- "$stage"' EXIT HUP INT TERM
 tail -n +ARCHIVE_LINE "$0" | tar -xz -C "$stage"
-"$stage/install-desktop.sh" "$@"
+"$stage/scripts/install-desktop.sh" "$@"
 echo "Start über das eigene KBox-Symbol auf dem Desktop oder im Anwendungsmenü."
 exit 0
 '''
@@ -101,7 +103,7 @@ exit 0
             tar.addfile(info, io.BytesIO(data))
 
         for filename in FILES:
-            if filename == 'setup.ini' and setup is not None:
+            if filename == 'src/setup.ini' and setup is not None:
                 add_bytes(filename, installation_setup(setup).encode())
             else:
                 tar.add(SOURCE / filename, arcname=filename, recursive=False)

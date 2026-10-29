@@ -58,7 +58,7 @@ KnownHosts bleiben konfigurierbar. Die vorhandene Setup-Bearbeitung kann diese
 Werte ändern; zusätzlich gibt es die Desktop-CLI:
 
 ```sh
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --transport rsync
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --transport rsync
 ```
 
 Android verwendet SFTP. In `ChaosBox/Setup/setup.ini` können `[SSH]` und ein
@@ -148,14 +148,14 @@ Formularwerte bleiben erhalten.
 Desktop-CLI (IDs/Revisionen durch die angezeigten Werte ersetzen):
 
 ```sh
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --conflicts
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --resolve OBJECT_ID REVISION
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --history OBJECT_ID
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --restore OBJECT_ID REVISION
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --delete ~/ChaosBox/ChaosBox/TXT/a11.json --record 0
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --delete ~/ChaosBox/ChaosBox/TXT/a11.json --whole-box
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --devices
-/usr/bin/python3 sync-data.py --data ~/ChaosBox/ChaosBox --retire DEVICE_ID
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --conflicts
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --resolve OBJECT_ID REVISION
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --history OBJECT_ID
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --restore OBJECT_ID REVISION
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --delete ~/ChaosBox/ChaosBox/TXT/a11.json --record 0
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --delete ~/ChaosBox/ChaosBox/TXT/a11.json --whole-box
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --devices
+/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --retire DEVICE_ID
 ```
 
 Gerätebestätigungen (kind=device, action=ack) enthalten die bekannten
@@ -281,7 +281,7 @@ Explizites Installation ändert nur das Serverziel, nicht die lokale Identität.
 Desktop zeigt die ID beim Synchronisieren an. Ohne Übertragung anzeigen:
 
 ```sh
-/usr/bin/python3 sync-data.py --install-dir ~/ChaosBox --data ~/ChaosBox/ChaosBox --show-target
+/usr/bin/python3 scripts/sync-data.py --install-dir ~/ChaosBox --data ~/ChaosBox/ChaosBox --show-target
 ```
 
 Android verbindet sich ausdrücklich mit einer Installation. In
