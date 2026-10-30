@@ -32,17 +32,16 @@ class MakeAllTests(unittest.TestCase):
             self.assertEqual(blocks['ssh.bilder']['installation'], settings.installation_id)
             self.assertEqual(blocks['ssh.haus']['installation'], 'shared-house')
             self.assertEqual(blocks['ssh.haus']['remoteprofile'], 'haus')
-            self.assertEqual(blocks['ssh.bilder']['host'], 'access983197478.webspace-data.io')
-            self.assertEqual(blocks['ssh.bilder']['port'], '22')
-            self.assertEqual(blocks['ssh.bilder']['user'], 'u114229695')
-            self.assertEqual(blocks['ssh.bilder']['webinstallation'], 'l1')
-            self.assertNotIn('/private', text)
+            self.assertNotIn('host', blocks['ssh.bilder'])
+            self.assertNotIn('port', blocks['ssh.bilder'])
+            self.assertNotIn('user', blocks['ssh.bilder'])
+            self.assertIn('/private/key', text)
             self.assertEqual(text.count('[Box]'), 2)
-            self.assertIn('; Language=de', text)
-            self.assertIn('; editor=/usr/bin/gimp', text)
-            self.assertIn('; POSTER-COLS=3', text)
+            self.assertIn('Language=de', text)
+            self.assertIn('editor=/usr/bin/gimp', text)
+            self.assertIn('POSTER-COLS=3', text)
             self.assertEqual(blocks['app']['imagewidth'], '1800')
-            self.assertNotIn('poster', blocks)
+            self.assertIn('poster', blocks)
             self.assertNotIn('[ImageSize]', text)
             self.assertIn('ask="line 1\n[SSH]\nline 3"', text)
 
@@ -78,7 +77,9 @@ class MakeAllTests(unittest.TestCase):
                     make_all._make_all('Haushalt', root / 'Kbox-Haushalt', android, web)
             setup = (root / 'Kbox-Haushalt/setup.ini').read_text()
             self.assertIn('[Box]\nTitle=Haushalt', setup)
-            self.assertIn('[SSH.Haushalt]', setup)
+            self.assertEqual(setup, make_all.initial_setup('Haushalt'))
+            self.assertIn('[Poster]', setup)
+            self.assertIn('[TextSnippets]', setup)
 
     def test_pipeline_order_and_apk_setup(self):
         import contextlib
@@ -124,8 +125,9 @@ class MakeAllTests(unittest.TestCase):
                     self.assertFalse((assets / 'initial/Setup/setup.ini').exists())
                     setup = Path(kwargs['env']['KBOX_SETUP_FILE']).read_text()
                     self.assertIn('RemoteProfile=bilder', setup)
-                    self.assertIn('[SSH.Bilder]\nHost=sync.example\nPort=2222\nUser=roland\n'
-                                  'WebInstallation=l2\nInstallation=house-source\nRemoteProfile=bilder', setup)
+                    self.assertIn('[SSH.Bilder]\nRemoteProfile=bilder', setup)
+                    self.assertIn('[SSH]\nHost=sync.example\nPort=2222\nUser=roland\n'
+                                  'WebInstallation=l2', setup)
                     output = stage / 'released'
                     output.mkdir()
                     version = (make_all.ROOT / 'VERSION').read_text().strip().replace('.', '')

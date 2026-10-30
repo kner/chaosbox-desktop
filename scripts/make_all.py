@@ -51,33 +51,41 @@ def ensure_server_key(ssh):
 
 
 def android_setup(settings, android):
-    """Use the shared Box format, commenting only settings Android does not consume."""
-    text = core.english_setup(settings.path.read_text(encoding='utf-8-sig'))
-    lines = list(core.logical_lines(text))
-    output = []
-    desktop_keys = {'language', 'editor', 'transport', 'shelldatadestination'}
-    obsolete_keys = {'standard', 'jpg', 'bilder', 'daten', 'imagedestination',
-                     'datadestination', 'sftpdatadestination'}
-    for name, values, begin, end in core.section_blocks(text):
-        section = name.casefold()
-        if section == 'textsnippets':
-            output.extend(lines[begin:end])
-            continue
-        desktop_section = section == 'poster'
-        if desktop_section:
-            output.append('; Desktop-only settings (unused by Android):')
-        for line in lines[begin:end]:
-            key = line.split('=', 1)[0].strip().casefold() if '=' in line else ''
-            if section.startswith('ssh') and key in ('keyfile', 'knownhosts'):
-                continue  # Android uses installation-owned credentials packaged separately.
-            if key in obsolete_keys:
-                continue
-            if desktop_section or key in desktop_keys:
-                output.extend('; ' + part if part else ';' for part in line.splitlines())
-            else:
-                output.append(line)
-    text = '\n'.join(output).rstrip() + '\n'
+    """Return the common setup used by Desktop and Android, with shared sync IDs."""
+    text = settings.path.read_text(encoding='utf-8-sig')
     return build_user_installer.bind_sync_targets(text, settings.profiles)
+
+
+def initial_setup(name):
+    """Adapt the first Box title in the bundled template without dropping entries."""
+    text = core.english_setup(core.DEFAULT_SETUP.read_text(encoding='utf-8-sig'))
+    lines = list(core.logical_lines(text))
+    first_title = None
+    for section, values, begin, end in core.section_blocks(text):
+        if section.casefold() != 'box':
+            continue
+        first_title = values.get('titel', '')
+        title_line = next((index for index in range(begin + 1, end)
+                           if '=' in lines[index]
+                           and lines[index].split('=', 1)[0].strip().casefold() == 'title'), None)
+        if title_line is None:
+            lines.insert(begin + 1, 'Title=' + name)
+        else:
+            key = lines[title_line].split('=', 1)[0]
+            lines[title_line] = key + '=' + name
+        break
+    if first_title:
+        for section, _, begin, end in core.section_blocks(text):
+            if section.casefold() != 'ssh.' + first_title.casefold():
+                continue
+            lines[begin] = '[SSH.' + name + ']'
+            for index in range(begin + 1, end):
+                if '=' in lines[index] and lines[index].split('=', 1)[0].strip().casefold() == 'remoteprofile':
+                    key = lines[index].split('=', 1)[0]
+                    lines[index] = key + '=' + name.casefold()
+    if first_title:
+        return '\n'.join(lines).rstrip() + '\n'
+    return text.rstrip() + f'\n\n[Box]\nTitle={name}\n'
 
 
 def upload_file(sftp, source, destination):
@@ -117,7 +125,7 @@ def _make_all(name, install_dir, android, web):
     setup_path = install_dir / 'setup.ini'
     if not setup_path.is_file():
         install_dir.mkdir(parents=True, exist_ok=True)
-        core.atomic_write(setup_path, f'[App]\n\n[Box]\nTitle={name}\n\n[SSH.{name}]\n')
+        core.atomic_write(setup_path, initial_setup(name))
     print(f'[1/6] Desktop installieren: {install_dir}', flush=True)
     run(ROOT / 'scripts/install-desktop.sh', '--installdir', install_dir)
     settings = core.Settings(install_dir)
@@ -126,6 +134,10 @@ def _make_all(name, install_dir, android, web):
         if '/' in profile.id or profile.setup_path != settings.path:
             raise ValueError('Der Gesamtbuild unterstützt derzeit Boxen aus der zentralen setup.ini; lokale Box-setups bitte zuerst zentral zusammenführen.')
     setup = android_setup(settings, android)
+    if setup != settings.path.read_text(encoding='utf-8-sig'):
+        core.atomic_write(settings.path, setup)
+        settings.reload()
+        setup = settings.path.read_text(encoding='utf-8-sig')
     configurations = [profile.options[2] for profile in settings.profiles]
     ssh = configurations[0]
     target_keys = ('host', 'port', 'user', 'keyfile', 'knownhosts', 'webinstallation')

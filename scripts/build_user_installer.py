@@ -39,17 +39,20 @@ def installation_setup(setup):
 
 def bind_sync_targets(text, profiles):
     import core
+    global_installation = next((values.get('installation', '').strip()
+                                for section, values, _, _ in core.section_blocks(text)
+                                if section.casefold() == 'ssh'), '')
     for profile in profiles:
         section = 'SSH.' + profile.id
         ssh = profile.options[2]
+        # Host and login settings belong in [SSH]. Keep each profile section
+        # limited to its data identity so both clients can use the same setup.
         values = {
-            'host': ('Host', ssh['host']),
-            'port': ('Port', ssh['port']),
-            'user': ('User', ssh['user']),
-            'webinstallation': ('WebInstallation', ssh.get('webinstallation', 'l1')),
             'installation': ('Installation', ssh['installation']),
             'remoteprofile': ('RemoteProfile', profile.id.casefold()),
         }
+        if global_installation:
+            values.pop('installation')
         lines = list(core.logical_lines(text))
         blocks = [block for block in core.section_blocks(text) if block[0].casefold() == section.casefold()]
         if blocks:
@@ -57,8 +60,11 @@ def bind_sync_targets(text, profiles):
             seen = set()
             for index in range(begin + 1, end):
                 key = lines[index].split('=', 1)[0].strip().casefold() if '=' in lines[index] else ''
-                if key in values:
-                    label, value = values[key]
+                if key in ('installation', 'remoteprofile'):
+                    label, value = ({
+                        'installation': ('Installation', ssh['installation']),
+                        'remoteprofile': ('RemoteProfile', profile.id.casefold()),
+                    })[key]
                     lines[index] = f'{label}={value}'
                     seen.add(key)
             lines[end:end] = [f'{label}={value}' for key, (label, value) in values.items() if key not in seen]
