@@ -33,6 +33,7 @@ _TEXT = {
         "Alle Dateien": "All files", "Box": "Box", "Quantity": "Quantity", "Device": "Device", "Alias": "Alias",
         "Category": "Category", "Comment": "Comment", "Package": "Package", "Select JPG, PNG or MP4 files": "Select JPG, PNG or MP4 files", "Preview: {path}": "Preview: {path}",
         "Comment diagnostic: changed in form = {changed}; read-back matches = {verified}.": "Comment diagnostic: changed in form = {changed}; read-back matches = {verified}.",
+        "External editor changes indexed.": "External editor changes indexed.",
         "yes": "yes", "no": "no",
     },
     "de": {
@@ -54,6 +55,7 @@ _TEXT = {
         "Box": "Box", "Quantity": "Anzahl", "Device": "Gerät", "Alias": "Alias", "Category": "Kategorie",
         "Comment": "Kommentar", "Package": "Packung", "Select JPG, PNG or MP4 files": "JPG-, PNG- oder MP4-Dateien auswählen", "Preview: {path}": "Vorschau: {path}",
         "Comment diagnostic: changed in form = {changed}; read-back matches = {verified}.": "Kommentarprüfung: Im Formular geändert = {changed}; Rücklesen stimmt überein = {verified}.",
+        "External editor changes indexed.": "Änderungen aus dem Grafikeditor wurden indexiert.",
         "yes": "ja", "no": "nein",
         "Open JPG / MP4": "JPG / MP4 öffnen", "Open JSON": "JSON öffnen", "Save": "Speichern",
         "Poster": "Poster", "Search": "Suchen", "Run search": "Suche ausführen",

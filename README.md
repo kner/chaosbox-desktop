@@ -144,9 +144,10 @@ in its `TXT` folder. Existing files are not moved automatically. Rebuild with
 `--newindex` after migrating data or changing the configured projects.
 
 All projects share one search index. Local saves update only affected entries.
-External changes become searchable after starting with `--newindex`. Loose
-media is organized into category folders when rebuilding the index; duplicate
-names are retained without overwriting files.
+Changes made in the configured graphic editor are detected and reindexed while
+the desktop app is open. Other external changes become searchable after
+starting with `--newindex`. Loose media is organized into category folders when
+rebuilding the index; duplicate names are retained without overwriting files.
 
 ## Editing
 
@@ -204,8 +205,10 @@ names are retained without overwriting files.
   longer required.
   Initial index creation reuses metadata already read while organizing files.
   Startup loads the shared index, building it only when absent or with `--newindex`.
-  Searches and profile switches reuse it. Run with `--newindex` after external
-  changes or profile configuration changes, or to replace a damaged cache.
+  Searches and profile switches reuse it. The app reindexes files changed by
+  the configured graphic editor while it is open. Run with `--newindex` after
+  other external changes or profile configuration changes, or to replace a
+  damaged cache.
 - Saved media goes into the category folder, or **unassigned** when no category
   is specified. Existing profile media moves there when its category changes;
   media already in the correct folder is updated in place. Imports receive a separate `_cb`

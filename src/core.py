@@ -1526,7 +1526,9 @@ def update_index(target, changed, progress=lambda _: None):
     """Replace changed sources while retaining entries from every other profile."""
     try:
         entries = load_index(target)
-    except FileNotFoundError:
+    except (FileNotFoundError, ValueError, KeyError, TypeError):
+        # A missing or stale cache must not block saving an otherwise valid
+        # image. Rebuild from the configured profiles and current file data.
         return build_index(target, progress)
     paths = set(map(Path, changed))
     entries = [entry for entry in entries if entry.source not in paths]

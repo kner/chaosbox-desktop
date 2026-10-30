@@ -667,6 +667,9 @@ class App:
         self.created = ""
         self.sync_needs_reload = False
         self.preview_path = None
+        self.editor_files = {}
+        self.editor_file_candidates = {}
+        self.editor_watch_after = None
         self.search_mode, self.before_search, self.last_search = False, None, None
         self.cancel_upload = threading.Event()
         self.uploading = False
@@ -1172,8 +1175,60 @@ class App:
             if not path.is_file():
                 raise FileNotFoundError(f"File not found: {path}")
             subprocess.Popen([self.settings.editor, str(path)])
+            if any(core.within(path, folder) for profile in self.settings.profiles
+                   for folder in (profile.images, profile.data)):
+                self.editor_files[path] = self.editor_file_signature(path)
+                self.editor_file_candidates.pop(path, None)
+                self.watch_editor_files()
         except OSError as error:
             self.error(error)
+
+    @staticmethod
+    def editor_file_signature(path):
+        try:
+            info = path.stat()
+            return info.st_mtime_ns, info.st_size, info.st_ino
+        except OSError:
+            return None
+
+    def watch_editor_files(self):
+        if self.editor_watch_after is None and not self.closing:
+            self.editor_watch_after = self.root.after(1000, self.check_editor_files)
+
+    def check_editor_files(self):
+        self.editor_watch_after = None
+        if self.closing:
+            return
+        changed = []
+        for path, previous in list(self.editor_files.items()):
+            signature = self.editor_file_signature(path)
+            if signature is None or signature == previous:
+                self.editor_file_candidates.pop(path, None)
+                continue
+            if self.editor_file_candidates.get(path) == signature:
+                if not self.busy:
+                    self.editor_files[path] = signature
+                    self.editor_file_candidates.pop(path, None)
+                    changed.append(path)
+            else:
+                self.editor_file_candidates[path] = signature
+        if changed:
+            def work():
+                core.update_index(self.settings, changed, self.log)
+                current = self.preview_path.resolve() if self.preview_path else None
+                return {path: self.preview_result(path) for path in changed if path == current}
+
+            def done(previews):
+                status = self.t("External editor changes indexed.")
+                for path, (image, warning) in previews.items():
+                    if self.preview_path and self.preview_path.resolve() == path:
+                        self.preview.set_image(image)
+                        if warning:
+                            status = warning
+                self.status.set(status)
+
+            self.task(work, done)
+        self.watch_editor_files()
 
     def values(self):
         data = {key: variable.get() for key, variable in self.variables.items()}
