@@ -159,10 +159,14 @@ def _make_all(name, install_dir, android, web):
         import os
         run('bash', web / 'scripts/upload-exif.sh', ssh['user'] + '@' + ssh['host'], web_root,
             env={**os.environ, 'PATH': temp + ':' + os.environ.get('PATH', '')})
-    print('[3/6] Alle Boxen synchronisieren', flush=True)
-    for profile in settings.profiles:
-        settings.profile(profile.id)
-        core.upload(settings, profile, threading.Event(), print)
+    profile = next((profile for profile in settings.profiles
+                    if profile.id.casefold() == name.casefold()), None)
+    if profile is None:
+        available = ', '.join(profile.id for profile in settings.profiles)
+        raise ValueError(f'Box „{name}“ ist in {settings.path} nicht eingerichtet. Verfügbar: {available}')
+    print(f'[3/6] Box {profile.id} synchronisieren', flush=True)
+    settings.profile(profile.id)
+    core.upload(settings, profile, threading.Event(), print)
     print('[4/6] Signierte APK mit Installations-Setup bauen', flush=True)
     apk_name = f'KBox-{name}-{versions[0].replace(".", "")}.apk'
     with tempfile.TemporaryDirectory(prefix='kbox-android-') as temp:
