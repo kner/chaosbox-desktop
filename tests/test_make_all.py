@@ -2,7 +2,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import core
 import make_all
@@ -62,7 +62,7 @@ class MakeAllTests(unittest.TestCase):
         sftp.posix_rename.assert_not_called()
         sftp.remove.assert_called_once()
 
-    def test_missing_installation_setup_stops_before_installing_defaults(self):
+    def test_missing_installation_setup_is_seeded_for_requested_box(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             android, web = root / 'android', root / 'web'
@@ -70,8 +70,15 @@ class MakeAllTests(unittest.TestCase):
             for project in (android, web):
                 project.mkdir(exist_ok=True)
                 (project / 'VERSION').write_text((make_all.ROOT / 'VERSION').read_text())
-            with self.assertRaisesRegex(ValueError, 'Installation-setup.ini fehlt'):
-                make_all._make_all('Haushalt', root / 'Kbox-Haushalt', android, web)
+            (android / 'sign.sh').touch()
+            (android / 'configure-adb-sync.py').touch()
+            (web / 'scripts/upload-exif.sh').touch()
+            with patch.object(make_all, 'run', side_effect=RuntimeError('stop after seeding')):
+                with self.assertRaisesRegex(RuntimeError, 'stop after seeding'):
+                    make_all._make_all('Haushalt', root / 'Kbox-Haushalt', android, web)
+            setup = (root / 'Kbox-Haushalt/setup.ini').read_text()
+            self.assertIn('[Box]\nTitle=Haushalt', setup)
+            self.assertIn('[SSH.Haushalt]', setup)
 
     def test_pipeline_order_and_apk_setup(self):
         import contextlib

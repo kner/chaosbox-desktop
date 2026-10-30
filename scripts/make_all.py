@@ -108,12 +108,16 @@ def _make_all(name, install_dir, android, web):
     versions = [(p / 'VERSION').read_text().strip() for p in (ROOT, android, web)]
     if len(set(versions)) != 1:
         raise ValueError('VERSION muss in allen drei Projekten identisch sein.')
-    if not (install_dir / 'setup.ini').is_file():
-        raise ValueError(f'Installation-setup.ini fehlt: {install_dir / "setup.ini"}. '
-                         'Gesamtbuild abgebrochen, damit keine APK mit Standardkonfiguration entsteht.')
     for file in (android / 'sign.sh', android / 'configure-adb-sync.py', web / 'scripts/upload-exif.sh'):
         if not file.is_file():
             raise ValueError(f'Datei fehlt: {file}')
+    # A named make-all run on a fresh installation owns its initial box name.
+    # Seed this before desktop installation so neither the desktop installer nor
+    # the APK build can fall back to the generic bundled profiles.
+    setup_path = install_dir / 'setup.ini'
+    if not setup_path.is_file():
+        install_dir.mkdir(parents=True, exist_ok=True)
+        core.atomic_write(setup_path, f'[App]\n\n[Box]\nTitle={name}\n\n[SSH.{name}]\n')
     print(f'[1/6] Desktop installieren: {install_dir}', flush=True)
     run(ROOT / 'scripts/install-desktop.sh', '--installdir', install_dir)
     settings = core.Settings(install_dir)
