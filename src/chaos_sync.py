@@ -382,11 +382,18 @@ class Store:
 
     def embed_media(self,path):
         path=Path(path);relative=path.relative_to(self.images).as_posix()
-        for ops in self.heads().values():
-            if len(ops)!=1:continue
-            op=ops[0]
-            if op['kind']=='media' and op['path']==relative and op['action']=='put' and self.writer:
-                self.writer(path,op['record']);self.remember(op,path);return
+        if not self.reader or not self.writer:return
+        record=self.reader(path)
+        ident=record.get('id')
+        candidates=[versions[0] for versions in self.heads().values()
+                    if len(versions)==1 and versions[0]['id']==ident
+                    and versions[0]['kind']=='media' and versions[0]['path']==relative
+                    and versions[0]['action']=='put']
+        if len(candidates)==1:
+            op=candidates[0]
+            if clean(record)!=clean(op['record']):
+                raise ValueError('Image metadata changed after synchronization capture; the file was left unchanged.')
+            self.writer(path,op['record']);self.remember(op,path)
 
     def materialized(self):
         file=self.root/'materialized.json'
@@ -507,10 +514,40 @@ class Store:
         self.capture()
         if selected is None:
             relative=path.relative_to(self.images).as_posix()
-            candidates=[op for ops in self.heads().values() for op in ops if op['kind']=='media' and op['path']==relative]
-            if not candidates: raise ValueError('Media is not registered')
-            record=candidates[0]['record']
-            self.issue('media',relative,record,deleted=True)
+            if not path.is_file() or self.reader is None:
+                raise ValueError('Media is missing or cannot be registered: '+str(path))
+            heads=self.heads()
+            candidates=[op for ops in heads.values() for op in ops
+                        if op['kind']=='media' and op['path']==relative and op['action']=='put']
+            if not candidates:
+                # --newindex can migrate an image to a categorized path before
+                # it has a matching journal entry. Capture it here so deletion
+                # has a revision and payload to tombstone safely.
+                record=self.reader(path)
+                self.issue('media',relative,record,path,target=path)
+                heads=self.heads()
+                candidates=[op for ops in heads.values() for op in ops
+                            if op['kind']=='media' and op['path']==relative and op['action']=='put']
+            if not candidates: raise ValueError('Media could not be registered for deletion: '+str(path))
+            by_identity={}
+            for op in candidates:by_identity.setdefault(op['id'],[]).append(op)
+            for ident,versions in by_identity.items():
+                parents=[op['revision'] for op in versions]
+                self.issue('media',relative,versions[0]['record'],deleted=True,parents=parents)
+            # Deleting this file must not require applying unrelated journal
+            # entries. Other duplicate-path heads can otherwise block a local
+            # deletion even after every registration for this path was removed.
+            known_blobs={op.get('blob') for op in self.operations().values()
+                         if op.get('id') in by_identity and op.get('kind')=='media'}
+            materialized=self.materialized()
+            known_blobs.update(materialized.get(op['revision']) for op in self.operations().values()
+                               if op.get('id') in by_identity and op.get('kind')=='media')
+            if digest(path) not in known_blobs:
+                raise ValueError('Media changed during deletion; the file was left in place: '+str(path))
+            self.trash(path,'media')
+            self.checksums()
+            return {ident:versions for ident,versions in self.heads().items()
+                    if len(versions)>1 and versions[0]['kind']!='device'}
         else:
             records=json.loads(path.read_text())
             if not 0 <= selected < len(records): raise ValueError("The selected record no longer exists")

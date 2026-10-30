@@ -1078,6 +1078,18 @@ class App:
                         if self.upload_text is not None and self.upload_text.winfo_exists():
                             self.upload_text.insert("end", item[1] + "\n")
                             self.upload_text.see("end")
+                    elif item[0] == "editor-indexed":
+                        previews = item[1]
+                        for path, (image, warning) in previews.items():
+                            if self.preview_path and self.preview_path.resolve() == path:
+                                self.preview.set_image(image)
+                                if warning:
+                                    self.status.set(warning)
+                                    break
+                        else:
+                            self.status.set(self.t("External editor changes indexed."))
+                    elif item[0] == "editor-index-error":
+                        self.error(item[1])
                     else:
                         self.busy = False
                         self.progress.stop()
@@ -1206,28 +1218,22 @@ class App:
                 self.editor_file_candidates.pop(path, None)
                 continue
             if self.editor_file_candidates.get(path) == signature:
-                if not self.busy:
-                    self.editor_files[path] = signature
-                    self.editor_file_candidates.pop(path, None)
-                    changed.append(path)
+                self.editor_files[path] = signature
+                self.editor_file_candidates.pop(path, None)
+                changed.append(path)
             else:
                 self.editor_file_candidates[path] = signature
         if changed:
             def work():
-                core.update_index(self.settings, changed, self.log)
-                current = self.preview_path.resolve() if self.preview_path else None
-                return {path: self.preview_result(path) for path in changed if path == current}
+                try:
+                    core.update_index(self.settings, changed)
+                    current = self.preview_path.resolve() if self.preview_path else None
+                    previews = {path: self.preview_result(path) for path in changed if path == current}
+                    self.events.put(("editor-indexed", previews, None))
+                except Exception as error:
+                    self.events.put(("editor-index-error", error, None))
 
-            def done(previews):
-                status = self.t("External editor changes indexed.")
-                for path, (image, warning) in previews.items():
-                    if self.preview_path and self.preview_path.resolve() == path:
-                        self.preview.set_image(image)
-                        if warning:
-                            status = warning
-                self.status.set(status)
-
-            self.task(work, done)
+            self.executor.submit(work)
         self.watch_editor_files()
 
     def values(self):
@@ -1751,7 +1757,7 @@ class App:
             batch_records = ([core.edited_metadata(original, values, self.media_baseline,
                               mode=getattr(self, "media_edit_mode", "auto"),
                               differing_fields=getattr(self, "media_differing_fields", ()))
-                              for original in self.media_records] if len(self.media) > 1 else None)
+                              for original in self.media_records] if self.media else None)
             record = core.validate_record(values)
             expected_records = batch_records if batch_records is not None else ([record] if self.media else [])
             original_records = list(getattr(self, "media_records", ()))
@@ -1778,8 +1784,14 @@ class App:
                         except Exception as index_error:
                             self.log(f"Search index update failed: {index_error}")
                     raise
-                result = ("media", saved, self.preview_result(saved[0]),
-                          core.read_metadata_batch(saved, self.log))
+                saved_records = core.read_metadata_batch(saved, self.log)
+                for index, (actual, expected) in enumerate(zip(saved_records, expected_records)):
+                    mismatches = [field for field in core.FIELDS
+                                  if str(actual.get(field, "")) != str(expected.get(field, ""))]
+                    if mismatches:
+                        raise ValueError(self.t("Saved image metadata did not match the form for {name}: {fields}",
+                                                name=saved[index].name, fields=", ".join(mismatches)))
+                result = ("media", saved, self.preview_result(saved[0]), saved_records)
             else:
                 records, index = core.save_box(path, record, selected)
                 result = ("json", records, index)
@@ -1793,7 +1805,7 @@ class App:
         def done(result):
             saved_result, warning = result
             self.profile = self.settings.profile(profile.id)
-            if self.individual_paths and saved_result[0] == "media":
+            if saved_result[0] == "media" and (self.individual_paths or len(saved_result[1]) == 1):
                 _, saved_paths, (image, preview_warning), records = saved_result
                 comment_changed = bool(original_records) and str(expected_records[0].get("comment", "")) != str(original_records[0].get("comment", ""))
                 comment_verified = bool(records) and str(records[0].get("comment", "")) == str(expected_records[0].get("comment", ""))
@@ -1806,12 +1818,17 @@ class App:
                 self.fill(records[0])
                 self.set_preview_path(path)
                 self.preview.set_image(image)
-                self.selected.set(self.t("Einzelbild {current}/{total} · {name}", current=self.individual_index + 1,
-                                         total=len(self.individual_paths), name=path.name))
+                if self.individual_paths:
+                    self.selected.set(self.t("Einzelbild {current}/{total} · {name}", current=self.individual_index + 1,
+                                             total=len(self.individual_paths), name=path.name))
+                    saved_message = self.t("Einzelbild gespeichert. Sie können weiterblättern oder die Felder leeren.")
+                else:
+                    self.selected.set(self.t("Saved image: {name}", name=path.name))
+                    saved_message = self.t("Image saved. You can continue editing or clear the fields.")
                 diagnostic = self.t("Comment diagnostic: changed in form = {changed}; read-back matches = {verified}.",
                                      changed=self.t("yes") if comment_changed else self.t("no"),
                                      verified=self.t("yes") if comment_verified else self.t("no"))
-                self.status.set(warning or preview_warning or (self.t("Einzelbild gespeichert. Sie können weiterblättern oder die Felder leeren.") + " · " + diagnostic))
+                self.status.set(warning or preview_warning or (saved_message + " · " + diagnostic))
                 return
             diagnostic = ""
             if saved_result[0] == "media":

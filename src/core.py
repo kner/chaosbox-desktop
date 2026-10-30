@@ -1405,10 +1405,12 @@ def save_media(source, profile, metadata, image_width):
         metadata = dict(metadata)
         if within(Path(source), profile.images):
             relative = Path(source).resolve().relative_to(profile.images.resolve()).as_posix()
-            candidates = [op for ops in store.heads().values() for op in ops
-                          if op['kind']=='media' and op['path']==relative and op['action']=='put']
-            if len(candidates)==1:
-                metadata.update({key:candidates[0]['record'][key] for key in ('id','revision')})
+            candidates = [op for versions in store.heads().values() for op in versions
+                          if op['kind'] == 'media' and op['path'] == relative and op['action'] == 'put']
+            matching_id = [op for op in candidates if op['id'] == metadata.get('id')]
+            candidate = matching_id[0] if len(matching_id) == 1 else candidates[0] if len(candidates) == 1 else None
+            if candidate is not None:
+                metadata.update({key: candidate['record'][key] for key in ('id', 'revision')})
         metadata.setdefault("id", str(uuid.uuid4()))
         result = _save_media(source, profile, metadata, image_width)
         store.capture()
