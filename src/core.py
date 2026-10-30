@@ -762,8 +762,10 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
     for number, page in enumerate(pages, 1):
         progress(f"Poster page: {number}/{len(pages)}")
         indices = [item[0] for item in page]
+        page_title = next((str(metadata[index].get("box", "")).strip()
+                           for index in indices if str(metadata[index].get("box", "")).strip()), "")
         outputs.append(create_poster([paths[index] for index in indices], profile, settings, progress,
-                                     title=str(metadata[indices[0]].get("box", "")),
+                                     title=page_title,
                                      metadata=[metadata[index] for index in indices],
                                      placements=[item[1:] for item in page], setup_dir=setup_dir))
     return outputs
@@ -792,7 +794,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
         title = str(metadata[0].get("box", ""))
     gap = max(1, round(3 * scale))
     title_font, title_lines, title_line_height, title_height = poster_text(
-        [title], content_width, content_height * .15, round(5 * scale), round(1.5 * scale), True)
+        [title], content_width, content_height * .15, round(4 * scale), round(1.2 * scale), True)
     grid_top = top_edge + title_height + (gap if title_height else 0)
     bounds = (left_edge, grid_top, right_edge, bottom_edge)
     if placements is None:
