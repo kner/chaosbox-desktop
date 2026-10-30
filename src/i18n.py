@@ -32,6 +32,8 @@ _TEXT = {
         "Markdown": "Markdown", "Preview": "Preview", "Delete": "Delete", "ChaosBox startup": "ChaosBox startup", "Bilder und Videos": "Images and videos",
         "Alle Dateien": "All files", "Box": "Box", "Quantity": "Quantity", "Device": "Device", "Alias": "Alias",
         "Category": "Category", "Comment": "Comment", "Package": "Package", "Select JPG, PNG or MP4 files": "Select JPG, PNG or MP4 files", "Preview: {path}": "Preview: {path}",
+        "Comment diagnostic: changed in form = {changed}; read-back matches = {verified}.": "Comment diagnostic: changed in form = {changed}; read-back matches = {verified}.",
+        "yes": "yes", "no": "no",
     },
     "de": {
         'Drop JPG, PNG or MP4 here, or select files.': 'JPG, PNG oder MP4 hierher ziehen oder Dateien auswählen.', 'Drag and drop requires tkdnd. File selection remains available.': 'Drag & Drop benötigt tkdnd. Die Dateiauswahl bleibt verfügbar.', 'Drop one media file to attach to this JSON record.': 'Zum Verknüpfen mit diesem JSON-Datensatz eine Mediendatei ablegen.',
@@ -51,6 +53,8 @@ _TEXT = {
         "Delete": "Löschen", "ChaosBox startup": "ChaosBox konnte nicht gestartet werden", "Bilder und Videos": "Bilder und Videos", "Alle Dateien": "Alle Dateien",
         "Box": "Box", "Quantity": "Anzahl", "Device": "Gerät", "Alias": "Alias", "Category": "Kategorie",
         "Comment": "Kommentar", "Package": "Packung", "Select JPG, PNG or MP4 files": "JPG-, PNG- oder MP4-Dateien auswählen", "Preview: {path}": "Vorschau: {path}",
+        "Comment diagnostic: changed in form = {changed}; read-back matches = {verified}.": "Kommentarprüfung: Im Formular geändert = {changed}; Rücklesen stimmt überein = {verified}.",
+        "yes": "ja", "no": "nein",
         "Open JPG / MP4": "JPG / MP4 öffnen", "Open JSON": "JSON öffnen", "Save": "Speichern",
         "Poster": "Poster", "Search": "Suchen", "Run search": "Suche ausführen",
         "Repeat search": "Suche wiederholen", "Clear all": "Alles leeren", "Clear fields": "Felder leeren",

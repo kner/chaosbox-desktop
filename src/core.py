@@ -654,9 +654,11 @@ def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
         if zoom <= 1:
             shapes.append((base_rows, 1))
             continue
-        if zoom > cols * rows / base_rows:
-            raise ValueError(f"Poster zoom for photo {index + 1} exceeds the configured grid capacity.")
-        required = math.ceil(base_rows * zoom)
+        # A requested zoom can exceed the available page, especially for
+        # portraits that already reserve two rows. Use the largest area the
+        # configured grid can provide so one oversized photo cannot prevent
+        # the poster from being created.
+        required = min(math.ceil(base_rows * zoom), cols * rows)
         aspect = aspect_ratios[index] if aspect_ratios is not None else (.5 if portrait else 1)
         candidates = [(height, width) for height in range(base_rows, rows + 1)
                       for width in range(1, cols + 1) if height * width >= required]

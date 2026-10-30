@@ -1698,6 +1698,8 @@ class App:
                               differing_fields=getattr(self, "media_differing_fields", ()))
                               for original in self.media_records] if len(self.media) > 1 else None)
             record = core.validate_record(values)
+            expected_records = batch_records if batch_records is not None else ([record] if self.media else [])
+            original_records = list(getattr(self, "media_records", ()))
             path = self.box_path if self.box_path else self.profile.data / core.box_filename(record["box"]) if not self.media else None
         except Exception as error:
             self.error(error)
@@ -1738,6 +1740,8 @@ class App:
             self.profile = self.settings.profile(profile.id)
             if self.individual_paths and saved_result[0] == "media":
                 _, saved_paths, (image, preview_warning), records = saved_result
+                comment_changed = bool(original_records) and str(expected_records[0].get("comment", "")) != str(original_records[0].get("comment", ""))
+                comment_verified = bool(records) and str(records[0].get("comment", "")) == str(expected_records[0].get("comment", ""))
                 path = saved_paths[0]
                 self.individual_paths[self.individual_index] = path
                 self.media, self.box_path, self.records, self.record_index = saved_paths, None, [], None
@@ -1749,10 +1753,26 @@ class App:
                 self.preview.set_image(image)
                 self.selected.set(self.t("Einzelbild {current}/{total} · {name}", current=self.individual_index + 1,
                                          total=len(self.individual_paths), name=path.name))
-                self.status.set(warning or preview_warning or self.t("Einzelbild gespeichert. Sie können weiterblättern oder die Felder leeren."))
+                diagnostic = self.t("Comment diagnostic: changed in form = {changed}; read-back matches = {verified}.",
+                                     changed=self.t("yes") if comment_changed else self.t("no"),
+                                     verified=self.t("yes") if comment_verified else self.t("no"))
+                self.status.set(warning or preview_warning or (self.t("Einzelbild gespeichert. Sie können weiterblättern oder die Felder leeren.") + " · " + diagnostic))
                 return
+            diagnostic = ""
+            if saved_result[0] == "media":
+                _, _, _, saved_records = saved_result
+                comment_changed = any(
+                    index < len(original_records) and
+                    str(expected.get("comment", "")) != str(original_records[index].get("comment", ""))
+                    for index, expected in enumerate(expected_records))
+                comment_verified = len(saved_records) == len(expected_records) and all(
+                    str(actual.get("comment", "")) == str(expected.get("comment", ""))
+                    for actual, expected in zip(saved_records, expected_records))
+                diagnostic = " · " + self.t("Comment diagnostic: changed in form = {changed}; read-back matches = {verified}.",
+                                             changed=self.t("yes") if comment_changed else self.t("no"),
+                                             verified=self.t("yes") if comment_verified else self.t("no"))
             self.clear()
-            self.status.set(warning or self.t("Saved locally. Use Upload to synchronize manually."))
+            self.status.set(warning or (self.t("Saved locally. Use Upload to synchronize manually.") + diagnostic))
         def failed(error):
             if isinstance(error, core.BatchError):
                 self.media = error.selection
