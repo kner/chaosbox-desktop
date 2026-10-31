@@ -536,6 +536,7 @@ class MediaGrid(ttk.Frame):
         bottom = int((canvas.canvasy(0) + canvas.winfo_height()) // self.cell_height) + 1
         self.visible = list(range(top * self.columns, min(len(self.paths), bottom * self.columns)))
         self.photo_cache = {index: cached for index, cached in self.photo_cache.items() if index in self.visible}
+        sequence_numbers = {index: number for number, index in enumerate(self.selected, start=1)}
         if not self.paths:
             canvas.create_text(width / 2, 60, text=self.t("Keine Medien gefunden. Verwende „Andere Dateien …“, um Bilder zu importieren."),
                                width=max(100, width - 40), fill="#475569")
@@ -580,8 +581,16 @@ class MediaGrid(ttk.Frame):
                                    anchor="n", text=self.comments.get(index, self.t("Metadaten werden geladen …")),
                                    width=max(12, self.cell_width - 14),
                                    font=("Sans", 9), fill="#475569")
-            canvas.create_text(x + 9, y + 9, anchor="nw", text="☑" if selected else "☐",
-                               fill="#1d4ed8", font=("Sans", 14, "bold"))
+            if selected:
+                badge = canvas.create_text(x + 15, y + 11, anchor="nw", text=str(sequence_numbers[index]),
+                                           fill="white", font=("Sans", 14, "bold"))
+                left, top, right, bottom = canvas.bbox(badge)
+                background = canvas.create_rectangle(left - 6, top - 2, right + 6, bottom + 2,
+                                                     fill="#1d4ed8", outline="white")
+                canvas.tag_raise(badge, background)
+            else:
+                canvas.create_text(x + 9, y + 9, anchor="nw", text="☐",
+                                   fill="#1d4ed8", font=("Sans", 14, "bold"))
 
     def poll(self):
         self.pending = None
