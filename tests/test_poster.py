@@ -157,6 +157,39 @@ class PosterTests(unittest.TestCase):
                 centers.append((min(x for x, y in points) + max(x for x, y in points)) / 2)
             self.assertAlmostEqual(centers[1] - centers[0], centers[2] - centers[1], delta=2)
 
+    def test_angle_parsing_and_rotated_layout(self):
+        for value, expected in (("", 0), ("90", 90), ("-90", 270), ("360", 0), ("22,5", 22.5)):
+            self.assertEqual(core.poster_angle({"device": value}), expected)
+        for value in ("bad", "nan", "inf"):
+            with self.assertRaisesRegex(ValueError, "field 3"):
+                core.poster_angle({"device": value})
+        settings = core.PosterSettings(800, 200, 200, 2, 2, False)
+        Image.new("RGB", (200, 100), "red").save(self.paths[0])
+        page = core.poster_photo_pages(self.paths[:1], [{"device": "90"}], settings)
+        self.assertEqual(page, [[(0, 0, 0, 2, 1)]])
+
+    def test_photo_and_caption_rotate_together(self):
+        Image.new("RGB", (200, 100), "red").save(self.paths[0])
+        before = self.paths[0].read_bytes()
+        def caption_marker(draw, document, left, top, width):
+            draw.rectangle((left, top, left + width - 1, top + document.height - 1), fill="blue")
+        for angle in (90, -90):
+            with patch("core.markdown_render.draw_poster", side_effect=caption_marker):
+                output = core.create_poster(self.paths[:1], self.profile,
+                    core.PosterSettings(600, 200, 200, 1, 1, True),
+                    metadata=[{"device": str(angle), "comment": "Caption"}])
+            with Image.open(output) as image:
+                centers = []
+                for channel in (0, 2):
+                    points = [(x, y) for y in range(image.height) for x in range(image.width)
+                              if image.getpixel((x, y))[channel] > 180
+                              and image.getpixel((x, y))[2 - channel] < 60]
+                    self.assertTrue(points)
+                    centers.append(sum(x for x, y in points) / len(points))
+                # A caption below the image moves left clockwise, right counterclockwise.
+                self.assertEqual(centers[1] < centers[0], angle == 90)
+        self.assertEqual(self.paths[0].read_bytes(), before)
+
     def test_only_comment_is_caption(self):
         record = {"box": "Title", "comment": "Original", "category": "Category"}
         self.assertEqual(core.poster_caption(record), "Original")

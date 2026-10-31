@@ -628,6 +628,23 @@ def poster_caption(record):
     return str(record.get("comment", "")).strip()
 
 
+def poster_angle(record):
+    value = str(record.get("device", "") or "").strip()
+    try:
+        angle = float(value.replace(",", ".")) if value else 0
+    except ValueError as error:
+        raise ValueError(f"Invalid poster angle in field 3: {value!r}.") from error
+    if not math.isfinite(angle):
+        raise ValueError("Poster angle in field 3 must be a finite number.")
+    return angle % 360
+
+
+def poster_rotated_size(width, height, angle):
+    radians = math.radians(angle)
+    cosine, sine = abs(math.cos(radians)), abs(math.sin(radians))
+    return width * cosine + height * sine, width * sine + height * cosine
+
+
 def poster_zoom(record):
     value = str(record.get("anzahl", "")).strip()
     if not value:
@@ -692,11 +709,12 @@ def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
 
 def poster_photo_pages(paths, metadata, settings):
     portraits, aspects = [], []
-    for path in paths:
+    for path, record in zip(paths, metadata):
         with Image.open(path) as source:
             photo = ImageOps.exif_transpose(source)
-            portraits.append(photo.width < photo.height)
-            aspects.append(photo.width / photo.height)
+            width, height = poster_rotated_size(photo.width, photo.height, poster_angle(record))
+            portraits.append(width + 1e-8 < height)
+            aspects.append(width / height)
     zooms = None if settings.fixed else [poster_zoom(record) for record in metadata]
     return poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed,
                         zooms=zooms, aspect_ratios=aspects,
@@ -838,6 +856,31 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
         left, top, right, bottom = left + inset, top + inset, right - inset, bottom - inset
         with Image.open(path) as source:
             photo = ImageOps.exif_transpose(source).convert("RGBA")
+            angle = poster_angle(metadata[index])
+            if angle:
+                available_width, available_height = right - left, bottom - top
+                # Compose in the photo's original orientation, then rotate the
+                # entire photo/caption group clockwise into the panel.
+                local_width, local_height = available_width, available_height
+                if 45 <= angle % 180 <= 135:
+                    local_width, local_height = local_height, local_width
+                documents, text_height = markdown_render.fit(
+                    [comments[index]], local_width, local_height * .4,
+                    round(3 * scale), round(1 * scale))
+                text_gap = max(1, round(scale)) if text_height else 0
+                image_height = local_height - text_height - text_gap
+                if image_height < 1:
+                    raise ValueError("No room for images below poster captions.")
+                photo = ImageOps.contain(photo, (local_width, image_height), Image.Resampling.LANCZOS)
+                group = Image.new("RGBA", (local_width, photo.height + text_gap + text_height))
+                group.alpha_composite(photo, ((local_width - photo.width) // 2, 0))
+                markdown_render.draw_poster(ImageDraw.Draw(group), documents[0],
+                                            0, photo.height + text_gap, local_width)
+                group = group.rotate(-angle, resample=Image.Resampling.BICUBIC, expand=True)
+                group = ImageOps.contain(group, (available_width, available_height), Image.Resampling.LANCZOS)
+                canvas.paste(group, (left + (available_width - group.width) // 2,
+                                     top + (available_height - group.height) // 2), group)
+                continue
             image_height = bottom - top - caption_space
             if image_height < 1:
                 raise ValueError("No room for images below poster captions.")

@@ -626,3 +626,5 @@ falling back to the main channel when the server refuses additional channels.
 Remote image checksum reads use bounded prefetching to reduce round trips.
 Remote TXT JSON updates also use up to four channels, list each parent directory
 once, and download existing JSON only when its size matches the desired content.
+
+Poster field 3 (`device`) sets the clockwise rotation in degrees for the photo and its caption together: `90` rotates clockwise, `-90` counterclockwise. Empty or `0` leaves them upright. Finite numeric angles are required; automatic layout uses the rotated image orientation. The poster title remains upright.
