@@ -2157,7 +2157,7 @@ class App:
             self.uploading = False
             cancel.configure(text=self.t("Close"), command=close)
             if error:
-                text.insert("end", f"\n{error}\n")
+                text.insert("end", "\n" + describe(error, self.t) + "\n")
                 dialog.title(self.t("Upload cancelled" if isinstance(error, core.Cancelled) else "Upload failed"))
             else:
                 self.sync_needs_reload = bool(self.media or self.box_path)

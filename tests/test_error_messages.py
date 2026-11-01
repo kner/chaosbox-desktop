@@ -39,3 +39,35 @@ class ErrorMessagesTest(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('Your options:', result.stderr)
             self.assertNotIn('Traceback (most recent call last)', result.stderr)
+
+
+class UploadDialogErrorTest(unittest.TestCase):
+    def test_upload_failure_includes_guidance_in_the_upload_window(self):
+        from unittest.mock import Mock, patch
+        from app import App
+        import core
+        for error, title in (
+            (ValueError('Untracked file collision: /JPG/photo.jpg'), 'Upload failed'),
+            (core.Cancelled('Synchronization cancelled'), 'Upload cancelled'),
+            (RuntimeError('Unexpected failure'), 'Upload failed'),
+        ):
+            with self.subTest(error=error):
+                app = App.__new__(App)
+                app.busy = False
+                app.root = Mock()
+                app.t = lambda text: text
+                app.cancel_upload = Mock()
+                app.media = []
+                app.box_path = None
+                app.task = Mock()
+                with patch('app.tk.Toplevel') as window, patch('app.tk.Text') as text, patch('app.ttk.Button') as button:
+                    app.start_upload()
+                    failed = app.task.call_args.args[2]
+                    failed(error)
+                    message = text.return_value.insert.call_args.args[1]
+                    self.assertIn(str(error), message)
+                    self.assertIn('What happened:', message)
+                    self.assertIn('Your options:', message)
+                    window.return_value.title.assert_called_with(title)
+                    button.return_value.configure.assert_called_once()
+                    self.assertFalse(app.uploading)
