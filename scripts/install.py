@@ -83,7 +83,7 @@ def install(home=None, credentials=True, installdir=None):
         settings.reload()
     shared = home / ".local/share/chaosbox/desktop"
     shared.mkdir(parents=True, exist_ok=True)
-    for name in ("VERSION", "app.py", "core.py", "chaos_sync.py", "sync_transport.py", "sync-data.py", "cleanup-sync.py", "i18n.py", "markdown_render.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
+    for name in ("VERSION", "app.py", "core.py", "error_messages.py", "chaos_sync.py", "sync_transport.py", "sync-data.py", "cleanup-sync.py", "i18n.py", "markdown_render.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
         origin = source / "VERSION" if name == "VERSION" else payload / name
         if name in ("sync-data.py", "cleanup-sync.py"):
             origin = source / "scripts" / name

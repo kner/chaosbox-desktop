@@ -52,3 +52,5 @@ This reference covers every versioned production source, script, and test source
 | `tests/tk_markdown_smoke.py`, `tests/tk_smoke.py` | Optional Tk widget/rendering smoke checks. |
 
 Run the Python suite with `python3 -m unittest` from this repository. The protocol contract is documented separately in `SYNC-PROTOCOL.md`.
+
+User-visible errors retain technical details and add a cause explanation and recovery options. `src/error_messages.py` serves desktop dialogs and `scripts/sync-data.py`. Unknown errors receive conservative fallback guidance; completed steps are not assumed to have rolled back.

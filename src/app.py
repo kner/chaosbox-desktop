@@ -19,6 +19,7 @@ from tkinter import ttk, messagebox, simpledialog
 from PIL import Image, ImageTk
 
 import core
+from error_messages import describe
 from i18n import translate
 import markdown_render
 
@@ -298,7 +299,7 @@ class FileOpenDialog(simpledialog.Dialog):
             else:
                 files.sort(key=lambda item: (-item[1], item[0].name.casefold()))
         except OSError as error:
-            messagebox.showerror(self.title(), str(error), parent=self)
+            messagebox.showerror(self.title(), describe(error), parent=self)
             return
         self.folder = folder
         self.location.set(str(folder))
@@ -391,7 +392,7 @@ class MediaFolderDialog(simpledialog.Dialog):
             directories = sorted((path for path in folder.iterdir() if path.is_dir()),
                                  key=lambda path: path.name.casefold())
         except OSError as error:
-            messagebox.showerror(self.t("Select media folder"), str(error), parent=self)
+            messagebox.showerror(self.t("Select media folder"), describe(error), parent=self)
             return
         self.folder, self.directories = folder, directories
         self.location.set(str(folder))
@@ -414,7 +415,7 @@ class MediaFolderDialog(simpledialog.Dialog):
 
     def validate(self):
         if not self.selected_folder().is_dir():
-            messagebox.showerror(self.t("Select media folder"), self.t("This folder is no longer available."), parent=self)
+            messagebox.showerror(self.t("Select media folder"), describe(ValueError("This folder is no longer available. Select an existing folder or reconnect its drive.")), parent=self)
             return False
         return True
 
@@ -1118,7 +1119,7 @@ class App:
                 self.root.after(80, self.drain)
 
     def error(self, error):
-        message = self.t(str(error))
+        message = describe(error, self.t)
         self.status.set(message.splitlines()[0] if message else type(error).__name__)
         messagebox.showerror(self.t("ChaosBox"), message, parent=self.root)
 
@@ -1497,7 +1498,7 @@ class App:
         if any(path.is_symlink() or not core.within(path.resolve(), self.profile.images.resolve())
                for path in paths):
             messagebox.showerror(self.t("Del Selection"),
-                self.t("Only media inside the current dataset can be deleted."), parent=dialog)
+                describe(ValueError("Only media inside the current dataset can be deleted. Select the matching dataset first, or manage external files in your file manager.")), parent=dialog)
             return
         if not messagebox.askyesno(self.t("Del Selection"), self.t(
                 "Remove {count} selected media file(s) from the dataset and their original disk locations? "
@@ -2073,7 +2074,7 @@ class App:
                 dialog.destroy()
                 self.initialize()
             except Exception as error:
-                messagebox.showerror(self.t("Setup"), str(error), parent=dialog)
+                messagebox.showerror(self.t("Setup"), describe(error), parent=dialog)
         ttk.Button(dialog, text=self.t("Save"), command=save).pack(side="right", padx=10, pady=10)
         ttk.Button(dialog, text=self.t("Cancel"), command=dialog.destroy).pack(side="right", pady=10)
         def initialize():
@@ -2208,7 +2209,7 @@ def main():
         settings.ensure()
         app = App(root, settings, newindex=args.newindex)
     except Exception as error:
-        messagebox.showerror(translate("ChaosBox startup", getattr(settings, "language", "en")), str(error), parent=root)
+        messagebox.showerror(translate("ChaosBox startup", getattr(settings, "language", "en")), describe(error), parent=root)
         root.destroy()
         raise SystemExit(1)
     root.deiconify()

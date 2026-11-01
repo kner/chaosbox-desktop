@@ -9,7 +9,7 @@ from pathlib import Path
 import tarfile
 
 SOURCE = Path(__file__).resolve().parent.parent
-FILES = ('VERSION', 'src/app.py', 'src/core.py', 'src/chaos_sync.py', 'src/sync_transport.py',
+FILES = ('VERSION', 'src/app.py', 'src/core.py', 'src/error_messages.py', 'src/chaos_sync.py', 'src/sync_transport.py',
          'scripts/sync-data.py', 'scripts/cleanup-sync.py', 'src/i18n.py', 'src/markdown_render.py',
          'src/setup.ini', 'src/chaosbox.svg', 'src/chaosbox.png', 'scripts/install.py',
          'scripts/install-desktop.sh', 'scripts/run-desktop.sh', 'scripts/install-dependencies.sh', 'README.md')

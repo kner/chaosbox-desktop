@@ -10,6 +10,7 @@ import shutil
 import time
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'src'))
+from error_messages import describe
 
 
 @dataclass
@@ -138,7 +139,7 @@ def main():
         with locked(root):
             cleanup(root, args.older_than_days, args.apply)
     except (OSError, ValueError) as error:
-        parser.exit(1, f'Cleanup stopped: {error}\n')
+        parser.exit(1, f'Cleanup stopped: {describe(error)}\n')
 
 
 if __name__ == '__main__':

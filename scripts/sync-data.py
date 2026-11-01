@@ -9,6 +9,14 @@ project_src = Path(__file__).resolve().parent.parent / 'src'
 sys.path.insert(0, str(project_src if project_src.is_dir() else Path(__file__).resolve().parent))
 import core
 import chaos_sync
+from error_messages import describe
+
+def report_error(kind, error, traceback):
+    if issubclass(kind, KeyboardInterrupt):
+        sys.__excepthook__(kind, error, traceback)
+    else:
+        print("chaosbox-desktop sync: " + describe(error), file=sys.stderr)
+sys.excepthook = report_error
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--data',required=True,type=Path,help='Profile directory containing JPG and TXT')
 p.add_argument('--install-dir',type=Path)
