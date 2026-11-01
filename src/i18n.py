@@ -37,6 +37,10 @@ _TEXT = {
         "yes": "yes", "no": "no",
     },
     "de": {
+        "Poster preview": "Postervorschau", "Save posters": "Poster speichern",
+        "Previous": "Zurück", "Next": "Weiter", "Page {current}/{total}": "Seite {current}/{total}",
+        "Poster preview ready. Save posters to keep the result.": "Postervorschau bereit. Zum Behalten die Poster speichern.",
+
         'Drop JPG, PNG or MP4 here, or select files.': 'JPG, PNG oder MP4 hierher ziehen oder Dateien auswählen.', 'Drag and drop requires tkdnd. File selection remains available.': 'Drag & Drop benötigt tkdnd. Die Dateiauswahl bleibt verfügbar.', 'Drop one media file to attach to this JSON record.': 'Zum Verknüpfen mit diesem JSON-Datensatz eine Mediendatei ablegen.',
         "File": "Datei", "Modified · newest first": "Geändert · neueste zuerst",
         'Folder …': 'Ordner …', 'Other …': 'Andere …', 'Metadata': 'Metadaten', 'All': 'Alle', 'None': 'Keine', 'Edit all': 'Alle bearbeiten', 'Individual': 'Einzeln',

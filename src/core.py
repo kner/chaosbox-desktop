@@ -628,8 +628,23 @@ def poster_caption(record):
     return str(record.get("comment", "")).strip()
 
 
+def poster_position(record):
+    value = str(record.get("device", "") or "").strip()
+    match = re.fullmatch(r"([A-Za-z]+)([1-9][0-9]*)(?:/([^/]+))?", value)
+    if not match:
+        if "/" in value or re.match(r"[A-Za-z]+[0-9]", value):
+            raise ValueError(f"Invalid poster position in field 3: {value!r}.")
+        return None
+    col = 0
+    for letter in match[1].upper():
+        col = col * 26 + ord(letter) - ord("A") + 1
+    return int(match[2]) - 1, col - 1
+
+
 def poster_angle(record):
     value = str(record.get("device", "") or "").strip()
+    if poster_position(record) is not None:
+        value = value.split("/", 1)[1] if "/" in value else ""
     try:
         angle = float(value.replace(",", ".")) if value else 0
     except ValueError as error:
@@ -660,7 +675,7 @@ def poster_zoom(record):
 
 
 def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
-                 aspect_ratios=None, cell_aspect=1):
+                 aspect_ratios=None, cell_aspect=1, positions=None):
     """Reserve rectangular photo areas; defer photos that cannot fit this page."""
     if not fixed and rows < 2 and any(portraits):
         raise ValueError("Portrait photos require POSTER-ROWS of at least 2.")
@@ -683,12 +698,23 @@ def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
                           (shape[0] * shape[1] - required,
                            abs(math.log(shape[1] * cell_aspect / shape[0] / aspect)),
                            -shape[1])))
+    positions = positions or [None] * len(portraits)
+    for position in positions:
+        if position is not None and not (0 <= position[0] < rows and 0 <= position[1] < cols):
+            raise ValueError("Poster position in field 3 is outside the configured grid.")
     pending = list(range(len(portraits)))
     pages = []
     while pending:
         occupied = set()
         page, deferred = [], []
         for index in pending:
+            if positions[index] is not None:
+                row, col = positions[index]
+                row_span, col_span = shapes[index]
+                page.append((index, row, col, row_span, col_span))
+                occupied.update((r, c) for r in range(row, min(rows, row + row_span))
+                                for c in range(col, min(cols, col + col_span)))
+                continue
             slot = next((slot for slot in range(cols * rows) if divmod(slot, cols) not in occupied), None)
             if slot is None:
                 deferred.append(index)
@@ -718,6 +744,7 @@ def poster_photo_pages(paths, metadata, settings):
     zooms = None if settings.fixed else [poster_zoom(record) for record in metadata]
     return poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed,
                         zooms=zooms, aspect_ratios=aspects,
+                        positions=[poster_position(record) for record in metadata],
                         cell_aspect=settings.width * settings.rows / (settings.height * settings.cols))
 
 
@@ -794,7 +821,7 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
 def create_poster(paths, profile, settings, progress=lambda _: None, *,
                   title=None, metadata=None, placements=None, setup_dir=None):
     paths = list(paths)
-    if not paths or len(paths) > settings.cols * settings.rows:
+    if not paths:
         raise ValueError(f"Select between 1 and {settings.cols * settings.rows} images.")
     if any(path.suffix.lower() not in {".jpg", ".jpeg", ".png"} for path in paths):
         raise ValueError("Posters require JPG or PNG images.")
@@ -810,6 +837,8 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
                          f"top+bottom margins={settings.margin_top + settings.margin_bottom:g} mm.")
     if metadata is None:
         metadata = [read_metadata(path) for path in paths]
+    if len(paths) > settings.cols * settings.rows and not any(poster_position(record) is not None for record in metadata):
+        raise ValueError(f"Select between 1 and {settings.cols * settings.rows} images.")
     if title is None:
         title = str(metadata[0].get("box", ""))
     gap = max(1, round(3 * scale))
@@ -823,7 +852,8 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
             raise ValueError("Selection needs multiple posters; use create_posters.")
         placements = [item[1:] for item in pages[0]]
     cells = (poster_grid_cells(placements, settings.cols, settings.rows, bounds, gap)
-             if settings.fixed else poster_flexible_cells(placements, bounds, gap))
+             if settings.fixed or any(poster_position(record) is not None for record in metadata)
+             else poster_flexible_cells(placements, bounds, gap))
     cell_width = min(right - left for left, top, right, bottom in cells)
     cell_height = min(bottom - top for left, top, right, bottom in cells)
     if min(cell_width, cell_height) < 2:
@@ -841,7 +871,27 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
     draw = ImageDraw.Draw(canvas)
     poster_draw_text(draw, title_lines[0], title_font, title_line_height,
                      left_edge, top_edge, content_width)
+    output_canvas = canvas
+
+    def composite_cell(layer, cell):
+        left, top, right, bottom = cell
+        clipped = (max(left, bounds[0]), max(top, bounds[1]),
+                   min(right, bounds[2]), min(bottom, bounds[3]))
+        x, y, r, b = clipped
+        if r - x <= 2 * inset or b - y <= 2 * inset:
+            raise ValueError("Position leaves no room for image padding and border.")
+        panel = Image.new("RGBA", (r - x, b - y), poster_color(settings.image_background_color))
+        border = Image.new("RGBA", panel.size)
+        ImageDraw.Draw(border).rectangle((0, 0, panel.width - 1, panel.height - 1),
+                                         outline=poster_color(settings.frames), width=frame_width)
+        panel.alpha_composite(border)
+        interior = layer.crop((x + inset, y + inset, r - inset, b - inset))
+        panel.paste(interior, (inset, inset))
+        output_canvas.paste(panel, (x, y), panel)
+
     for index, path in enumerate(paths):
+        canvas = Image.new("RGBA", output_canvas.size)
+        draw = ImageDraw.Draw(canvas)
         progress(f"Poster: {index + 1}/{len(paths)} — {path.name}")
         left, top, right, bottom = cells[index]
         panel = Image.new("RGBA", (right - left, bottom - top), poster_color(settings.image_background_color))
@@ -880,6 +930,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
                 group = ImageOps.contain(group, (available_width, available_height), Image.Resampling.LANCZOS)
                 canvas.paste(group, (left + (available_width - group.width) // 2,
                                      top + (available_height - group.height) // 2), group)
+                composite_cell(canvas, cells[index])
                 continue
             image_height = bottom - top - caption_space
             if image_height < 1:
@@ -892,8 +943,9 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
             canvas.paste(photo, (left + (right - left - photo.width) // 2, photo_top), photo)
             markdown_render.draw_poster(draw, captions[index],
                                         left, photo_top + photo.height + text_gap, right - left)
+        composite_cell(canvas, cells[index])
     output = io.BytesIO()
-    canvas.save(output, "JPEG", quality=95,
+    output_canvas.save(output, "JPEG", quality=95,
                 dpi=(width * 25.4 / settings.width, height * 25.4 / settings.height))
     directory = profile.images.parent / "poster"
     if directory.is_symlink():

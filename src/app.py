@@ -12,6 +12,8 @@ import queue
 import subprocess
 import sys
 import threading
+import tempfile
+from types import SimpleNamespace
 import tkinter as tk
 from urllib.parse import urlsplit, unquote
 from tkinter import ttk, messagebox, simpledialog
@@ -208,6 +210,86 @@ class ImageCanvas(tk.Canvas):
 
     def navigation_motion(self, event):
         self.configure(cursor="hand2" if self.navigation_enabled and self.is_navigation_click(event) else "")
+
+
+class PosterPreview(tk.Toplevel):
+    """Review the exact generated JPEGs before publishing them to the box."""
+
+    def __init__(self, app, outputs, temporary, directory):
+        super().__init__(app.root)
+        self.app, self.t = app, app.t
+        self.outputs, self.temporary, self.directory = outputs, temporary, directory
+        self.index, self.saving = 0, False
+        self.title(self.t("Poster preview"))
+        self.geometry("1000x800")
+        self.minsize(480, 360)
+        self.transient(app.root)
+        controls = ttk.Frame(self)
+        controls.pack(side="bottom", fill="x", padx=10, pady=10)
+        self.previous = ttk.Button(controls, text=self.t("Previous"), command=lambda: self.show(self.index - 1))
+        self.previous.pack(side="left")
+        self.page = ttk.Label(controls)
+        self.page.pack(side="left", padx=12)
+        self.next = ttk.Button(controls, text=self.t("Next"), command=lambda: self.show(self.index + 1))
+        self.next.pack(side="left")
+        ttk.Button(controls, text=self.t("Close"), command=self.close).pack(side="right")
+        self.save_button = ttk.Button(controls, text=self.t("Save posters"), command=self.save)
+        self.save_button.pack(side="right", padx=10)
+        self.viewer = ImageCanvas(self, self.t)
+        self.viewer.pack(fill="both", expand=True, padx=10, pady=(10, 0))
+        self.protocol("WM_DELETE_WINDOW", self.close)
+        self.bind("<Escape>", lambda event: self.close())
+        self.bind("<Left>", lambda event: self.show(self.index - 1))
+        self.bind("<Right>", lambda event: self.show(self.index + 1))
+        self.bind("<Destroy>", self.cleanup)
+        self.show(0)
+
+    def cleanup(self, event):
+        if event.widget is self:
+            self.temporary.cleanup()
+
+    def show(self, index):
+        if not 0 <= index < len(self.outputs):
+            return
+        with Image.open(self.outputs[index]) as image:
+            self.viewer.set_image(image.copy())
+        self.index = index
+        self.page.configure(text=self.t("Page {current}/{total}", current=index + 1, total=len(self.outputs)))
+        self.previous.configure(state="normal" if index else "disabled")
+        self.next.configure(state="normal" if index + 1 < len(self.outputs) else "disabled")
+
+    def close(self):
+        if not self.saving:
+            self.destroy()
+
+    def save(self):
+        if self.saving or self.app.busy:
+            return
+        self.saving = True
+        self.save_button.configure(state="disabled")
+        def work():
+            if self.directory.is_symlink():
+                raise ValueError("Poster directory must not be a symbolic link.")
+            saved = []
+            try:
+                for source in self.outputs:
+                    target = core.reserve_output(self.directory, source.name)
+                    saved.append(target)
+                    core.atomic_write(target, source.read_bytes())
+            except Exception:
+                for target in saved:
+                    target.unlink(missing_ok=True)
+                raise
+            return saved
+        def done(outputs):
+            self.saving = False
+            self.app.status.set(self.t("{count} poster(s) saved: {path}", count=len(outputs), path=self.directory))
+            self.destroy()
+        def failed(error):
+            self.saving = False
+            self.save_button.configure(state="normal")
+            messagebox.showerror(self.t("Poster"), describe(error, self.t), parent=self)
+        self.app.task(work, done, failed)
 
 
 class MetadataModeDialog(simpledialog.Dialog):
@@ -1028,6 +1110,8 @@ class App:
         for key, (row, label) in zip(self.FORM_FIELDS, self.rows):
             i = core.FIELDS.index(key)
             configured = self.profile.labels[i]
+            if key == "device" and configured.casefold() in {"orientation", "ausrichtung"}:
+                configured = "Position and Orientation"
             label.configure(text=self.t(core.LABELS[i]) if configured == core.LABELS[i] else configured)
             row.pack_forget()
             if self.profile.labels[i]:
@@ -1646,13 +1730,26 @@ class App:
             overrides = values
             edit_options = dict(field_baseline=baseline, edit_mode=self.media_edit_mode,
                                 differing_fields=self.media_differing_fields)
-        def done(outputs):
-            self.status.set(self.t("{count} poster(s) saved: {path}", count=len(outputs), path=outputs[0].parent))
-            messagebox.showinfo(self.t("Poster"), self.t("Posters saved:\n{paths}", paths="\n".join(map(str, outputs))), parent=self.root)
-        self.task(lambda: core.create_posters(paths, profile, settings, self.log,
-                                            field_overrides=overrides,
-                                            **edit_options,
-                                            setup_dir=getattr(self.settings, "active_path", self.settings.path).parent), done)
+        def work():
+            temporary = tempfile.TemporaryDirectory(prefix="chaosbox-poster-")
+            try:
+                preview_profile = SimpleNamespace(images=Path(temporary.name) / "JPG")
+                outputs = core.create_posters(paths, preview_profile, settings, self.log,
+                                              field_overrides=overrides, **edit_options,
+                                              setup_dir=getattr(self.settings, "active_path", self.settings.path).parent)
+                return outputs, temporary
+            except Exception:
+                temporary.cleanup()
+                raise
+        def done(result):
+            outputs, temporary = result
+            try:
+                PosterPreview(self, outputs, temporary, profile.images.parent / "poster")
+            except Exception:
+                temporary.cleanup()
+                raise
+            self.status.set(self.t("Poster preview ready. Save posters to keep the result."))
+        self.task(work, done)
 
     def choose_json(self):
         if self.busy or self.search_mode:

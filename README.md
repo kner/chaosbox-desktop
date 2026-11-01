@@ -628,3 +628,7 @@ Remote TXT JSON updates also use up to four channels, list each parent directory
 once, and download existing JSON only when its size matches the desired content.
 
 Poster field 3 (`device`) sets the clockwise rotation in degrees for the photo and its caption together: `90` rotates clockwise, `-90` counterclockwise. Empty or `0` leaves them upright. Finite numeric angles are required; automatic layout uses the rotated image orientation. The poster title remains upright.
+
+Poster field 3 accepts grid positions and clockwise rotation: `A1/0`, `B3`, `B2/90`. Letters identify columns, numbers rows (case insensitive). Numeric angles alone remain supported. Explicit positions use the configured grid in both layout modes; later selections cover earlier selections. Overflow is cropped at the image-area edge with border and padding kept inside. Starting cells must be within the grid.
+
+The Poster button opens a resizable preview before saving. Use Previous/Next (or the arrow keys) to inspect multiple pages. Save posters writes the exact previewed JPEGs to the box’s poster folder; Close or Escape discards the temporary preview.

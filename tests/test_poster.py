@@ -157,6 +157,39 @@ class PosterTests(unittest.TestCase):
                 centers.append((min(x for x, y in points) + max(x for x, y in points)) / 2)
             self.assertAlmostEqual(centers[1] - centers[0], centers[2] - centers[1], delta=2)
 
+    def test_explicit_positions_overlap_in_selection_order(self):
+        for value, position, angle in (("A1/0", (0, 0), 0), ("b3", (2, 1), 0),
+                                       ("B2/90", (1, 1), 90)):
+            self.assertEqual(core.poster_position({"device": value}), position)
+            self.assertEqual(core.poster_angle({"device": value}), angle)
+        settings = core.PosterSettings(600, 100, 100, 3, 4, True)
+        records = [{"device": "B2"}] * 3
+        self.assertEqual(core.poster_photo_pages(self.paths, records, settings),
+                         [[(i, 1, 1, 1, 1) for i in range(3)]])
+        output = core.create_poster(self.paths, self.profile, settings, metadata=records)
+        with Image.open(output) as image:
+            self.assertEqual(image.size, (600, 600))
+            pixels = list(image.getdata())
+            self.assertTrue(any(g > 90 and r < 30 and b < 30 for r, g, b in pixels))
+            self.assertFalse(any(b > 150 and r < 30 and g < 30 for r, g, b in pixels))
+        with self.assertRaisesRegex(ValueError, "outside"):
+            core.poster_photo_pages(self.paths[:1], [{"device": "D1"}], settings)
+
+    def test_position_overflow_is_cropped_with_frame_inside(self):
+        settings = core.PosterSettings(600, 100, 100, 2, 2, False,
+                                       frames="000000", image_background_color="ffffff")
+        Image.new("RGB", (40, 100), "red").save(self.paths[0])
+        records = [{"device": "B2"}]
+        self.assertEqual(core.poster_photo_pages(self.paths[:1], records, settings),
+                         [[(0, 1, 1, 2, 1)]])
+        output = core.create_poster(self.paths[:1], self.profile, settings, metadata=records)
+        with Image.open(output) as image:
+            x = 450
+            bottom = 600 - round(settings.margin_bottom * 6)
+            self.assertLess(max(image.getpixel((x, bottom - 1))), 40)
+            self.assertGreater(min(image.getpixel((x, bottom - 8))), 220)
+            self.assertGreater(image.getpixel((x, bottom - 35))[0], 180)
+
     def test_angle_parsing_and_rotated_layout(self):
         for value, expected in (("", 0), ("90", 90), ("-90", 270), ("360", 0), ("22,5", 22.5)):
             self.assertEqual(core.poster_angle({"device": value}), expected)
@@ -294,8 +327,8 @@ class PosterTests(unittest.TestCase):
                                   (2, 1, 1, 1, 1), (3, 1, 2, 1, 1)]])
         pages = core.poster_pages([True, False], 2, 2, zooms=[2, 1])
         self.assertEqual(pages, [[(0, 0, 0, 2, 2)], [(1, 0, 0, 1, 1)]])
-        with self.assertRaisesRegex(ValueError, "capacity"):
-            core.poster_pages([False], 2, 2, zooms=[5])
+        self.assertEqual(core.poster_pages([False], 2, 2, zooms=[5]),
+                         [[(0, 0, 0, 2, 2)]])
 
     def test_zoom_deferral_leaves_free_cells_for_following_photos(self):
         pages = core.poster_pages([False] * 4, 3, 1, zooms=[1, 3, 1, 1],
@@ -335,7 +368,11 @@ class PosterTests(unittest.TestCase):
         app.media_baseline = {"box": "Existing", "comment": "Original"}
         app.values = Mock(return_value={"category": "Different category", "box": "Existing", "comment": "Added"})
         app.log = Mock()
-        app.task = lambda work, done: work()
+        def run(work, done):
+            outputs, temporary = work()
+            self.assertNotEqual(create.call_args.args[1].images, self.profile.images)
+            temporary.cleanup()
+        app.task = run
         with patch("core.create_posters") as create:
             app.make_poster()
         self.assertEqual(create.call_args.kwargs,
