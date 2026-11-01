@@ -37,6 +37,9 @@ _TEXT = {
         "yes": "yes", "no": "no",
     },
     "de": {
+        "Poster Page / Position / Rotation / Transparency": "Posterseite / Position / Drehung / Transparenz",
+        "Fixed layout (1/true/t)": "Festes Layout (1/true/t)",
+
         "Poster preview": "Postervorschau", "Save posters": "Poster speichern",
         "Previous": "Zurück", "Next": "Weiter", "Page {current}/{total}": "Seite {current}/{total}",
         "Poster preview ready. Save posters to keep the result.": "Postervorschau bereit. Zum Behalten die Poster speichern.",

@@ -190,15 +190,131 @@ class PosterTests(unittest.TestCase):
             self.assertGreater(min(image.getpixel((x, bottom - 8))), 220)
             self.assertGreater(image.getpixel((x, bottom - 35))[0], 180)
 
+    def test_position_rotation_transparency_syntax(self):
+        examples = [("A2/90/100", ((1, 0), 90, 100)),
+                    ("A1//0", ((0, 0), 0, 0)),
+                    ("//90/100", (None, 90, 100)),
+                    ("///50", (None, 0, 50)), ("B3", ((2, 1), 0, 0)),
+                    ("//90", (None, 90, 0)), ("A1/", ((0, 0), 0, 0))]
+        for value, expected in examples:
+            self.assertEqual(core.poster_transform({"device": value}), expected)
+        for value in ("A1//-1", "A1//101", "A1//nan", "A1//bad", "A1/0/0/0", "A0//0"):
+            with self.assertRaisesRegex(ValueError, "field 3"):
+                core.poster_transform({"device": value})
+
+    def test_transparent_panel_reveals_previous_image_without_fading_photo(self):
+        Image.new("RGB", (100, 100), "red").save(self.paths[0])
+        Image.new("RGB", (20, 100), "blue").save(self.paths[1])
+        settings = core.PosterSettings(600, 100, 100, 1, 1, True,
+                                       frames="00ff00", image_background_color="ffffff")
+        for transparency, expected in ((0, (255, 255, 255)), (50, (255, 128, 128)), (100, (255, 0, 0))):
+            with self.subTest(transparency=transparency):
+                output = core.create_poster(self.paths[:2], self.profile, settings,
+                            metadata=[{"device": "A1//0"}, {"device": f"A1//{transparency}"}])
+                with Image.open(output) as image:
+                    actual = image.getpixel((150, 300))
+                    self.assertTrue(all(abs(a - b) < 12 for a, b in zip(actual, expected)), actual)
+                    r, g, b = image.getpixel((300, 300))
+                    self.assertGreater(b, 230)
+                    self.assertLess(max(r, g), 20)
+        settings = core.PosterSettings(600, 100, 100, 1, 1, True,
+                                       frames="00ff00", image_background_color="ffffff", background_color="ff0000")
+        output = core.create_poster(self.paths[1:2], self.profile, settings,
+                                    metadata=[{"device": "//90/100"}])
+        with Image.open(output) as image:
+            # Transparent padding and frame reveal the red poster background.
+            for point in ((76, 300), (90, 300), (300, 100)):
+                r, g, b = image.getpixel(point)
+                self.assertGreater(r, 230)
+                self.assertLess(max(g, b), 25)
+
+    def test_page_position_rotation_transparency_syntax(self):
+        examples = [("3", 3, (None, 0, 0)),
+                    ("2/A1/90/100", 2, ((0, 0), 90, 100)),
+                    ("2/A1", 2, ((0, 0), 0, 0)),
+                    ("2//90", 2, (None, 90, 0)),
+                    ("/A1/90/100", None, ((0, 0), 90, 100)),
+                    ("A1/90/100", None, ((0, 0), 90, 100)),
+                    ("//90/100", None, (None, 90, 100))]
+        for value, page, transform in examples:
+            with self.subTest(value=value):
+                self.assertEqual(core.poster_page({"device": value}), page)
+                self.assertEqual(core.poster_transform({"device": value}), transform)
+        for value in ("0/A1/90/100", "-2/A1/90/100", "1.5/A1/90/100", "2/Z0/90/100", "/90/100"):
+            with self.assertRaisesRegex(ValueError, "field 3"):
+                core.poster_transform({"device": value})
+
+    def test_page_start_is_inherited_and_can_return_to_an_earlier_page(self):
+        pages = core.poster_pages([False] * 6, 2, 1, fixed=True,
+                                  page_numbers=[None, 3, None, None, 2, None])
+        self.assertEqual(pages, [[(0, 0, 0, 1, 1)],
+                                 [(4, 0, 0, 1, 1), (5, 0, 1, 1, 1)],
+                                 [(1, 0, 0, 1, 1), (2, 0, 1, 1, 1)],
+                                 [(3, 0, 0, 1, 1)]])
+
+    def test_fixed_switch_is_case_insensitive_and_empty_inherits(self):
+        for truth in ("1", "true", "t", " TRUE ", "T"):
+            records = [{}, {"alias": truth}, {}, {"alias": "false"}, {}, {"alias": "1"}]
+            self.assertEqual(core.poster_layout_modes(records, False),
+                             [False, True, True, False, False, True])
+        self.assertEqual(core.poster_layout_modes([{}, {"alias": "0"}, {}], True), [True, False, False])
+        pages = core.poster_pages([True] * 3, 2, 2, zooms=[2, 2, 2],
+                                 fixed_modes=[True, True, False])
+        self.assertEqual(pages[0], [(0, 0, 0, 1, 1), (1, 0, 1, 1, 1)])
+        self.assertEqual(pages[1], [(2, 0, 0, 2, 2)])
+
+    def test_page_three_output_includes_blank_pages(self):
+        settings = core.PosterSettings(600, 100, 100, 2, 2, True)
+        state = {}
+        records = [{"device": "3/A1/90/100", "alias": "1"}, {}]
+        with patch("core.read_metadata_batch", return_value=records):
+            outputs = core.create_posters(self.paths[:2], self.profile, settings, layout_state=state)
+        self.assertEqual(len(outputs), 3)
+        self.assertEqual([len(page["placements"]) for page in state["pages"]], [0, 0, 2])
+        self.assertEqual([item[0] for item in state["pages"][2]["placements"]], [0, 1])
+        for output in outputs:
+            with Image.open(output) as image:
+                self.assertEqual(image.size, (600, 600))
+        self.assertEqual(outputs[0].read_bytes(), outputs[1].read_bytes())
+
+    def test_individual_page_move_keeps_other_panels_and_z_order(self):
+        settings = core.PosterSettings(600, 100, 100, 2, 2, True)
+        records = [{"device": "A1"}, {"device": "A1"}, {"device": "3/A1"}]
+        initial, updated = {}, {}
+        with patch("core.read_metadata_batch", return_value=records):
+            core.create_posters(self.paths, self.profile, settings, layout_state=initial)
+        edited = [dict(record) for record in records]
+        edited[1]["device"] = "3/A1/90/100"
+        with patch("core.read_metadata_batch", return_value=edited):
+            outputs = core.create_posters(self.paths, self.profile, settings, layout_state=updated,
+                                         previous_layout=initial, changed_indices={1})
+        self.assertEqual(len(outputs), 3)
+        self.assertEqual([item[0] for item in updated["pages"][0]["placements"]], [0])
+        self.assertEqual([item[0] for item in updated["pages"][2]["placements"]], [1, 2])
+        self.assertIs(updated["pages"][0]["panels"][0][0], initial["pages"][0]["panels"][0][0])
+        self.assertIs(updated["pages"][2]["panels"][1][0], initial["pages"][2]["panels"][0][0])
+
+    def test_mixed_modes_keep_fixed_cells_on_the_configured_grid(self):
+        settings = core.PosterSettings(600, 100, 100, 3, 2, False)
+        records = [{"alias": "true"}, {"alias": "false"}, {}]
+        state = {}
+        with patch("core.read_metadata_batch", return_value=records):
+            core.create_posters(self.paths, self.profile, settings, layout_state=state)
+        fixed_cell = state["pages"][0]["cells"][0]
+        self.assertEqual(state["fixed_modes"], [True, False, False])
+        self.assertLess(fixed_cell[2] - fixed_cell[0], 200)
+        self.assertLess(fixed_cell[3] - fixed_cell[1], 300)
+        self.assertGreater(state["pages"][0]["cells"][2][3], fixed_cell[3])
+
     def test_angle_parsing_and_rotated_layout(self):
-        for value, expected in (("", 0), ("90", 90), ("-90", 270), ("360", 0), ("22,5", 22.5)):
+        for value, expected in (("", 0), ("//90", 90), ("//-90", 270), ("//360", 0), ("//22,5", 22.5)):
             self.assertEqual(core.poster_angle({"device": value}), expected)
         for value in ("bad", "nan", "inf"):
             with self.assertRaisesRegex(ValueError, "field 3"):
                 core.poster_angle({"device": value})
         settings = core.PosterSettings(800, 200, 200, 2, 2, False)
         Image.new("RGB", (200, 100), "red").save(self.paths[0])
-        page = core.poster_photo_pages(self.paths[:1], [{"device": "90"}], settings)
+        page = core.poster_photo_pages(self.paths[:1], [{"device": "//90"}], settings)
         self.assertEqual(page, [[(0, 0, 0, 2, 1)]])
 
     def test_photo_and_caption_rotate_together(self):
@@ -210,7 +326,7 @@ class PosterTests(unittest.TestCase):
             with patch("core.markdown_render.draw_poster", side_effect=caption_marker):
                 output = core.create_poster(self.paths[:1], self.profile,
                     core.PosterSettings(600, 200, 200, 1, 1, True),
-                    metadata=[{"device": str(angle), "comment": "Caption"}])
+                    metadata=[{"device": f"//{angle}", "comment": "Caption"}])
             with Image.open(output) as image:
                 centers = []
                 for channel in (0, 2):
@@ -360,6 +476,58 @@ class PosterTests(unittest.TestCase):
                                core.PosterSettings(400, 100, 100, 2, 1, False))
         self.assertEqual(cells.call_args.args[0], [(0, 0, 1, 2)])
 
+    def test_per_image_poster_edits_do_not_change_other_images(self):
+        records = [{"device": "A1", "comment": "First"},
+                   {"device": "B1", "comment": "Second"}]
+        with patch("core.read_metadata_batch", return_value=records), \
+             patch("core.create_poster", return_value=self.root / "poster.jpg") as render:
+            core.create_posters(self.paths[:2], self.profile,
+                                core.PosterSettings(cols=2, rows=1, fixed=True),
+                                path_overrides={self.paths[1]: {"device": "A1/90", "comment": "Edited"}})
+        metadata = render.call_args.kwargs["metadata"]
+        self.assertEqual(metadata, [records[0], {"device": "A1/90", "comment": "Edited"}])
+        self.assertEqual(records[1], {"device": "B1", "comment": "Second"})
+
+    def test_individual_refresh_preserves_other_panels_and_page_membership(self):
+        for fixed in (False, True):
+            with self.subTest(fixed=fixed):
+                settings = core.PosterSettings(600, 100, 100, 2, 2, fixed)
+                records = [{"device": "", "comment": "Original"} for _ in self.paths]
+                initial = {}
+                with patch("core.read_metadata_batch", return_value=records):
+                    core.create_posters(self.paths, self.profile, settings, layout_state=initial)
+                edited = [dict(record) for record in records]
+                edited[0].update(device="B2/90/100", anzahl="Z=3", comment="Updated")
+                # Even if unrelated metadata changes externally, an individual update
+                # retains the other panels exactly as they appeared in the preview.
+                edited[1]["comment"] = "Unrelated external change"
+                updated = {}
+                with patch("core.read_metadata_batch", return_value=edited), \
+                     patch("core.Image.open", wraps=Image.open) as opened:
+                    core.create_posters(self.paths, self.profile, settings, layout_state=updated,
+                                        previous_layout=initial, changed_indices={0})
+                self.assertTrue(all(call.args[0] == self.paths[0] for call in opened.call_args_list))
+                self.assertEqual(len(updated["pages"]), len(initial["pages"]))
+                for old_page, new_page in zip(initial["pages"], updated["pages"]):
+                    self.assertEqual([item[0] for item in old_page["placements"]],
+                                     [item[0] for item in new_page["placements"]])
+                    for local, placement in enumerate(old_page["placements"]):
+                        if placement[0] != 0:
+                            self.assertEqual(new_page["cells"][local], old_page["cells"][local])
+                            self.assertIs(new_page["panels"][local][0], old_page["panels"][local][0])
+                self.assertEqual(updated["metadata"][1], records[1])
+                self.assertEqual(updated["pages"][0]["placements"][0][1:3], (1, 1))
+
+    def test_individual_transparency_change_keeps_flexible_cell_size(self):
+        settings = core.PosterSettings(600, 100, 100, 3, 3, False)
+        initial, updated = {}, {}
+        with patch("core.read_metadata_batch", return_value=[{}]):
+            core.create_posters(self.paths[:1], self.profile, settings, layout_state=initial)
+        with patch("core.read_metadata_batch", return_value=[{"device": "///100"}]):
+            core.create_posters(self.paths[:1], self.profile, settings, layout_state=updated,
+                                previous_layout=initial, changed_indices={0})
+        self.assertEqual(initial["pages"][0]["cells"], updated["pages"][0]["cells"])
+
     def test_ui_passes_title_and_only_new_additions(self):
         app = App.__new__(App)
         app.busy = app.search_mode = False
@@ -376,7 +544,7 @@ class PosterTests(unittest.TestCase):
         with patch("core.create_posters") as create:
             app.make_poster()
         self.assertEqual(create.call_args.kwargs,
-                         {"field_overrides": {"category": "Different category", "comment": "Added"}, "setup_dir": self.root})
+                         {"field_overrides": {"category": "Different category", "comment": "Added"}, "setup_dir": self.root, "layout_state": {}})
 
     def test_poster_obeys_selected_metadata_mode(self):
         originals = [core.normalized({"box": "A", "comment": "first"}),

@@ -247,6 +247,15 @@ class PosterPreview(tk.Toplevel):
     def cleanup(self, event):
         if event.widget is self:
             self.temporary.cleanup()
+            if getattr(self.app, "poster_preview", None) is self:
+                self.app.poster_preview = None
+
+    def replace(self, outputs, temporary, directory):
+        previous = self.temporary
+        self.outputs, self.temporary, self.directory = outputs, temporary, directory
+        self.show(min(self.index, len(outputs) - 1))
+        self.save_button.configure(state="normal")
+        previous.cleanup()
 
     def show(self, index):
         if not 0 <= index < len(self.outputs):
@@ -1110,11 +1119,13 @@ class App:
         for key, (row, label) in zip(self.FORM_FIELDS, self.rows):
             i = core.FIELDS.index(key)
             configured = self.profile.labels[i]
-            if key == "device" and configured.casefold() in {"orientation", "ausrichtung"}:
-                configured = "Position and Orientation"
+            if key == "device" and configured.casefold() in {"orientation", "ausrichtung", "position and orientation"}:
+                configured = self.t("Poster Page / Position / Rotation / Transparency")
+            if key == "alias" and (configured or self.media):
+                configured = self.t("Fixed layout (1/true/t)")
             label.configure(text=self.t(core.LABELS[i]) if configured == core.LABELS[i] else configured)
             row.pack_forget()
-            if self.profile.labels[i]:
+            if configured:
                 row.pack(fill="both" if key == "comment" else "x", expand=key == "comment", pady=(0, 3))
         self.field_widgets["category"].configure(values=sorted(self.profile.categories, key=str.casefold))
         self.update_controls()
@@ -1717,26 +1728,57 @@ class App:
                 self.status.set(warning)
         self.task(work, done)
 
-    def make_poster(self):
+    def refresh_poster_after_save(self, original_paths, saved_paths):
+        preview = getattr(self, "poster_preview", None)
+        if preview is not None and preview.winfo_exists():
+            self.make_poster(saved_paths=saved_paths, original_paths=original_paths)
+
+    def make_poster(self, *, saved_paths=None, original_paths=None):
         if self.busy or self.search_mode:
             return
-        paths, profile, settings = list(self.media), self.profile, self.settings.poster
-        values = self.values()
-        baseline = getattr(self, "media_baseline", {})
-        overrides = {field: value for field, value in values.items()
-                     if value != str(baseline.get(field, ""))}
-        edit_options = {}
-        if len(paths) > 1 and hasattr(self, "media_edit_mode"):
-            overrides = values
-            edit_options = dict(field_baseline=baseline, edit_mode=self.media_edit_mode,
-                                differing_fields=self.media_differing_fields)
+        preview = getattr(self, "poster_preview", None)
+        if preview is not None and not preview.winfo_exists():
+            preview = None
+        refreshing = saved_paths is not None
+        if refreshing:
+            if preview is None:
+                return
+            replacements = dict(zip(original_paths, saved_paths))
+            paths = [replacements.get(path, path) for path in preview.source_paths]
+            profile, settings, setup_dir = preview.profile, preview.settings, preview.setup_dir
+            overrides, edit_options = {}, {}
+            if getattr(self, "individual_paths", None) and isinstance(getattr(preview, "layout_state", None), dict):
+                edit_options.update(previous_layout=preview.layout_state,
+                                    changed_indices={index for index, path in enumerate(preview.source_paths)
+                                                     if path in replacements})
+        else:
+            individual_paths = getattr(self, "individual_paths", None)
+            paths = list(individual_paths or self.media)
+            profile, settings = self.profile, self.settings.poster
+            setup_dir = getattr(self.settings, "active_path", self.settings.path).parent
+            values = self.values()
+            baseline = getattr(self, "media_baseline", {})
+            overrides = {field: value for field, value in values.items()
+                         if value != str(baseline.get(field, ""))}
+            edit_options = {}
+            if individual_paths:
+                edit_options = dict(path_overrides={self.media[0]: overrides})
+                overrides = {}
+            elif len(paths) > 1 and hasattr(self, "media_edit_mode"):
+                overrides = values
+                edit_options = dict(field_baseline=baseline, edit_mode=self.media_edit_mode,
+                                    differing_fields=self.media_differing_fields)
+            if individual_paths and preview is not None and isinstance(getattr(preview, "layout_state", None), dict) and paths == preview.source_paths:
+                edit_options.update(previous_layout=preview.layout_state,
+                                    changed_indices={paths.index(self.media[0])})
+        layout_state = {}
         def work():
             temporary = tempfile.TemporaryDirectory(prefix="chaosbox-poster-")
             try:
                 preview_profile = SimpleNamespace(images=Path(temporary.name) / "JPG")
                 outputs = core.create_posters(paths, preview_profile, settings, self.log,
                                               field_overrides=overrides, **edit_options,
-                                              setup_dir=getattr(self.settings, "active_path", self.settings.path).parent)
+                                              setup_dir=setup_dir, layout_state=layout_state)
                 return outputs, temporary
             except Exception:
                 temporary.cleanup()
@@ -1744,7 +1786,18 @@ class App:
         def done(result):
             outputs, temporary = result
             try:
-                PosterPreview(self, outputs, temporary, profile.images.parent / "poster")
+                current = getattr(self, "poster_preview", None)
+                if refreshing and (current is not preview or not preview.winfo_exists()):
+                    temporary.cleanup()
+                    return
+                if current is not None and current.winfo_exists():
+                    current.replace(outputs, temporary, profile.images.parent / "poster")
+                else:
+                    current = PosterPreview(self, outputs, temporary, profile.images.parent / "poster")
+                    self.poster_preview = current
+                current.layout_state = layout_state
+                current.source_paths = list(paths)
+                current.profile, current.settings, current.setup_dir = profile, settings, setup_dir
             except Exception:
                 temporary.cleanup()
                 raise
@@ -1917,7 +1970,8 @@ class App:
                 comment_changed = bool(original_records) and str(expected_records[0].get("comment", "")) != str(original_records[0].get("comment", ""))
                 comment_verified = bool(records) and str(records[0].get("comment", "")) == str(expected_records[0].get("comment", ""))
                 path = saved_paths[0]
-                self.individual_paths[self.individual_index] = path
+                if self.individual_paths:
+                    self.individual_paths[self.individual_index] = path
                 self.media, self.box_path, self.records, self.record_index = saved_paths, None, [], None
                 self.media_records = records
                 self.media_baseline = dict(records[0])
@@ -1936,6 +1990,7 @@ class App:
                                      changed=self.t("yes") if comment_changed else self.t("no"),
                                      verified=self.t("yes") if comment_verified else self.t("no"))
                 self.status.set(warning or preview_warning or (saved_message + " · " + diagnostic))
+                self.refresh_poster_after_save(media, saved_paths)
                 return
             diagnostic = ""
             if saved_result[0] == "media":
@@ -1952,6 +2007,8 @@ class App:
                                              verified=self.t("yes") if comment_verified else self.t("no"))
             self.clear()
             self.status.set(warning or (self.t("Saved locally. Use Upload to synchronize manually.") + diagnostic))
+            if saved_result[0] == "media":
+                self.refresh_poster_after_save(media, saved_result[1])
         def failed(error):
             if isinstance(error, core.BatchError):
                 self.media = error.selection
