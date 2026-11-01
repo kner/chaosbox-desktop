@@ -37,6 +37,25 @@ _TEXT = {
         "yes": "yes", "no": "no",
     },
     "de": {
+        "Open poster project …": "Posterprojekt öffnen …", "Open poster project": "Posterprojekt öffnen",
+        "Poster project": "Posterprojekt",
+        "No poster configurations in {path}.": "Keine Posterkonfigurationen in {path}.",
+        "Open poster …": "Poster öffnen …", "Open poster": "Poster öffnen",
+        "No poster images in {path}.": "Keine Posterbilder in {path}.",
+        "Poster opened: {path}": "Poster geöffnet: {path}",
+        "Save poster + project": "Poster + Projekt speichern",
+        "Poster images and projects saved: {path}": "Poster und Projekte gespeichert: {path}",
+        "No saved poster project in {path}. Save a poster first.": "Kein gespeichertes Posterprojekt in {path}. Zuerst ein Poster speichern.",
+
+        "Export JPEGs": "JPEGs exportieren",
+        "Freeze / Save project …": "Layout einfrieren / Projekt speichern …",
+        "Edit individual": "Einzeln bearbeiten", "Edit all": "Alle bearbeiten",
+        "Load poster project …": "Posterprojekt laden …", "Load poster project": "Posterprojekt laden",
+        "Save poster project": "Posterprojekt speichern", "Poster projects": "Posterprojekte",
+        "Poster project saved: {path}": "Posterprojekt gespeichert: {path}",
+        "Poster project loaded. Choose Edit individual or Edit all.": "Posterprojekt geladen. Einzeln oder alle bearbeiten wählen.",
+        "Poster project collection is unavailable: {name}": "Sammlung des Posterprojekts ist nicht verfügbar: {name}",
+
         "Poster Page / Position / Rotation / Transparency": "Posterseite / Position / Drehung / Transparenz",
         "Fixed layout (1/true/t)": "Festes Layout (1/true/t)",
 

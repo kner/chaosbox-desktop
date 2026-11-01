@@ -19,8 +19,13 @@ class PosterPreviewTests(unittest.TestCase):
             source.write_bytes(b'preview JPEG bytes ' + bytes([index]))
         self.app = SimpleNamespace(busy=False, status=Mock())
         self.preview = SimpleNamespace(app=self.app, saving=False, outputs=sources,
-                                       directory=root / 'poster', save_button=Mock(), destroy=Mock(),
+                                       directory=root / 'poster', save_button=Mock(), destroy=Mock(), title=Mock(),
+                                       source_paths=sources, settings=object(), layout_state={}, setup_dir=root,
+                                       profile=SimpleNamespace(id='Photos'),
                                        t=lambda text, **kw: text.format(**kw))
+        writer = patch('app.poster_project.save_project', side_effect=lambda path, *args: Path(path).write_bytes(b'project snapshot'))
+        self.project_writer = writer.start()
+        self.addCleanup(writer.stop)
         self.errors = []
         def task(work, done, failed):
             try:
@@ -40,8 +45,13 @@ class PosterPreviewTests(unittest.TestCase):
         self.assertEqual(existing.read_bytes(), b'existing')
         self.assertEqual((self.preview.directory / 'page_1.jpg').read_bytes(), self.preview.outputs[0].read_bytes())
         self.assertEqual((self.preview.directory / 'page_2.jpg').read_bytes(), self.preview.outputs[1].read_bytes())
-        self.preview.destroy.assert_called_once()
+        self.preview.destroy.assert_not_called()
+        self.preview.save_button.configure.assert_called_with(state="normal")
         self.assertFalse(self.errors)
+        self.assertTrue(self.preview.frozen)
+        self.assertEqual(self.preview.project_path, self.preview.directory / 'page_1.cbposter')
+        self.assertEqual((self.preview.directory / 'page_1.cbposter').read_bytes(), b'project snapshot')
+        self.assertEqual((self.preview.directory / 'page_2.cbposter').read_bytes(), b'project snapshot')
 
     def test_failed_save_rolls_back_new_files_and_allows_retry(self):
         with patch('app.core.atomic_write', side_effect=OSError('disk full')), patch('app.messagebox.showerror'):
@@ -61,6 +71,24 @@ class PosterPreviewTests(unittest.TestCase):
         PosterPreview.close(self.preview)
         self.preview.destroy.assert_not_called()
 
+    def test_configuration_failure_rolls_back_both_posters_and_projects(self):
+        self.project_writer.side_effect = OSError('configuration failed')
+        with patch('app.messagebox.showerror'):
+            PosterPreview.save(self.preview)
+        self.assertEqual(list(self.preview.directory.iterdir()), [])
+        self.assertFalse(self.preview.saving)
+        self.preview.destroy.assert_not_called()
+
+    def test_existing_configuration_is_preserved_and_new_pair_uses_same_basename(self):
+        self.preview.directory.mkdir()
+        existing = self.preview.directory / 'page.cbposter'
+        existing.write_bytes(b'older project')
+        PosterPreview.save(self.preview)
+        self.assertEqual(existing.read_bytes(), b'older project')
+        self.assertFalse((self.preview.directory / 'page.jpg').exists())
+        self.assertTrue((self.preview.directory / 'page_1.jpg').is_file())
+        self.assertTrue((self.preview.directory / 'page_1.cbposter').is_file())
+
 
 class PosterRefreshTests(unittest.TestCase):
     def setUp(self):
@@ -72,9 +100,10 @@ class PosterRefreshTests(unittest.TestCase):
         self.app.poster_preview = Mock()
         self.app.poster_preview.winfo_exists.return_value = True
         self.app.poster_preview.source_paths = [Path('/images/first.jpg'), Path('/images/second.jpg')]
-        self.app.poster_preview.profile = SimpleNamespace(images=Path('/images'))
+        self.app.poster_preview.profile = SimpleNamespace(images=Path('/images'), id='Photos')
         self.app.poster_preview.settings = object()
         self.app.poster_preview.setup_dir = Path('/setup')
+        self.app.profile = self.app.poster_preview.profile
         self.app.values = Mock(side_effect=AssertionError('Refresh must use saved metadata'))
 
     def test_individual_and_common_save_replace_same_preview(self):
@@ -132,7 +161,7 @@ class PosterRefreshTests(unittest.TestCase):
         paths = [Path('/images/first.jpg'), Path('/images/second.jpg')]
         self.app.individual_paths = paths
         self.app.media = paths[1:]
-        self.app.profile = SimpleNamespace(images=Path('/images'))
+        self.app.profile = SimpleNamespace(images=Path('/images'), id='Photos')
         self.app.settings = SimpleNamespace(poster=object(), path=Path('/setup/setup.ini'))
         self.app.media_baseline = {'device': 'A1', 'comment': 'saved'}
         self.app.media_edit_mode = 'replace'
@@ -161,3 +190,124 @@ class PosterRefreshTests(unittest.TestCase):
             self.app.refresh_poster_after_save([Path('/images/second.jpg')], [Path('/saved/second.jpg')])
         self.assertIs(render.call_args.kwargs['previous_layout'], old_layout)
         self.assertEqual(render.call_args.kwargs['changed_indices'], {1})
+
+    def test_frozen_project_common_edits_keep_project_settings_and_geometry(self):
+        self.app.poster_preview.frozen = True
+        self.app.poster_preview.layout_state = {'pages': []}
+        old_layout = self.app.poster_preview.layout_state
+        self.app.media = list(self.app.poster_preview.source_paths)
+        self.app.individual_paths = None
+        self.app.profile = self.app.poster_preview.profile
+        self.app.settings = SimpleNamespace(poster=object(), path=Path('/different/setup.ini'))
+        self.app.media_baseline = {'comment': 'Old'}
+        self.app.values = Mock(return_value={'comment': 'New'})
+        self.app.task = lambda work, done: done(work())
+        temporary = Mock()
+        temporary.name = '/tmp/render'
+        with patch('app.tempfile.TemporaryDirectory', return_value=temporary), \
+             patch('app.core.create_posters', return_value=[Path('/tmp/poster.jpg')]) as render:
+            self.app.make_poster()
+        self.assertIs(render.call_args.kwargs['previous_layout'], old_layout)
+        self.assertEqual(render.call_args.kwargs['changed_indices'], {0, 1})
+        self.assertEqual(render.call_args.kwargs['field_overrides'], {'comment': 'New'})
+        self.assertIs(render.call_args.args[2], self.app.poster_preview.settings)
+        self.assertEqual(render.call_args.kwargs['setup_dir'], Path('/setup'))
+
+    def test_individual_navigation_uses_project_metadata(self):
+        self.app.individual_paths = list(self.app.poster_preview.source_paths)
+        self.app.individual_index = 0
+        self.app.poster_preview.frozen = True
+        records = [{'device': '/A1/90/100'}, {'device': '/B1//50'}]
+        self.app.poster_preview.layout_state = {'metadata': records}
+        self.app.preview_result = Mock(return_value=(None, ''))
+        results = []
+        self.app.task = lambda work, done: results.append(work())
+        with patch('app.core.read_metadata_batch', side_effect=AssertionError('Must use project snapshot')):
+            self.app.navigate_preview(1)
+        self.assertEqual(results[0][0], [records[1]])
+
+    def test_edit_project_can_switch_between_individual_and_common_selection(self):
+        self.app.settings = SimpleNamespace(profile=Mock(return_value=self.app.poster_preview.profile))
+        self.app.root, self.app.refresh_profile, self.app.open_media = Mock(), Mock(), Mock()
+        self.app.poster_preview.saving = False
+        records = [{'comment': 'First'}, {'comment': 'Second'}]
+        self.app.poster_preview.layout_state = {'metadata': records}
+        paths = list(self.app.poster_preview.source_paths)
+        self.app.edit_poster_project(self.app.poster_preview, individual=True)
+        self.assertEqual(self.app.individual_paths, paths)
+        self.app.open_media.assert_called_with(paths[:1], individual=True, project_records=dict(zip(paths, records)))
+        self.app.edit_poster_project(self.app.poster_preview, individual=False)
+        self.app.open_media.assert_called_with(paths, project_records=dict(zip(paths, records)))
+
+    def test_load_project_reuses_preview_and_restores_editable_selection(self):
+        from app import App
+        with tempfile.TemporaryDirectory() as folder:
+            directory = Path(folder) / 'poster'
+            directory.mkdir()
+            selected = directory / 'page.cbposter'
+            selected.write_bytes(b'poster')
+            config = selected
+            config.write_bytes(b'configuration')
+            preview = self.app.poster_preview
+            self.app.root = Mock()
+            profile = SimpleNamespace(id='Photos', images=Path(folder) / 'JPG')
+            self.app.profile = profile
+            self.app.settings = SimpleNamespace(profiles=[profile], profile=Mock())
+            self.app.task = lambda work, done: done(work())
+            project = dict(paths=list(preview.source_paths), layout={'metadata': [{}, {}]},
+                           outputs=[Path('/tmp/restored.jpg')], settings=object(), setup_dir=Path('/frozen/setup'),
+                           project_path=config, profile_id='Photos', poster_names=[selected.with_suffix('.jpg').name])
+            temporary = Mock()
+            temporary.name = '/tmp/render'
+            with patch('app.PosterOpenDialog', return_value=SimpleNamespace(result=selected)) as dialog, \
+                 patch('app.tempfile.TemporaryDirectory', return_value=temporary), \
+                 patch('app.poster_project.load_project', return_value=project) as load, \
+                 patch('app.PosterPreview') as window:
+                App.load_poster_project(self.app)
+            dialog.assert_called_once_with(self.app.root, directory, [selected], self.app.t)
+            load.assert_called_once_with(config, Path('/tmp/render/poster'))
+            preview.replace.assert_called_once_with(project['outputs'], temporary, directory)
+            self.assertTrue(preview.frozen)
+            self.assertEqual(preview.source_paths, project['paths'])
+            self.assertIs(preview.layout_state, project['layout'])
+            self.assertIs(preview.settings, project['settings'])
+            self.app.settings.profile.assert_not_called()
+            window.assert_not_called()
+
+    def test_unavailable_project_collection_preserves_open_preview(self):
+        with tempfile.TemporaryDirectory() as folder:
+            selected = Path(folder) / 'page.cbposter'
+            selected.write_bytes(b'poster')
+            selected.with_suffix('.cbposter').write_bytes(b'configuration')
+            self.app.root = Mock()
+            self.app.settings = SimpleNamespace(profiles=[])
+            self.app.task = lambda work, done: done(work())
+            temporary = Mock()
+            temporary.name = '/tmp/render'
+            with patch('app.poster_project.project_files', return_value=[selected]), \
+                 patch('app.PosterOpenDialog', return_value=SimpleNamespace(result=selected)), \
+                 patch('app.tempfile.TemporaryDirectory', return_value=temporary), \
+                 patch('app.poster_project.load_project', return_value={'profile_id': 'Missing', 'poster_names': [selected.name]}):
+                with self.assertRaisesRegex(ValueError, 'collection is unavailable'):
+                    self.app.load_poster_project()
+            temporary.cleanup.assert_called_once()
+            self.app.poster_preview.replace.assert_not_called()
+
+    def test_no_configurations_reports_fixed_folder_without_starting_load(self):
+        self.app.root = Mock()
+        self.app.task = Mock()
+        with patch('app.poster_project.project_files', return_value=[]) as find, \
+             patch('app.messagebox.showinfo') as info, patch('app.PosterOpenDialog') as dialog:
+            self.app.load_poster_project()
+        find.assert_called_once_with(Path('/poster'))
+        self.app.task.assert_not_called()
+        dialog.assert_not_called()
+        info.assert_called_once()
+
+    def test_cancel_poster_selection_keeps_existing_preview(self):
+        self.app.root, self.app.task = Mock(), Mock()
+        with patch('app.poster_project.project_files', return_value=[Path('/poster/a.cbposter')]), \
+             patch('app.PosterOpenDialog', return_value=SimpleNamespace(result=None)):
+            self.app.load_poster_project()
+        self.app.task.assert_not_called()
+        self.app.poster_preview.replace.assert_not_called()

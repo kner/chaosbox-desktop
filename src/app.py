@@ -24,6 +24,7 @@ import core
 from error_messages import describe
 from i18n import translate
 import markdown_render
+import poster_project
 
 
 def media_drop_paths(interpreter, data):
@@ -212,6 +213,51 @@ class ImageCanvas(tk.Canvas):
         self.configure(cursor="hand2" if self.navigation_enabled and self.is_navigation_click(event) else "")
 
 
+class PosterOpenDialog(simpledialog.Dialog):
+    """Choose poster configurations from one fixed folder, with no folder navigation."""
+
+    def __init__(self, parent, directory, paths, translator=translate):
+        self.directory, self.paths, self.t = directory, list(paths), translator
+        super().__init__(parent, title=self.t("Open poster project"))
+
+    def body(self, master):
+        self.resizable(True, True)
+        ttk.Label(master, text=str(self.directory)).pack(anchor="w", pady=(0, 8))
+        frame = ttk.Frame(master)
+        frame.pack(fill="both", expand=True)
+        self.listing = ttk.Treeview(frame, columns=("modified",), selectmode="browse", height=16)
+        self.listing.heading("#0", text=self.t("Poster project"))
+        self.listing.heading("modified", text=self.t("Modified · newest first"))
+        self.listing.column("#0", width=420, minwidth=160)
+        self.listing.column("modified", width=170, minwidth=150, stretch=False)
+        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.listing.yview)
+        self.listing.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        self.listing.pack(fill="both", expand=True)
+        for index, path in enumerate(self.paths):
+            self.listing.insert("", "end", iid=str(index), text=path.name,
+                                values=(datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M"),))
+        if self.paths:
+            self.listing.selection_set("0")
+        self.listing.bind("<Double-Button-1>", lambda event: self.ok())
+        return self.listing
+
+    def buttonbox(self):
+        frame = ttk.Frame(self)
+        frame.pack(fill="x", padx=8, pady=8)
+        ttk.Button(frame, text=self.t("Cancel"), command=self.cancel).pack(side="right")
+        ttk.Button(frame, text=self.t("Open"), command=self.ok).pack(side="right", padx=6)
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+
+    def validate(self):
+        selected = self.listing.selection()
+        return bool(selected and self.paths[int(selected[0])].is_file())
+
+    def apply(self):
+        self.result = self.paths[int(self.listing.selection()[0])]
+
+
 class PosterPreview(tk.Toplevel):
     """Review the exact generated JPEGs before publishing them to the box."""
 
@@ -220,6 +266,7 @@ class PosterPreview(tk.Toplevel):
         self.app, self.t = app, app.t
         self.outputs, self.temporary, self.directory = outputs, temporary, directory
         self.index, self.saving = 0, False
+        self.frozen, self.project_path = False, None
         self.title(self.t("Poster preview"))
         self.geometry("1000x800")
         self.minsize(480, 360)
@@ -233,8 +280,18 @@ class PosterPreview(tk.Toplevel):
         self.next = ttk.Button(controls, text=self.t("Next"), command=lambda: self.show(self.index + 1))
         self.next.pack(side="left")
         ttk.Button(controls, text=self.t("Close"), command=self.close).pack(side="right")
-        self.save_button = ttk.Button(controls, text=self.t("Save posters"), command=self.save)
-        self.save_button.pack(side="right", padx=10)
+        save_controls = ttk.Frame(self)
+        save_controls.pack(side="bottom", fill="x", padx=10, pady=(8, 0))
+        self.save_button = ttk.Button(save_controls, text=self.t("Save poster + project"), command=self.save)
+        self.save_button.pack(side="right")
+        project_controls = ttk.Frame(self)
+        project_controls.pack(side="top", fill="x", padx=10, pady=(10, 0))
+        self.edit_individual_button = ttk.Button(project_controls, text=self.t("Edit individual"),
+                                                 command=lambda: app.edit_poster_project(self, individual=True))
+        self.edit_individual_button.pack(side="left", padx=6)
+        self.edit_all_button = ttk.Button(project_controls, text=self.t("Edit all"),
+                                         command=lambda: app.edit_poster_project(self, individual=False))
+        self.edit_all_button.pack(side="left")
         self.viewer = ImageCanvas(self, self.t)
         self.viewer.pack(fill="both", expand=True, padx=10, pady=(10, 0))
         self.protocol("WM_DELETE_WINDOW", self.close)
@@ -271,6 +328,9 @@ class PosterPreview(tk.Toplevel):
         if not self.saving:
             self.destroy()
 
+    def save_project(self):
+        self.save()
+
     def save(self):
         if self.saving or self.app.busy:
             return
@@ -279,21 +339,30 @@ class PosterPreview(tk.Toplevel):
         def work():
             if self.directory.is_symlink():
                 raise ValueError("Poster directory must not be a symbolic link.")
-            saved = []
+            saved, projects = [], []
             try:
                 for source in self.outputs:
-                    target = core.reserve_output(self.directory, source.name)
+                    target, project = poster_project.reserve_poster_pair(self.directory, source.name)
                     saved.append(target)
+                    projects.append(project)
                     core.atomic_write(target, source.read_bytes())
+                poster_project.save_project(projects[0], self.source_paths, self.settings, self.layout_state,
+                                            saved, self.setup_dir, self.profile.id)
+                # Every page has a same-named companion containing the complete project.
+                content = projects[0].read_bytes()
+                for project in projects[1:]:
+                    core.atomic_write(project, content)
             except Exception:
-                for target in saved:
+                for target in saved + projects:
                     target.unlink(missing_ok=True)
                 raise
             return saved
         def done(outputs):
             self.saving = False
-            self.app.status.set(self.t("{count} poster(s) saved: {path}", count=len(outputs), path=self.directory))
-            self.destroy()
+            self.frozen, self.project_path = True, outputs[0].with_suffix(".cbposter")
+            self.title(self.t("Poster preview") + " · " + self.project_path.name)
+            self.app.status.set(self.t("Poster images and projects saved: {path}", path=self.directory))
+            self.save_button.configure(state="normal")
         def failed(error):
             self.saving = False
             self.save_button.configure(state="normal")
@@ -1014,6 +1083,7 @@ class App:
         self.profile_picker.bind("<<ComboboxSelected>>", self.select_profile)
         self.controls.append(self.profile_picker)
         self.button(header, self.t("Poster"), self.make_poster, side="left", padx=2)
+        self.button(header, self.t("Open poster project …"), self.load_poster_project, side="left", padx=2)
         self.button(header, "TXT", self.snippets_dialog, side="left", padx=2)
         menu_button = ttk.Button(header, text="☰", width=3, command=self.setup_dialog)
         ttk.Label(header, text=f"(c) kner.at · {core.VERSION}").pack(side="right", padx=2)
@@ -1689,14 +1759,20 @@ class App:
         except Exception as error:
             return None, self.t("Preview unavailable: {error}", error=error)
 
-    def open_media(self, paths, individual=False, preserve_fields=False):
+    def open_media(self, paths, individual=False, preserve_fields=False, project_records=None):
         if any(path.suffix.lower() not in core.IMPORTS for path in paths):
             self.error(self.t("Select JPG, PNG or MP4 files."))
             return
         if not individual:
             self.individual_paths, self.individual_index = None, 0
+        preview = getattr(self, "poster_preview", None)
+        if project_records is None and preview is not None and getattr(preview, "frozen", False) is True and preview.winfo_exists():
+            frozen_records = dict(zip(preview.source_paths, preview.layout_state["metadata"]))
+            if all(path in frozen_records for path in paths):
+                project_records = frozen_records
         def work():
-            records = core.read_metadata_batch(list(dict.fromkeys(paths)), self.log)
+            records = ([dict(project_records[path]) for path in dict.fromkeys(paths)] if project_records is not None
+                       else core.read_metadata_batch(list(dict.fromkeys(paths)), self.log))
             return records, self.preview_result(paths[0])
         def done(result):
             records, (image, warning) = result
@@ -1714,6 +1790,7 @@ class App:
             values = records[0] if len(records) == 1 else core.common_metadata(records)
             self.media_baseline = dict(values)
             self.media, self.box_path, self.records, self.record_index = list(dict.fromkeys(paths)), None, [], None
+            self.refresh_profile()
             self.field_widgets["device"].configure(values=[])
             if not preserve_fields:
                 self.fill(values)
@@ -1726,6 +1803,68 @@ class App:
                 self.selected.set(self.t("{count} file(s) selected", count=len(self.media)))
             if warning:
                 self.status.set(warning)
+        self.task(work, done)
+
+    def edit_poster_project(self, preview, individual=False):
+        if self.busy or preview.saving or not preview.winfo_exists():
+            return
+        self.profile = self.settings.profile(preview.profile.id)
+        self.search_mode, self.before_search = False, None
+        paths = list(preview.source_paths)
+        records = dict(zip(paths, preview.layout_state["metadata"]))
+        if individual:
+            self.individual_paths, self.individual_index = paths, 0
+            self.open_media(paths[:1], individual=True, project_records=records)
+        else:
+            self.open_media(paths, project_records=records)
+        self.refresh_profile()
+        self.root.lift()
+
+    def load_poster_project(self):
+        if self.busy:
+            return
+        directory = self.profile.images.parent / "poster"
+        paths = poster_project.project_files(directory)
+        if not paths:
+            messagebox.showinfo(self.t("Open poster project"), self.t("No poster configurations in {path}.", path=directory), parent=self.root)
+            return
+        selected = PosterOpenDialog(self.root, directory, paths, self.t).result
+        if selected is None:
+            return
+        path = selected
+        def work():
+            temporary = tempfile.TemporaryDirectory(prefix="chaosbox-poster-project-")
+            try:
+                project = poster_project.load_project(path, Path(temporary.name) / "poster")
+                names = project.get("poster_names", [])
+                poster_name = path.with_suffix(".jpg").name
+                project["selected_page"] = names.index(poster_name) if poster_name in names else 0
+                if not any(profile.id.casefold() == project["profile_id"].casefold() for profile in self.settings.profiles):
+                    raise ValueError(self.t("Poster project collection is unavailable: {name}", name=project["profile_id"]))
+                return project, temporary
+            except Exception:
+                temporary.cleanup()
+                raise
+        def done(result):
+            project, temporary = result
+            try:
+                profile = next(profile for profile in self.settings.profiles
+                               if profile.id.casefold() == project["profile_id"].casefold())
+                current = getattr(self, "poster_preview", None)
+                if current is not None and current.winfo_exists():
+                    current.replace(project["outputs"], temporary, profile.images.parent / "poster")
+                else:
+                    current = PosterPreview(self, project["outputs"], temporary, profile.images.parent / "poster")
+                    self.poster_preview = current
+                current.source_paths, current.layout_state = project["paths"], project["layout"]
+                current.settings, current.setup_dir, current.profile = project["settings"], project["setup_dir"], profile
+                current.frozen, current.project_path = True, project["project_path"]
+                current.show(project.get("selected_page", 0))
+                current.title(self.t("Poster preview") + " · " + selected.name)
+                self.status.set(self.t("Poster project loaded. Choose Edit individual or Edit all."))
+            except Exception:
+                temporary.cleanup()
+                raise
         self.task(work, done)
 
     def refresh_poster_after_save(self, original_paths, saved_paths):
@@ -1747,7 +1886,7 @@ class App:
             paths = [replacements.get(path, path) for path in preview.source_paths]
             profile, settings, setup_dir = preview.profile, preview.settings, preview.setup_dir
             overrides, edit_options = {}, {}
-            if getattr(self, "individual_paths", None) and isinstance(getattr(preview, "layout_state", None), dict):
+            if (getattr(self, "individual_paths", None) or getattr(preview, "frozen", False) is True) and isinstance(getattr(preview, "layout_state", None), dict):
                 edit_options.update(previous_layout=preview.layout_state,
                                     changed_indices={index for index, path in enumerate(preview.source_paths)
                                                      if path in replacements})
@@ -1768,9 +1907,12 @@ class App:
                 overrides = values
                 edit_options = dict(field_baseline=baseline, edit_mode=self.media_edit_mode,
                                     differing_fields=self.media_differing_fields)
-            if individual_paths and preview is not None and isinstance(getattr(preview, "layout_state", None), dict) and paths == preview.source_paths:
-                edit_options.update(previous_layout=preview.layout_state,
-                                    changed_indices={paths.index(self.media[0])})
+            if preview is not None and isinstance(getattr(preview, "layout_state", None), dict) and paths == preview.source_paths:
+                if individual_paths or getattr(preview, "frozen", False) is True:
+                    edit_options.update(previous_layout=preview.layout_state,
+                                        changed_indices={paths.index(self.media[0])} if individual_paths else set(range(len(paths))))
+                if getattr(preview, "frozen", False) is True:
+                    profile, settings, setup_dir = preview.profile, preview.settings, preview.setup_dir
         layout_state = {}
         def work():
             temporary = tempfile.TemporaryDirectory(prefix="chaosbox-poster-")
@@ -1795,6 +1937,9 @@ class App:
                 else:
                     current = PosterPreview(self, outputs, temporary, profile.images.parent / "poster")
                     self.poster_preview = current
+                if not refreshing and paths != getattr(current, "source_paths", paths):
+                    current.frozen, current.project_path = False, None
+                    current.title(self.t("Poster preview"))
                 current.layout_state = layout_state
                 current.source_paths = list(paths)
                 current.profile, current.settings, current.setup_dir = profile, settings, setup_dir

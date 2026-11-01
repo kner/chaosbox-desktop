@@ -912,13 +912,19 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
         if previous_layout is not None:
             old_pages = previous_layout["pages"]
             if number <= len(old_pages):
-                page_title = old_pages[number - 1]["title"]
+                old_title = old_pages[number - 1]["title"]
+                title_changed = any(index in changed and metadata[index].get("box", "") !=
+                                    previous_layout["metadata"][index].get("box", "") for index in indices)
+                if not title_changed or len(changed) != len(paths):
+                    page_title = old_title
             cached = {item[0]: (old_page, local) for old_page in old_pages
                       for local, item in enumerate(old_page["placements"])}
             old_locations = {item[0]: old_number for old_number, old_page in enumerate(old_pages, 1)
                              for item in old_page["placements"]}
             previous_page = {key: [cached[index][0][key][cached[index][1]] for index in indices]
                              for key in ("cells", "placements", "metadata", "panels")}
+            if number <= len(old_pages):
+                previous_page.update(title=old_pages[number - 1]["title"], base=old_pages[number - 1].get("base"))
             previous_page["reflow"] = {
                 local for local, index in enumerate(indices)
                 if index in changed and (old_locations[index] != number or
@@ -939,7 +945,7 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
 
 def create_poster(paths, profile, settings, progress=lambda _: None, *,
                   title=None, metadata=None, placements=None, setup_dir=None,
-                  layout_state=None, previous_page=None, changed_indices=None, fixed_modes=None):
+                  layout_state=None, previous_page=None, changed_indices=None, fixed_modes=None, frozen_cells=None):
     paths = list(paths)
     if not paths and placements != []:
         raise ValueError(f"Select between 1 and {settings.cols * settings.rows} images.")
@@ -971,12 +977,16 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
         if len(pages) != 1:
             raise ValueError("Selection needs multiple posters; use create_posters.")
         placements = [item[1:] for item in pages[0]]
+    frozen_base = previous_page.get("base") if previous_page is not None and title == previous_page.get("title") else None
     if not paths:
         if layout_state is not None:
             layout_state.update(cells=[], panels=[], metadata=[])
-        canvas = poster_background((width, height), settings.background_color, setup_dir, progress)
-        poster_draw_text(ImageDraw.Draw(canvas), title_lines[0], title_font, title_line_height,
-                         left_edge, top_edge, content_width)
+        canvas = frozen_base.copy() if frozen_base is not None else poster_background((width, height), settings.background_color, setup_dir, progress)
+        if frozen_base is None:
+            poster_draw_text(ImageDraw.Draw(canvas), title_lines[0], title_font, title_line_height,
+                             left_edge, top_edge, content_width)
+        if layout_state is not None:
+            layout_state["base"] = canvas.convert("RGBA")
         return save_poster_canvas(canvas, profile, settings, width, height)
     modes = fixed_modes if fixed_modes is not None else poster_layout_modes(metadata, settings.fixed)
     if all(modes) or any(poster_position(record) is not None for record in metadata):
@@ -986,6 +996,8 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
                                       fixed_modes=modes)
     else:
         cells = poster_flexible_cells(placements, bounds, gap)
+    if frozen_cells is not None:
+        cells = [tuple(cell) for cell in frozen_cells]
     if previous_page is not None:
         cells = [previous_page["cells"][index] if index not in changed_indices or
                  (index not in previous_page.get("reflow", ()) and
@@ -1006,11 +1018,13 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
     captions, caption_height = markdown_render.fit(
         comments, int(cell_width), cell_height * .4, round(3 * scale), round(1 * scale))
     caption_space = caption_height + (max(1, round(scale)) if caption_height else 0)
-    canvas = poster_background((width, height), settings.background_color, setup_dir, progress)
-    draw = ImageDraw.Draw(canvas)
-    poster_draw_text(draw, title_lines[0], title_font, title_line_height,
-                     left_edge, top_edge, content_width)
+    canvas = frozen_base.copy() if frozen_base is not None else poster_background((width, height), settings.background_color, setup_dir, progress)
+    if frozen_base is None:
+        poster_draw_text(ImageDraw.Draw(canvas), title_lines[0], title_font, title_line_height,
+                         left_edge, top_edge, content_width)
     output_canvas = canvas.convert("RGBA")
+    if layout_state is not None:
+        layout_state["base"] = output_canvas.copy()
 
     def composite_cell(layer, cell):
         left, top, right, bottom = cell
