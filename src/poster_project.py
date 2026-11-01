@@ -2,6 +2,7 @@
 from dataclasses import asdict
 import json
 import os
+import re
 from pathlib import Path
 import zipfile
 from types import SimpleNamespace
@@ -13,7 +14,21 @@ FORMAT = "chaosbox-poster"
 SCHEMA = 2
 
 
-def reserve_poster_pair(directory, name):
+def poster_filename(original, paths):
+    """Use real source folder names, retaining their selection order."""
+    folders = []
+    for path in paths:
+        folder = re.sub(r"[/\\\x00-\x1f\x7f]", "_", Path(path).parent.name).strip(". ")
+        if folder and folder not in folders:
+            folders.append(folder)
+    category = "_".join(folders) or "unassigned"
+    # Leave room for the timestamp, page/collision suffix and extension.
+    category = category.encode("utf-8")[:120].decode("utf-8", errors="ignore")
+    stem = Path(original).stem.removeprefix("poster_")
+    return f"poster_{category}_{stem}.jpg"
+
+
+def reserve_poster_pair(directory, name, *, with_project=True):
     directory = Path(directory)
     if directory.is_symlink():
         raise ValueError("Poster directory must not be a symbolic link.")
@@ -29,6 +44,11 @@ def reserve_poster_pair(directory, name):
         except FileExistsError:
             continue
         os.close(fd)
+        if not with_project:
+            if project.exists():
+                target.unlink()
+                continue
+            return target, None
         try:
             fd = os.open(project, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
         except FileExistsError:

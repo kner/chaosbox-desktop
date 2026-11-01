@@ -44,7 +44,7 @@ _TEXT = {
         "No poster images in {path}.": "Keine Posterbilder in {path}.",
         "Poster opened: {path}": "Poster geöffnet: {path}",
         "Save poster + project": "Poster + Projekt speichern",
-        "Poster images and projects saved: {path}": "Poster und Projekte gespeichert: {path}",
+        "Poster images and configuration saved: {path}": "Poster und Konfiguration gespeichert: {path}",
         "No saved poster project in {path}. Save a poster first.": "Kein gespeichertes Posterprojekt in {path}. Zuerst ein Poster speichern.",
 
         "Export JPEGs": "JPEGs exportieren",

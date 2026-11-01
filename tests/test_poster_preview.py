@@ -26,6 +26,9 @@ class PosterPreviewTests(unittest.TestCase):
         writer = patch('app.poster_project.save_project', side_effect=lambda path, *args: Path(path).write_bytes(b'project snapshot'))
         self.project_writer = writer.start()
         self.addCleanup(writer.stop)
+        names = patch('app.poster_project.poster_filename', side_effect=lambda name, paths: name)
+        names.start()
+        self.addCleanup(names.stop)
         self.errors = []
         def task(work, done, failed):
             try:
@@ -51,7 +54,9 @@ class PosterPreviewTests(unittest.TestCase):
         self.assertTrue(self.preview.frozen)
         self.assertEqual(self.preview.project_path, self.preview.directory / 'page_1.cbposter')
         self.assertEqual((self.preview.directory / 'page_1.cbposter').read_bytes(), b'project snapshot')
-        self.assertEqual((self.preview.directory / 'page_2.cbposter').read_bytes(), b'project snapshot')
+        self.assertFalse((self.preview.directory / 'page_2.cbposter').exists())
+        self.assertEqual(len(list(self.preview.directory.glob("*.cbposter"))), 1)
+        self.project_writer.assert_called_once()
 
     def test_failed_save_rolls_back_new_files_and_allows_retry(self):
         with patch('app.core.atomic_write', side_effect=OSError('disk full')), patch('app.messagebox.showerror'):

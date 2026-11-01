@@ -171,7 +171,7 @@ class PosterProjectTests(unittest.TestCase):
             poster_project.save_project(self.paths[0], self.paths, self.settings, self.state,
                                         self.outputs, self.setup, self.profile.id)
 
-    def test_export_saves_matching_project_for_every_jpeg_without_folder_selection(self):
+    def test_export_saves_one_project_named_after_first_poster_with_all_pages(self):
         from app import PosterPreview
         from unittest.mock import Mock
         app = SimpleNamespace(busy=False, status=Mock())
@@ -185,13 +185,40 @@ class PosterProjectTests(unittest.TestCase):
         PosterPreview.save(preview)
         posters = sorted(preview.directory.glob('*.jpg'))
         self.assertEqual(len(posters), len(self.outputs))
-        self.assertEqual(len(list(preview.directory.glob('*.cbposter'))), len(posters))
+        self.assertEqual(list(preview.directory.glob('*.cbposter')), [preview.project_path])
+        self.assertEqual(preview.project_path, posters[0].with_suffix('.cbposter'))
+        project = poster_project.load_project(preview.project_path, self.root / 'export-check')
         for number, poster in enumerate(posters):
-            config = poster.with_suffix('.cbposter')
-            project = poster_project.load_project(config, self.root / f'export-check-{number}')
             self.assertEqual(project['paths'], self.paths)
             self.assertEqual(project['layout']['metadata'], self.records)
             self.assertEqual(project['outputs'][number].read_bytes(), poster.read_bytes())
+
+    def test_export_names_use_actual_category_folders_and_match_configuration(self):
+        from app import PosterPreview
+        from unittest.mock import Mock
+        renamed = []
+        for index, path in enumerate(self.paths):
+            directory = self.profile.images / ('Reisen' if index < 2 else 'Haus')
+            directory.mkdir(exist_ok=True)
+            target = directory / path.name
+            path.rename(target)
+            renamed.append(target)
+        self.paths = renamed
+        app = SimpleNamespace(busy=False, status=Mock(), task=lambda work, done, failed: done(work()))
+        preview = SimpleNamespace(app=app, saving=False, directory=self.root / 'exported',
+                         source_paths=self.paths, settings=self.settings, layout_state=self.state,
+                         outputs=self.outputs, setup_dir=self.setup, profile=self.profile,
+                         save_button=Mock(), title=Mock(), t=lambda text, **kw: text.format(**kw))
+        PosterPreview.save(preview)
+        self.assertEqual(len(list(preview.directory.glob('*.cbposter'))), 1)
+        self.assertTrue(preview.project_path.name.startswith('poster_Reisen_Haus_'))
+        data = json.loads(preview.project_path.read_text())
+        self.assertEqual(preview.project_path, (preview.directory / data['poster_names'][0]).with_suffix('.cbposter'))
+        for poster in preview.directory.glob('*.jpg'):
+            self.assertTrue(poster.name.startswith('poster_Reisen_Haus_'), poster.name)
+            self.assertIn(poster.name, data['poster_names'])
+            self.assertTrue(all(source.startswith('../JPG/') for source in data['sources']))
+
 
 
 class PosterProjectLocationTests(unittest.TestCase):
@@ -207,3 +234,9 @@ class PosterProjectLocationTests(unittest.TestCase):
             os.utime(root / 'latest.CBPOSTER', ns=(2, 2))
             self.assertEqual(poster_project.project_files(root), [root / 'latest.CBPOSTER', root / 'first.cbposter'])
             self.assertEqual(poster_project.project_files(root / 'missing'), [])
+
+    def test_category_filename_preserves_unicode_and_uses_folder_not_metadata(self):
+        name = poster_project.poster_filename('poster_20261101_120000.jpg',
+                        [Path('/box/JPG/Urlaub Österreich/a.jpg'), Path('/box/JPG/Urlaub Österreich/b.jpg')])
+        self.assertEqual(name, 'poster_Urlaub Österreich_20261101_120000.jpg')
+        self.assertEqual(poster_project.poster_filename('poster_123.jpg', []), 'poster_unassigned_123.jpg')

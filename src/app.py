@@ -341,17 +341,18 @@ class PosterPreview(tk.Toplevel):
                 raise ValueError("Poster directory must not be a symbolic link.")
             saved, projects = [], []
             try:
-                for source in self.outputs:
-                    target, project = poster_project.reserve_poster_pair(self.directory, source.name)
+                for number, source in enumerate(self.outputs):
+                    pages = self.layout_state.get("pages", [])
+                    indices = [item[0] for item in pages[number]["placements"]] if number < len(pages) else []
+                    category_paths = [self.source_paths[index] for index in indices] if indices else self.source_paths
+                    name = poster_project.poster_filename(source.name, category_paths)
+                    target, project = poster_project.reserve_poster_pair(self.directory, name, with_project=number == 0)
                     saved.append(target)
-                    projects.append(project)
+                    if project is not None:
+                        projects.append(project)
                     core.atomic_write(target, source.read_bytes())
                 poster_project.save_project(projects[0], self.source_paths, self.settings, self.layout_state,
                                             saved, self.setup_dir, self.profile.id)
-                # Every page has a same-named companion containing the complete project.
-                content = projects[0].read_bytes()
-                for project in projects[1:]:
-                    core.atomic_write(project, content)
             except Exception:
                 for target in saved + projects:
                     target.unlink(missing_ok=True)
@@ -361,7 +362,7 @@ class PosterPreview(tk.Toplevel):
             self.saving = False
             self.frozen, self.project_path = True, outputs[0].with_suffix(".cbposter")
             self.title(self.t("Poster preview") + " · " + self.project_path.name)
-            self.app.status.set(self.t("Poster images and projects saved: {path}", path=self.directory))
+            self.app.status.set(self.t("Poster images and configuration saved: {path}", path=self.directory))
             self.save_button.configure(state="normal")
         def failed(error):
             self.saving = False
