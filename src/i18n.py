@@ -56,7 +56,7 @@ _TEXT = {
         "Poster project loaded. Choose Edit individual or Edit all.": "Posterprojekt geladen. Einzeln oder alle bearbeiten wählen.",
         "Poster project collection is unavailable: {name}": "Sammlung des Posterprojekts ist nicht verfügbar: {name}",
 
-        "Poster Page / Position / Rotation / Transparency": "Posterseite / Position / Drehung / Transparenz",
+        "Poster Page / X / Y / Rotation / Transparency / Z-order": "Posterseite / X / Y / Drehung / Transparenz / Z-Reihenfolge",
         "Fixed layout (1/true/t)": "Festes Layout (1/true/t)",
 
         "Poster preview": "Postervorschau", "Save posters": "Poster speichern",

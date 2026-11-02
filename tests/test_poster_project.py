@@ -133,7 +133,7 @@ class PosterProjectTests(unittest.TestCase):
         self.assertFalse(zipfile.is_zipfile(self.file))
         self.assertLess(self.file.stat().st_size, 10000)
         data = json.loads(self.file.read_text())
-        self.assertEqual(data['schema'], 2)
+        self.assertEqual(data['schema'], 3)
         self.assertTrue(all(set(page) == {'title', 'placements', 'cells'} for page in data['pages']))
         self.assertNotIn('panels', self.file.read_text())
         self.assertNotIn('base', self.file.read_text())
@@ -153,7 +153,7 @@ class PosterProjectTests(unittest.TestCase):
         self.assertEqual(project['paths'], self.paths)
         self.assertFalse(zipfile.is_zipfile(self.file))
         self.assertLess(self.file.stat().st_size, before / 100)
-        self.assertEqual(json.loads(self.file.read_text())['schema'], 2)
+        self.assertEqual(json.loads(self.file.read_text())['schema'], 3)
         self.assertEqual(project['layout']['pages'][1]['cells'], self.state['pages'][1]['cells'])
 
     def test_loading_uses_referenced_images_even_if_exported_posters_are_missing(self):
@@ -165,6 +165,45 @@ class PosterProjectTests(unittest.TestCase):
         self.assertEqual(project['layout']['pages'][1]['cells'], self.state['pages'][1]['cells'])
         self.assertNotEqual(project['layout']['pages'][1]['panels'][0][0].tobytes(),
                             self.state['pages'][1]['panels'][0][0].tobytes())
+
+    def test_explicit_zorder_survives_reference_only_project_reload(self):
+        self.settings = core.PosterSettings(400, 100, 100, 1, 1, True)
+        self.records = [{"device": "1/A1/0/0/9"}, {"device": "1/A1/0/0/2"}, {"device": "1/A1/0/0/4"}]
+        self.state = {}
+        with patch('core.read_metadata_batch', return_value=self.records):
+            self.outputs = core.create_posters(self.paths, self.profile, self.settings, layout_state=self.state)
+        self.save()
+        project = self.load()
+        self.assertEqual(project['layout']['metadata'], self.records)
+        self.assertEqual([item[0] for item in project['layout']['pages'][0]['placements']], [0, 1, 2])
+        with Image.open(project['outputs'][0]) as image:
+            r, g, b = image.getpixel((200, 200))
+            self.assertGreater(g, 110)
+            self.assertLess(max(r, b), 20)
+
+    def test_numeric_xy_project_roundtrip_preserves_negative_and_off_grid_geometry(self):
+        self.records = [{'device': '2/-0.5/0.25/90/100/4'}, {'device': '2/100/-100'}, {'device': '2/0/0'}]
+        self.state = {}
+        with patch('core.read_metadata_batch', return_value=self.records):
+            self.outputs = core.create_posters(self.paths, self.profile, self.settings, layout_state=self.state)
+        self.save()
+        project = self.load()
+        self.assertEqual(project['layout']['metadata'], self.records)
+        for old, restored in zip(self.state['pages'], project['layout']['pages']):
+            self.assertEqual(old['cells'], restored['cells'])
+            self.assertEqual(old['placements'], restored['placements'])
+        self.assertEqual(project['layout']['pages'][1]['panels'][1][0].getbbox(), None)
+
+    def test_previous_numeric_free_rotation_is_migrated_from_schema_two(self):
+        self.save()
+        data = json.loads(self.file.read_text())
+        data['schema'] = 2
+        data['metadata'][0]['device'] = '2//90/100/4'
+        self.file.write_text(json.dumps(data))
+        project = self.load()
+        self.assertEqual(project['layout']['metadata'][0]['device'], '2///90/100/4')
+        self.assertEqual(core.poster_angle(project['layout']['metadata'][0]), 90)
+        self.assertEqual(core.poster_zorder(project['layout']['metadata'][0]), 4)
 
     def test_project_cannot_overwrite_a_source_image(self):
         with self.assertRaisesRegex(ValueError, 'source images'):

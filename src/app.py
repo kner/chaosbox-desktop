@@ -1191,7 +1191,7 @@ class App:
             i = core.FIELDS.index(key)
             configured = self.profile.labels[i]
             if key == "device" and configured.casefold() in {"orientation", "ausrichtung", "position and orientation"}:
-                configured = self.t("Poster Page / Position / Rotation / Transparency")
+                configured = self.t("Poster Page / X / Y / Rotation / Transparency / Z-order")
             if key == "alias" and (configured or self.media):
                 configured = self.t("Fixed layout (1/true/t)")
             label.configure(text=self.t(core.LABELS[i]) if configured == core.LABELS[i] else configured)
@@ -1421,6 +1421,8 @@ class App:
     def fill(self, values):
         for key, variable in self.variables.items():
             value = str(values.get(key, ""))
+            if key == "device":
+                value = core.poster_coordinate_text(value)
             variable.set(value.upper() if key == "category" else value)
         self.field_widgets["comment"].delete("1.0", "end")
         self.field_widgets["comment"].insert("1.0", str(values.get("comment", "")))

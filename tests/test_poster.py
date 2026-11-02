@@ -172,8 +172,8 @@ class PosterTests(unittest.TestCase):
             pixels = list(image.getdata())
             self.assertTrue(any(g > 90 and r < 30 and b < 30 for r, g, b in pixels))
             self.assertFalse(any(b > 150 and r < 30 and g < 30 for r, g, b in pixels))
-        with self.assertRaisesRegex(ValueError, "outside"):
-            core.poster_photo_pages(self.paths[:1], [{"device": "D1"}], settings)
+        self.assertEqual(core.poster_photo_pages(self.paths[:1], [{"device": "1/3/0"}], settings),
+                         [[(0, 0, 3, 1, 1)]])
 
     def test_position_overflow_is_cropped_with_frame_inside(self):
         settings = core.PosterSettings(600, 100, 100, 2, 2, False,
@@ -193,12 +193,12 @@ class PosterTests(unittest.TestCase):
     def test_position_rotation_transparency_syntax(self):
         examples = [("A2/90/100", ((1, 0), 90, 100)),
                     ("A1//0", ((0, 0), 0, 0)),
-                    ("//90/100", (None, 90, 100)),
-                    ("///50", (None, 0, 50)), ("B3", ((2, 1), 0, 0)),
-                    ("//90", (None, 90, 0)), ("A1/", ((0, 0), 0, 0))]
+                    ("///90/100", (None, 90, 100)),
+                    ("////50", (None, 0, 50)), ("B3", ((2, 1), 0, 0)),
+                    ("///90", (None, 90, 0)), ("A1/", ((0, 0), 0, 0))]
         for value, expected in examples:
             self.assertEqual(core.poster_transform({"device": value}), expected)
-        for value in ("A1//-1", "A1//101", "A1//nan", "A1//bad", "A1/0/0/0", "A0//0"):
+        for value in ("A1//-1", "A1//101", "A1//nan", "A1//bad", "A1/0/0/0/0", "A0//0"):
             with self.assertRaisesRegex(ValueError, "field 3"):
                 core.poster_transform({"device": value})
 
@@ -220,7 +220,7 @@ class PosterTests(unittest.TestCase):
         settings = core.PosterSettings(600, 100, 100, 1, 1, True,
                                        frames="00ff00", image_background_color="ffffff", background_color="ff0000")
         output = core.create_poster(self.paths[1:2], self.profile, settings,
-                                    metadata=[{"device": "//90/100"}])
+                                    metadata=[{"device": "///90/100"}])
         with Image.open(output) as image:
             # Transparent padding and frame reveal the red poster background.
             for point in ((76, 300), (90, 300), (300, 100)):
@@ -232,15 +232,15 @@ class PosterTests(unittest.TestCase):
         examples = [("3", 3, (None, 0, 0)),
                     ("2/A1/90/100", 2, ((0, 0), 90, 100)),
                     ("2/A1", 2, ((0, 0), 0, 0)),
-                    ("2//90", 2, (None, 90, 0)),
+                    ("2///90", 2, (None, 90, 0)),
                     ("/A1/90/100", None, ((0, 0), 90, 100)),
                     ("A1/90/100", None, ((0, 0), 90, 100)),
-                    ("//90/100", None, (None, 90, 100))]
+                    ("///90/100", None, (None, 90, 100))]
         for value, page, transform in examples:
             with self.subTest(value=value):
                 self.assertEqual(core.poster_page({"device": value}), page)
                 self.assertEqual(core.poster_transform({"device": value}), transform)
-        for value in ("0/A1/90/100", "-2/A1/90/100", "1.5/A1/90/100", "2/Z0/90/100", "/90/100"):
+        for value in ("0/A1/90/100", "-2/A1/90/100", "1.5/A1/90/100", "2/Z0/90/100", "/bad/100"):
             with self.assertRaisesRegex(ValueError, "field 3"):
                 core.poster_transform({"device": value})
 
@@ -262,6 +262,56 @@ class PosterTests(unittest.TestCase):
                                  fixed_modes=[True, True, False])
         self.assertEqual(pages[0], [(0, 0, 0, 1, 1), (1, 0, 1, 1, 1)])
         self.assertEqual(pages[1], [(2, 0, 0, 2, 2)])
+
+    def test_explicit_page_overrides_flexible_portrait_spans(self):
+        self.assertEqual(core.poster_pages([True] * 3, 2, 2,
+                         page_numbers=[None, None, 1]),
+                         [[(0, 0, 0, 1, 1), (1, 0, 1, 1, 1), (2, 1, 0, 1, 1)]])
+
+    def test_forced_page_reconsiders_earlier_deferred_images_after_zoom_reflow(self):
+        pages = core.poster_pages([False] * 3, 2, 2, zooms=[4, 1, 1],
+                                  page_numbers=[None, None, 1])
+        self.assertEqual(len(pages), 1)
+        self.assertEqual([item[0] for item in pages[0]], [0, 1, 2])
+        self.assertEqual(len({(item[1], item[2]) for item in pages[0]}), 3)
+
+    def test_forced_page_over_capacity_uses_selection_order_overlap(self):
+        pages = core.poster_pages([False] * 3, 2, 1, fixed=True,
+                                  page_numbers=[None, None, 1])
+        self.assertEqual(pages, [[(0, 0, 0, 1, 1), (1, 0, 1, 1, 1), (2, 0, 0, 1, 1)]])
+        self.assertEqual(core.poster_pages([True], 2, 1, page_numbers=[1]), [[(0, 0, 0, 1, 1)]])
+
+    def test_individual_page_override_recalculates_flexible_destination(self):
+        settings = core.PosterSettings(600, 100, 100, 2, 2, False)
+        for path in self.paths:
+            Image.new("RGB", (40, 100), "red").save(path)
+        initial, updated = {}, {}
+        records = [{}, {}, {}]
+        with patch("core.read_metadata_batch", return_value=records):
+            core.create_posters(self.paths, self.profile, settings, layout_state=initial)
+        self.assertEqual(len(initial["pages"]), 2)
+        records[2] = {"device": "1"}
+        with patch("core.read_metadata_batch", return_value=records):
+            outputs = core.create_posters(self.paths, self.profile, settings, layout_state=updated,
+                                         previous_layout=initial, changed_indices={2})
+        self.assertEqual(len(outputs), 1)
+        self.assertEqual([item[0] for item in updated["pages"][0]["placements"]], [0, 1, 2])
+        self.assertTrue(all(item[3:] == (1, 1) for item in updated["pages"][0]["placements"]))
+        self.assertIsNot(initial["pages"][0]["panels"][0][0], updated["pages"][0]["panels"][0][0])
+
+    def test_saved_page_override_reconsiders_images_on_previous_overflow_page(self):
+        settings = core.PosterSettings(600, 100, 100, 2, 2, False)
+        records = [{"anzahl": "Z=4"}, {}, {}]
+        initial, updated = {}, {}
+        with patch("core.read_metadata_batch", return_value=records):
+            core.create_posters(self.paths, self.profile, settings, layout_state=initial)
+        self.assertEqual(len(initial["pages"]), 2)
+        records[2] = {"device": "1"}
+        with patch("core.read_metadata_batch", return_value=records):
+            outputs = core.create_posters(self.paths, self.profile, settings, layout_state=updated,
+                                         previous_layout=initial, changed_indices={2})
+        self.assertEqual(len(outputs), 1)
+        self.assertEqual([item[0] for item in updated["pages"][0]["placements"]], [0, 1, 2])
 
     def test_page_three_output_includes_blank_pages(self):
         settings = core.PosterSettings(600, 100, 100, 2, 2, True)
@@ -306,15 +356,74 @@ class PosterTests(unittest.TestCase):
         self.assertLess(fixed_cell[3] - fixed_cell[1], 300)
         self.assertGreater(state["pages"][0]["cells"][2][3], fixed_cell[3])
 
+    def test_numeric_xy_coordinates_are_zero_based_and_unbounded(self):
+        for value, position in (("1/0/0/90/100/4", (0, 0)), ("1/-0.5/1.25", (1.25, -0.5)),
+                                ("1/50/-20", (-20, 50)), ("/0/0", (0, 0)), ("1//", None)):
+            self.assertEqual(core.poster_position({"device": value}), position)
+        self.assertEqual(core.poster_angle({"device": "///90"}), 90)
+        self.assertEqual(core.poster_zorder({"device": "1/0/0/90/100/4"}), 4)
+        for value in ("1/nan/0", "1/0/inf", "1/a/0", "1/0/0/0/0/0/0"):
+            with self.assertRaisesRegex(ValueError, "field 3"):
+                core.poster_transform({"device": value})
+        self.assertEqual(core.poster_coordinate_text("1/B2/90/100/4"), "1/1/1/90/100/4")
+
+    def test_negative_xy_is_cropped_and_fully_outside_coordinates_are_valid(self):
+        settings = core.PosterSettings(600, 100, 100, 2, 2, True,
+                                       frames="000000", image_background_color="ffffff")
+        state = {}
+        records = [{"device": "1/-0.5/-0.5/0/0/4"}, {"device": "1/100/-100/0/0/5"}]
+        with patch("core.read_metadata_batch", return_value=records):
+            outputs = core.create_posters(self.paths[:2], self.profile, settings, layout_state=state)
+        self.assertLess(state["pages"][0]["cells"][0][0], 0)
+        self.assertEqual(state["pages"][0]["placements"][0][1:3], (-.5, -.5))
+        with Image.open(outputs[0]) as image:
+            self.assertTrue(any(r > 150 and g < 30 and b < 30 for r, g, b in image.getdata()))
+            self.assertFalse(any(b > 150 and r < 30 and g < 30 for r, g, b in image.getdata()))
+            left = round(settings.margin_left * 6)
+            top = round(settings.margin_top * 6)
+            self.assertLess(max(image.getpixel((left, top))), 40)
+        panel, position = state["pages"][0]["panels"][1]
+        self.assertEqual(panel.getbbox(), None)
+
+    def test_explicit_zorder_parsing_and_overlapping_render(self):
+        self.assertEqual(core.poster_transform({"device": "1/A2/90/100/4"}), ((1, 0), 90, 100))
+        self.assertEqual(core.poster_zorder({"device": "1/A2/90/100/4"}), 4)
+        self.assertEqual(core.poster_zorder({"device": "1/A2/90/100/"}, 7), 7)
+        self.assertEqual(core.poster_zorder({"device": "/////-2,5"}), -2.5)
+        for value in ("/////bad", "/////inf", "/////nan", "1/A1/0/0/1/2"):
+            with self.assertRaisesRegex(ValueError, "field 3"):
+                core.poster_transform({"device": value})
+        settings = core.PosterSettings(400, 100, 100, 1, 1, True)
+        for z, expected in ((4, (255, 0, 0)), (1, (0, 0, 255)), (2, (0, 0, 255))):
+            output = core.create_poster(self.paths[:2], self.profile, settings,
+                     metadata=[{"device": f"1/A1/0/0/{z}"}, {"device": "1/A1/0/0/2"}])
+            with Image.open(output) as image:
+                self.assertTrue(all(abs(a - b) < 10 for a, b in zip(image.getpixel((200, 200)), expected)))
+
+    def test_zorder_edit_changes_stacking_without_reordering_cached_panels(self):
+        settings = core.PosterSettings(400, 100, 100, 1, 1, True)
+        records = [{"device": "1/A1/0/0/4"}, {"device": "1/A1/0/0/2"}]
+        initial, updated = {}, {}
+        with patch("core.read_metadata_batch", return_value=records):
+            core.create_posters(self.paths[:2], self.profile, settings, layout_state=initial)
+        records[0] = {"device": "1/A1/0/0/1"}
+        with patch("core.read_metadata_batch", return_value=records):
+            outputs = core.create_posters(self.paths[:2], self.profile, settings, layout_state=updated,
+                                         previous_layout=initial, changed_indices={0})
+        self.assertIs(updated["pages"][0]["panels"][1][0], initial["pages"][0]["panels"][1][0])
+        self.assertEqual(updated["pages"][0]["cells"], initial["pages"][0]["cells"])
+        with Image.open(outputs[0]) as image:
+            self.assertGreater(image.getpixel((200, 200))[2], 240)
+
     def test_angle_parsing_and_rotated_layout(self):
-        for value, expected in (("", 0), ("//90", 90), ("//-90", 270), ("//360", 0), ("//22,5", 22.5)):
+        for value, expected in (("", 0), ("///90", 90), ("///-90", 270), ("///360", 0), ("///22,5", 22.5)):
             self.assertEqual(core.poster_angle({"device": value}), expected)
         for value in ("bad", "nan", "inf"):
             with self.assertRaisesRegex(ValueError, "field 3"):
                 core.poster_angle({"device": value})
         settings = core.PosterSettings(800, 200, 200, 2, 2, False)
         Image.new("RGB", (200, 100), "red").save(self.paths[0])
-        page = core.poster_photo_pages(self.paths[:1], [{"device": "//90"}], settings)
+        page = core.poster_photo_pages(self.paths[:1], [{"device": "///90"}], settings)
         self.assertEqual(page, [[(0, 0, 0, 2, 1)]])
 
     def test_photo_and_caption_rotate_together(self):
@@ -326,7 +435,7 @@ class PosterTests(unittest.TestCase):
             with patch("core.markdown_render.draw_poster", side_effect=caption_marker):
                 output = core.create_poster(self.paths[:1], self.profile,
                     core.PosterSettings(600, 200, 200, 1, 1, True),
-                    metadata=[{"device": f"//{angle}", "comment": "Caption"}])
+                    metadata=[{"device": f"///{angle}", "comment": "Caption"}])
             with Image.open(output) as image:
                 centers = []
                 for channel in (0, 2):
@@ -523,7 +632,7 @@ class PosterTests(unittest.TestCase):
         initial, updated = {}, {}
         with patch("core.read_metadata_batch", return_value=[{}]):
             core.create_posters(self.paths[:1], self.profile, settings, layout_state=initial)
-        with patch("core.read_metadata_batch", return_value=[{"device": "///100"}]):
+        with patch("core.read_metadata_batch", return_value=[{"device": "////100"}]):
             core.create_posters(self.paths[:1], self.profile, settings, layout_state=updated,
                                 previous_layout=initial, changed_indices={0})
         self.assertEqual(initial["pages"][0]["cells"], updated["pages"][0]["cells"])

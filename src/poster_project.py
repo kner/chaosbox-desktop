@@ -1,6 +1,7 @@
 """Small poster configurations containing source references and layout data only."""
 from dataclasses import asdict
 import json
+import math
 import os
 import re
 from pathlib import Path
@@ -11,7 +12,7 @@ import core
 
 
 FORMAT = "chaosbox-poster"
-SCHEMA = 2
+SCHEMA = 3
 
 
 def poster_filename(original, paths):
@@ -120,11 +121,20 @@ def load_project(path, output_dir):
                 manifest = json.loads(archive.read("project.json"))
         else:
             manifest = json.loads(path.read_text(encoding="utf-8"))
-        if manifest["format"] != FORMAT or manifest["schema"] not in (1, SCHEMA):
+        if manifest["format"] != FORMAT or manifest["schema"] not in (1, 2, SCHEMA):
             raise ValueError("Unsupported poster project format or version.")
         settings = _settings(manifest["settings"])
         sources = [(path.parent / source).resolve() for source in manifest["sources"]]
         records, modes = manifest["metadata"], manifest["fixed_modes"]
+        if manifest["schema"] < 3:
+            records = [dict(record) for record in records]
+            for record in records:
+                parts = str(record.get("device", "") or "").split("/")
+                if not any(re.fullmatch(r"[A-Za-z]+[1-9][0-9]*", part.strip()) for part in parts):
+                    parts += [""] * (5 - len(parts))
+                    parts[1:2] = ["", ""]
+                    record["device"] = "/".join(parts).rstrip("/")
+            manifest["metadata"] = records
         if not sources or len(set(sources)) != len(sources) or len(sources) != len(records) or len(modes) != len(sources):
             raise ValueError("Invalid poster project image list.")
         if not all(isinstance(record, dict) for record in records) or not all(type(mode) is bool for mode in modes):
@@ -149,16 +159,17 @@ def load_project(path, output_dir):
             page = dict(title=str(saved["title"]), placements=[], cells=[])
             previous_index = -1
             for placement, cell in zip(placements, cells):
-                if len(placement) != 5 or not all(type(value) is int for value in placement):
+                if len(placement) != 5 or not all(type(placement[index]) is int for index in (0, 3, 4)) or not all(
+                        type(value) in (int, float) and math.isfinite(value) for value in placement[1:3]):
                     raise ValueError("Invalid poster project placement.")
                 index, row, col, rows, cols = placement
                 if not 0 <= index < len(sources) or index <= previous_index or index in seen or not (
-                        0 <= row < settings.rows and 0 <= col < settings.cols and 0 < rows <= settings.rows and 0 < cols <= settings.cols):
+                        0 < rows <= settings.rows and 0 < cols <= settings.cols):
                     raise ValueError("Invalid poster project image order or placement.")
                 previous_index = index
                 seen.add(index)
                 if len(cell) != 4 or not all(type(value) is int for value in cell) or not (
-                        0 <= cell[0] < cell[2] <= 2 * size[0] and 0 <= cell[1] < cell[3] <= 2 * size[1]):
+                        cell[0] < cell[2] and cell[1] < cell[3]):
                     raise ValueError("Invalid poster project image area.")
                 page["placements"].append(tuple(placement))
                 page["cells"].append(tuple(cell))
@@ -178,6 +189,7 @@ def load_project(path, output_dir):
                          title=page["title"], metadata=[records[index] for index in indices],
                          placements=[item[1:] for item in page["placements"]],
                          fixed_modes=[modes[index] for index in indices], frozen_cells=page["cells"],
+                         selection_numbers=[index + 1 for index in indices],
                          layout_state=rendered, setup_dir=setup_dir))
             page.update(rendered)
         if legacy:

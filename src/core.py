@@ -629,14 +629,41 @@ def poster_caption(record):
 
 
 def poster_parts(record):
-    """Page/position/rotation/transparency; retain unambiguous grid shorthand."""
+    """Page/x/y/rotation/transparency/z-order, with legacy grid addresses readable."""
     value = str(record.get("device", "") or "").strip()
     parts = [part.strip() for part in value.split("/")]
     if re.fullmatch(r"[A-Za-z]+[1-9][0-9]*", parts[0]):
         parts.insert(0, "")
-    if len(parts) > 4:
-        raise ValueError(f"Invalid poster page/position/rotation/transparency in field 3: {value!r}.")
-    return parts + [""] * (4 - len(parts))
+    if len(parts) > 1:
+        address = re.fullmatch(r"([A-Za-z]+)([1-9][0-9]*)", parts[1])
+        if address:
+            col = 0
+            for letter in address[1].upper():
+                col = col * 26 + ord(letter) - ord("A") + 1
+            parts[1:2] = [str(col - 1), str(int(address[2]) - 1)]
+    if len(parts) > 6:
+        raise ValueError(f"Invalid poster page/x/y/rotation/transparency/z-order in field 3: {value!r}.")
+    return parts + [""] * (6 - len(parts))
+
+
+def poster_coordinate_text(value):
+    text = str(value or "").strip()
+    if re.search(r"[A-Za-z]+[1-9][0-9]*", text):
+        return "/".join(poster_parts({"device": text})).rstrip("/")
+    return text
+
+
+def poster_zorder(record, selection_number=1):
+    value = poster_parts(record)[5]
+    if not value:
+        return selection_number
+    try:
+        z = float(value.replace(",", "."))
+    except ValueError as error:
+        raise ValueError(f"Invalid poster z-order in field 3: {value!r}.") from error
+    if not math.isfinite(z):
+        raise ValueError("Poster z-order in field 3 must be a finite number.")
+    return z
 
 
 def poster_page(record):
@@ -662,16 +689,18 @@ def poster_layout_modes(metadata, default):
 def poster_transform(record):
     """Parse the position, clockwise rotation and panel transparency."""
     poster_page(record)
-    _, position_value, angle_value, transparency_value = poster_parts(record)
+    poster_zorder(record)
+    _, x_value, y_value, angle_value, transparency_value, _ = poster_parts(record)
     position = None
-    address = re.fullmatch(r"([A-Za-z]+)([1-9][0-9]*)", position_value)
-    if address:
-        col = 0
-        for letter in address[1].upper():
-            col = col * 26 + ord(letter) - ord("A") + 1
-        position = int(address[2]) - 1, col - 1
-    elif position_value:
-        raise ValueError(f"Invalid poster position in field 3: {position_value!r}.")
+    if x_value or y_value:
+        try:
+            x = float(x_value.replace(",", ".")) if x_value else 0
+            y = float(y_value.replace(",", ".")) if y_value else 0
+        except ValueError as error:
+            raise ValueError("Poster x/y coordinates in field 3 must be finite numbers.") from error
+        if not math.isfinite(x) or not math.isfinite(y):
+            raise ValueError("Poster x/y coordinates in field 3 must be finite numbers.")
+        position = y, x
     try:
         angle = float(angle_value.replace(",", ".")) if angle_value else 0
     except ValueError as error:
@@ -719,16 +748,63 @@ def poster_zoom(record):
     return max(1, zoom)
 
 
+def poster_occupied(row, col, height, width, rows, cols):
+    return {(r, c) for r in range(max(0, math.floor(row)), min(rows, math.ceil(row + height)))
+            for c in range(max(0, math.floor(col)), min(cols, math.ceil(col + width)))}
+
+
+def poster_repack_page(indices, shapes, positions, cols, rows, modes, portraits):
+    """Honor a forced page, reducing flexible spans before allowing overlap."""
+    def pack(candidate_shapes, overlap=False):
+        occupied, result = set(), []
+        for index in indices:
+            height, width = candidate_shapes[index]
+            position = positions[index]
+            if position is None:
+                position = next(((r, c) for r in range(rows) for c in range(cols)
+                                 if r + height <= rows and c + width <= cols and not any(
+                                     (y, x) in occupied for y in range(r, r + height)
+                                     for x in range(c, c + width))), None)
+                if position is None:
+                    if not overlap:
+                        return None
+                    position = divmod(len(result) % (cols * rows), cols)
+            row, col = position
+            occupied.update(poster_occupied(row, col, height, width, rows, cols))
+            result.append((index, row, col, height, width))
+        return result
+
+    candidates = dict(enumerate(shapes))
+    result = pack(candidates)
+    if result is not None:
+        return result
+    # Requested page numbers take priority over flexible zoom and portrait spans.
+    for index in indices:
+        if not modes[index] and positions[index] is None:
+            candidates[index] = (min(rows, 2) if portraits[index] else 1, 1)
+    result = pack(candidates)
+    if result is not None:
+        return result
+    for index in indices:
+        if not modes[index] and positions[index] is None:
+            candidates[index] = (1, 1)
+    return pack(candidates, overlap=True)
+
+
 def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
                  aspect_ratios=None, cell_aspect=1, positions=None,
                  page_numbers=None, fixed_modes=None):
     """Reserve rectangular photo areas; defer photos that cannot fit this page."""
     modes = fixed_modes if fixed_modes is not None else [fixed] * len(portraits)
-    if rows < 2 and any(portrait and not modes[index] for index, portrait in enumerate(portraits)):
+    explicit_pages = page_numbers or [None] * len(portraits)
+    if rows < 2 and any(portrait and not modes[index] and explicit_pages[index] is None
+                        for index, portrait in enumerate(portraits)):
         raise ValueError("Portrait photos require POSTER-ROWS of at least 2.")
     shapes = []
     for index, portrait in enumerate(portraits):
         base_rows = 2 if portrait and not modes[index] else 1
+        if explicit_pages[index] is not None:
+            base_rows = min(rows, base_rows)
         zoom = zooms[index] if zooms is not None and not modes[index] else 1
         if zoom <= 1:
             shapes.append((base_rows, 1))
@@ -747,8 +823,8 @@ def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
                            -shape[1])))
     positions = positions or [None] * len(portraits)
     for position in positions:
-        if position is not None and not (0 <= position[0] < rows and 0 <= position[1] < cols):
-            raise ValueError("Poster position in field 3 is outside the configured grid.")
+        if position is not None and not all(math.isfinite(value) for value in position):
+            raise ValueError("Poster x/y coordinates in field 3 must be finite numbers.")
     start_pages, start_page = [], 1
     for page in page_numbers or [None] * len(portraits):
         if page is not None:
@@ -759,6 +835,7 @@ def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
     while pending:
         occupied = set()
         page, deferred = [], []
+        repacked_page = False
         for index in pending:
             if start_pages[index] > len(pages) + 1:
                 deferred.append(index)
@@ -767,28 +844,50 @@ def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
                 row, col = positions[index]
                 row_span, col_span = shapes[index]
                 page.append((index, row, col, row_span, col_span))
-                occupied.update((r, c) for r in range(row, min(rows, row + row_span))
-                                for c in range(col, min(cols, col + col_span)))
+                occupied.update(poster_occupied(row, col, row_span, col_span, rows, cols))
                 continue
             slot = next((slot for slot in range(cols * rows) if divmod(slot, cols) not in occupied), None)
-            if slot is None:
+            if slot is None and explicit_pages[index] is None:
                 deferred.append(index)
                 continue
-            row, col = divmod(slot, cols)
+            row, col = divmod(slot, cols) if slot is not None else (0, 0)
             row_span, col_span = shapes[index]
             area = {(r, c) for r in range(row, row + row_span)
                     for c in range(col, col + col_span)}
-            if row + row_span > rows or col + col_span > cols or area & occupied:
-                deferred.append(index)
+            if slot is None or row + row_span > rows or col + col_span > cols or area & occupied:
+                if explicit_pages[index] is not None:
+                    repacked_page = True
+                    page = poster_repack_page([item[0] for item in page] + [index], shapes, positions,
+                                              cols, rows, modes, portraits)
+                    occupied = set().union(*(poster_occupied(r0, c0, height, width, rows, cols)
+                                             for _, r0, c0, height, width in page))
+                else:
+                    deferred.append(index)
                 continue
             occupied.update(area)
             page.append((index, row, col, row_span, col_span))
+        if repacked_page:
+            remaining = []
+            for index in deferred:
+                height, width = shapes[index]
+                position = next(((r, c) for r in range(rows) for c in range(cols)
+                                 if start_pages[index] <= len(pages) + 1 and r + height <= rows and
+                                 c + width <= cols and not any((y, x) in occupied
+                                 for y in range(r, r + height) for x in range(c, c + width))), None)
+                if position is None:
+                    remaining.append(index)
+                    continue
+                row, col = position
+                page.append((index, row, col, height, width))
+                occupied.update((r, c) for r in range(row, row + height) for c in range(col, col + width))
+            deferred = remaining
+            page.sort()
         pages.append(page)
         pending = deferred
     return pages
 
 
-def poster_photo_pages(paths, metadata, settings, *, ignore_pages=False, fixed_modes=None):
+def poster_photo_pages(paths, metadata, settings, *, ignore_pages=False, fixed_modes=None, force_page=False):
     portraits, aspects = [], []
     for path, record in zip(paths, metadata):
         with Image.open(path) as source:
@@ -801,7 +900,7 @@ def poster_photo_pages(paths, metadata, settings, *, ignore_pages=False, fixed_m
     return poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed,
                         zooms=zooms, aspect_ratios=aspects,
                         positions=[poster_position(record) for record in metadata],
-                        page_numbers=None if ignore_pages else [poster_page(record) for record in metadata],
+                        page_numbers=[1] * len(paths) if force_page else None if ignore_pages else [poster_page(record) for record in metadata],
                         fixed_modes=modes,
                         cell_aspect=settings.width * settings.rows / (settings.height * settings.cols))
 
@@ -873,6 +972,7 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
         metadata = [record if index in changed else dict(previous_layout["metadata"][index])
                     for index, record in enumerate(metadata)]
     modes = poster_layout_modes(metadata, settings.fixed)
+    recalculate_pages = set()
     if previous_layout is not None:
         # Keep every untouched panel on its page, even when an edited image moves.
         pages = [[item for item in old_page["placements"] if item[0] not in changed]
@@ -891,10 +991,20 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
                     if position is not None:
                         row, col = position
                 number = poster_page(record) or old_number
+                if poster_page(record) is not None and poster_position(record) is None and (
+                        number != old_number or poster_page(record) != poster_page(old_record)):
+                    recalculate_pages.update((old_number, number))
                 while len(pages) < number:
                     pages.append([])
                 pages[number - 1].append((index, row, col, row_span, col_span))
         pages = [sorted(page) for page in pages]
+        if recalculate_pages:
+            # A page override also reconsiders images previously deferred by flexible sizing.
+            pages = poster_photo_pages(paths, metadata, settings)
+            for number, page in enumerate(pages, 1):
+                old_pages = previous_layout["pages"]
+                if number > len(old_pages) or page != old_pages[number - 1]["placements"]:
+                    recalculate_pages.add(number)
     else:
         pages = poster_photo_pages(paths, metadata, settings)
     if layout_state is not None:
@@ -927,15 +1037,16 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
                 previous_page.update(title=old_pages[number - 1]["title"], base=old_pages[number - 1].get("base"))
             previous_page["reflow"] = {
                 local for local, index in enumerate(indices)
-                if index in changed and (old_locations[index] != number or
-                    previous_layout.get("fixed_modes", modes)[index] != modes[index])}
+                if (number in recalculate_pages or index in changed and (old_locations[index] != number or
+                    previous_layout.get("fixed_modes", modes)[index] != modes[index]))}
             render_options.update(previous_page=previous_page,
-                                  changed_indices={local for local, index in enumerate(indices) if index in changed})
+                                  changed_indices={local for local, index in enumerate(indices) if index in changed or number in recalculate_pages})
         outputs.append(create_poster([paths[index] for index in indices], profile, settings, progress,
                                      title=page_title,
                                      metadata=[metadata[index] for index in indices],
                                      placements=[item[1:] for item in page], setup_dir=setup_dir,
-                                     fixed_modes=[modes[index] for index in indices], **render_options))
+                                     fixed_modes=[modes[index] for index in indices],
+                                     selection_numbers=[index + 1 for index in indices], **render_options))
         if layout_state is not None:
             page_state["placements"] = list(page)
             page_state["title"] = page_title
@@ -945,7 +1056,7 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
 
 def create_poster(paths, profile, settings, progress=lambda _: None, *,
                   title=None, metadata=None, placements=None, setup_dir=None,
-                  layout_state=None, previous_page=None, changed_indices=None, fixed_modes=None, frozen_cells=None):
+                  layout_state=None, previous_page=None, changed_indices=None, fixed_modes=None, frozen_cells=None, selection_numbers=None):
     paths = list(paths)
     if not paths and placements != []:
         raise ValueError(f"Select between 1 and {settings.cols * settings.rows} images.")
@@ -963,7 +1074,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
                          f"top+bottom margins={settings.margin_top + settings.margin_bottom:g} mm.")
     if metadata is None:
         metadata = [read_metadata(path) for path in paths]
-    if len(paths) > settings.cols * settings.rows and not any(poster_position(record) is not None for record in metadata):
+    if len(paths) > settings.cols * settings.rows and not any(poster_position(record) is not None or poster_page(record) is not None for record in metadata):
         raise ValueError(f"Select between 1 and {settings.cols * settings.rows} images.")
     if title is None:
         title = str(metadata[0].get("box", "")) if metadata else ""
@@ -1004,7 +1115,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
                   tuple(placement) == tuple(previous_page["placements"][index][1:])) else cells[index]
                  for index, placement in enumerate(placements)]
     if layout_state is not None:
-        layout_state.update(cells=list(cells), panels=[], metadata=[dict(record) for record in metadata])
+        layout_state.update(cells=list(cells), panels=[None] * len(paths), metadata=[dict(record) for record in metadata])
     cell_width = min(right - left for left, top, right, bottom in cells)
     cell_height = min(bottom - top for left, top, right, bottom in cells)
     if min(cell_width, cell_height) < 2:
@@ -1031,8 +1142,10 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
         clipped = (max(left, bounds[0]), max(top, bounds[1]),
                    min(right, bounds[2]), min(bottom, bounds[3]))
         x, y, r, b = clipped
-        if r - x <= 2 * inset or b - y <= 2 * inset:
-            raise ValueError("Position leaves no room for image padding and border.")
+        if r <= x or b <= y:
+            if layout_state is not None:
+                layout_state["panels"][index] = (Image.new("RGBA", (1, 1)), (0, 0))
+            return
         opacity = 1 - poster_transparency(metadata[index]) / 100
         def panel_color(value):
             red, green, blue, alpha = poster_color(value)
@@ -1042,24 +1155,31 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
         ImageDraw.Draw(border).rectangle((0, 0, panel.width - 1, panel.height - 1),
                                          outline=panel_color(settings.frames), width=frame_width)
         panel.alpha_composite(border)
-        interior = layer.crop((x + inset, y + inset, r - inset, b - inset))
-        panel.alpha_composite(interior, (inset, inset))
+        if r - x > 2 * inset and b - y > 2 * inset:
+            interior = layer.crop((x + inset, y + inset, r - inset, b - inset))
+            panel.alpha_composite(interior, (inset, inset))
         output_canvas.alpha_composite(panel, (x, y))
         if layout_state is not None:
-            layout_state["panels"].append((panel, (x, y)))
+            layout_state["panels"][index] = (panel, (x, y))
 
-    for index, path in enumerate(paths):
+    selection_numbers = selection_numbers if selection_numbers is not None else list(range(1, len(paths) + 1))
+    draw_order = sorted(range(len(paths)), key=lambda index: (poster_zorder(metadata[index], selection_numbers[index]), index))
+    for index in draw_order:
+        path = paths[index]
         if previous_page is not None and index not in changed_indices:
             panel, position = previous_page["panels"][index]
             output_canvas.alpha_composite(panel, position)
             if layout_state is not None:
-                layout_state["panels"].append((panel, position))
+                layout_state["panels"][index] = (panel, position)
             continue
         canvas = Image.new("RGBA", output_canvas.size)
         draw = ImageDraw.Draw(canvas)
         progress(f"Poster: {index + 1}/{len(paths)} — {path.name}")
         left, top, right, bottom = cells[index]
         frame_width = max(1, round(.3 * scale))
+        if right <= bounds[0] or bottom <= bounds[1] or left >= bounds[2] or top >= bounds[3]:
+            composite_cell(canvas, cells[index])
+            continue
         inset = frame_width + max(0, round(settings.image_padding * scale))
         left, top, right, bottom = left + inset, top + inset, right - inset, bottom - inset
         with Image.open(path) as source:
