@@ -805,7 +805,13 @@ def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
         base_rows = 2 if portrait and not modes[index] else 1
         if explicit_pages[index] is not None:
             base_rows = min(rows, base_rows)
-        zoom = zooms[index] if zooms is not None and not modes[index] else 1
+        zoom = zooms[index] if zooms is not None else 1
+        if modes[index]:
+            width = max(1, math.ceil(zoom))
+            if width > cols and (positions is None or positions[index] is None):
+                raise ValueError(f"Fixed poster zoom in field 2 requires {width} columns, but POSTER-COLS is {cols}.")
+            shapes.append((1, width))
+            continue
         if zoom <= 1:
             shapes.append((base_rows, 1))
             continue
@@ -846,7 +852,13 @@ def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
                 page.append((index, row, col, row_span, col_span))
                 occupied.update(poster_occupied(row, col, row_span, col_span, rows, cols))
                 continue
-            slot = next((slot for slot in range(cols * rows) if divmod(slot, cols) not in occupied), None)
+            if modes[index]:
+                height, width = shapes[index]
+                slot = next((slot for slot in range(cols * rows)
+                             if slot % cols + width <= cols and not any(
+                                 (slot // cols, c) in occupied for c in range(slot % cols, slot % cols + width))), None)
+            else:
+                slot = next((slot for slot in range(cols * rows) if divmod(slot, cols) not in occupied), None)
             if slot is None and explicit_pages[index] is None:
                 deferred.append(index)
                 continue
@@ -896,7 +908,7 @@ def poster_photo_pages(paths, metadata, settings, *, ignore_pages=False, fixed_m
             portraits.append(width + 1e-8 < height)
             aspects.append(width / height)
     modes = fixed_modes if fixed_modes is not None else poster_layout_modes(metadata, settings.fixed)
-    zooms = [1 if mode else poster_zoom(record) for mode, record in zip(modes, metadata)]
+    zooms = [poster_zoom(record) for record in metadata]
     return poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed,
                         zooms=zooms, aspect_ratios=aspects,
                         positions=[poster_position(record) for record in metadata],
@@ -982,6 +994,7 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
                 if index not in changed:
                     continue
                 old_record, record = previous_layout["metadata"][index], metadata[index]
+                old_shape = row_span, col_span
                 old_mode = previous_layout.get("fixed_modes", modes)[index]
                 if ((poster_transform(record)[:2], poster_zoom(record), modes[index]) !=
                         (poster_transform(old_record)[:2], poster_zoom(old_record), old_mode)):
@@ -991,6 +1004,8 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
                     if position is not None:
                         row, col = position
                 number = poster_page(record) or old_number
+                if modes[index] and poster_position(record) is None and (old_shape != (row_span, col_span) or old_mode != modes[index]):
+                    recalculate_pages.add(old_number)
                 if poster_page(record) is not None and poster_position(record) is None and (
                         number != old_number or poster_page(record) != poster_page(old_record)):
                     recalculate_pages.update((old_number, number))

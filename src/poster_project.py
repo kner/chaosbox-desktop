@@ -164,7 +164,7 @@ def load_project(path, output_dir):
                     raise ValueError("Invalid poster project placement.")
                 index, row, col, rows, cols = placement
                 if not 0 <= index < len(sources) or index <= previous_index or index in seen or not (
-                        0 < rows <= settings.rows and 0 < cols <= settings.cols):
+                        0 < rows <= settings.rows and cols > 0):
                     raise ValueError("Invalid poster project image order or placement.")
                 previous_index = index
                 seen.add(index)

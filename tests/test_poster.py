@@ -260,7 +260,7 @@ class PosterTests(unittest.TestCase):
         self.assertEqual(core.poster_layout_modes([{}, {"alias": "0"}, {}], True), [True, False, False])
         pages = core.poster_pages([True] * 3, 2, 2, zooms=[2, 2, 2],
                                  fixed_modes=[True, True, False])
-        self.assertEqual(pages[0], [(0, 0, 0, 1, 1), (1, 0, 1, 1, 1)])
+        self.assertEqual(pages[0], [(0, 0, 0, 1, 2), (1, 1, 0, 1, 2)])
         self.assertEqual(pages[1], [(2, 0, 0, 2, 2)])
 
     def test_explicit_page_overrides_flexible_portrait_spans(self):
@@ -566,13 +566,45 @@ class PosterTests(unittest.TestCase):
         self.assertEqual(core.poster_pages([False], 2, 2, zooms=[5]),
                          [[(0, 0, 0, 2, 2)]])
 
+    def test_fixed_zoom_reserves_horizontal_fields_and_searches_later_rows(self):
+        pages = core.poster_pages([False] * 5, 3, 2, fixed=True, zooms=[1, 1, 2, 1, 1])
+        self.assertEqual(pages, [[(0, 0, 0, 1, 1), (1, 0, 1, 1, 1), (2, 1, 0, 1, 2),
+                                 (3, 0, 2, 1, 1), (4, 1, 2, 1, 1)]])
+        occupied = [cell for _, row, col, height, width in pages[0]
+                    for cell in core.poster_occupied(row, col, height, width, 2, 3)]
+        self.assertEqual(len(occupied), len(set(occupied)))
+
+    def test_fixed_zoom_moves_to_next_page_when_no_row_has_enough_space(self):
+        pages = core.poster_pages([False] * 3, 3, 1, fixed=True, zooms=[1, 3, 1])
+        self.assertEqual(pages, [[(0, 0, 0, 1, 1), (2, 0, 1, 1, 1)], [(1, 0, 0, 1, 3)]])
+        self.assertEqual(core.poster_pages([False] * 2, 3, 2, fixed=True, zooms=[2.5, 1]),
+                         [[(0, 0, 0, 1, 3), (1, 1, 0, 1, 1)]])
+        with self.assertRaisesRegex(ValueError, "POSTER-COLS"):
+            core.poster_pages([False], 3, 2, fixed=True, zooms=[4])
+
+    def test_individual_fixed_zoom_edit_recalculates_reserved_cells(self):
+        settings = core.PosterSettings(600, 100, 100, 3, 1, True)
+        initial, updated = {}, {}
+        records = [{}, {}, {}]
+        with patch("core.read_metadata_batch", return_value=records):
+            core.create_posters(self.paths, self.profile, settings, layout_state=initial)
+        records[0] = {"anzahl": "Z=2"}
+        with patch("core.read_metadata_batch", return_value=records):
+            outputs = core.create_posters(self.paths, self.profile, settings, layout_state=updated,
+                                         previous_layout=initial, changed_indices={0})
+        self.assertEqual(len(outputs), 2)
+        self.assertEqual(updated["pages"][0]["placements"], [(0, 0, 0, 1, 2), (1, 0, 2, 1, 1)])
+        self.assertEqual(updated["pages"][1]["placements"], [(2, 0, 0, 1, 1)])
+        first, second = updated["pages"][0]["cells"]
+        self.assertGreater(first[2] - first[0], 2 * (second[2] - second[0]))
+
     def test_zoom_deferral_leaves_free_cells_for_following_photos(self):
         pages = core.poster_pages([False] * 4, 3, 1, zooms=[1, 3, 1, 1],
                                   aspect_ratios=[1, 3, 1, 1])
         self.assertEqual(pages, [[(0, 0, 0, 1, 1), (2, 0, 1, 1, 1), (3, 0, 2, 1, 1)],
                                  [(1, 0, 0, 1, 3)]])
 
-    def test_zoom_exports_more_space_only_in_flexible_mode(self):
+    def test_zoom_reserves_space_in_fixed_and_flexible_modes(self):
         for fixed in (False, True):
             records = [{"box": str(i), "anzahl": "Z=2" if i == 0 else "0", "comment": "Caption"}
                        for i in range(3)]
@@ -582,14 +614,12 @@ class PosterTests(unittest.TestCase):
                                              core.PosterSettings(600, 100, 200, 2, 1, fixed))
             self.assertEqual(len(outputs), 2)
             placements = create.call_args_list[0].kwargs["placements"]
-            if fixed:
-                self.assertEqual(placements, [(0, 0, 1, 1), (0, 1, 1, 1)])
-            else:
-                self.assertEqual(placements, [(0, 0, 1, 2)])
-            self.assertEqual(create.call_args_list[1].kwargs["title"], "2" if fixed else "1")
+            self.assertEqual(placements, [(0, 0, 1, 2)])
+            self.assertEqual(create.call_args_list[1].kwargs["title"], "1")
         with patch("core.read_metadata", return_value={"anzahl": "invalid"}):
-            self.assertTrue(core.create_poster([self.paths[0]], self.profile,
-                                              core.PosterSettings(400, 100, 100, 1, 1, True)).is_file())
+            with self.assertRaisesRegex(ValueError, "field 2"):
+                core.create_poster([self.paths[0]], self.profile,
+                                   core.PosterSettings(400, 100, 100, 1, 1, True))
         with patch("core.read_metadata", return_value={"anzahl": "2"}), \
              patch("core.poster_flexible_cells", wraps=core.poster_flexible_cells) as cells:
             core.create_poster([self.paths[0]], self.profile,
