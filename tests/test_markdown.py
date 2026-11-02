@@ -61,6 +61,24 @@ class MarkdownTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'does not fit'):
             md.fit([source * 100], 40, 20, 12, 8)
 
+    def test_caption_preserves_edge_spaces_repeated_spaces_and_blank_lines(self):
+        source = '\n  First   **bold**  \n\n\n Last  value  \n'
+        document = md.layout(md.parse(source, preserve_whitespace=True), 800, 14)
+        self.assertEqual(document.plain_lines, ['', '  First   bold  ', '', '', ' Last  value  ', ''])
+        self.assertTrue(any(run.span.bold and run.span.text == 'bold' for line in document.lines for run in line.runs))
+        self.assertTrue(all(line.gap == 0 for line in document.lines))
+
+    def test_caption_wrapping_preserves_spaces_and_whitespace_only_lines(self):
+        document = md.layout(md.parse('  **alpha**   beta  ', preserve_whitespace=True), 70, 15)
+        self.assertEqual(''.join(document.plain_lines), '  alpha   beta  ')
+        self.assertTrue(all(sum(run.width for run in line.runs) <= 70 for line in document.lines))
+        document = md.layout(md.parse('  \n \n', preserve_whitespace=True), 100, 12)
+        self.assertEqual(document.plain_lines, ['  ', ' ', ''])
+
+    def test_indented_caption_preserves_original_indentation(self):
+        document = md.layout(md.parse('    indented   caption  ', preserve_whitespace=True), 400, 12)
+        self.assertEqual(document.plain_lines, ['    indented   caption  '])
+
     def test_empty_markdown_needs_no_caption_space(self):
         documents, height = md.fit(['', ' \n\n'], 100, 20, 12, 8)
         self.assertEqual(height, 0)

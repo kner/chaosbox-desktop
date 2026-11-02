@@ -650,3 +650,5 @@ Saved poster/configuration pairs include the actual category folder names of the
 An explicit page number overrides flexible pagination. If the requested page cannot accommodate the normal flexible spans, that page is repacked, reducing zoom/portrait allocations as needed; earlier deferred images are reconsidered when space becomes available. If there are more images than grid cells, selection-order overlap keeps the explicitly assigned image on its requested page. During individual editing, a page-only override recalculates pagination and reconsiders prior overflow. Pages whose layouts change are rendered again; unchanged unrelated pages retain their frozen panels. Empty trailing pages are removed.
 
 Higher z-order values paint over lower values. Omitted z-order uses the original selection number; ties keep selection order. Z-order changes do not move or resize other images and are preserved in the reference-only project configuration.
+
+Poster captions preserve leading and trailing spaces, repeated spaces, and blank lines, including when rotated. Markdown styling still applies, and whitespace is included when fitting the caption into its available area.

@@ -27,6 +27,7 @@ class Block:
     quote: bool = False
     code: bool = False
     rule: bool = False
+    preserve_whitespace: bool = False
 
 
 def inline_spans(tokens):
@@ -55,19 +56,59 @@ def inline_spans(tokens):
     return tuple(spans)
 
 
+def caption_spans(spans, raw_lines, preserve_indent):
+    """Restore edge spaces removed by CommonMark, retaining inline styling."""
+    groups = [[]]
+    for span in spans:
+        parts = span.text.split("\n")
+        for index, text in enumerate(parts):
+            if index:
+                groups.append([])
+            if text:
+                groups[-1].append(replace(span, text=text))
+    result = []
+    for index, group in enumerate(groups):
+        if index:
+            result.append(Span("\n"))
+        if index < len(raw_lines):
+            raw = raw_lines[index]
+            visible = "".join(span.text for span in group)
+            prefix = re.match(r"[ \t]*", raw).group() if preserve_indent else ""
+            suffix = re.search(r"[ \t]*$", raw).group()
+            current_prefix = re.match(r"[ \t]*", visible).group()
+            current_suffix = re.search(r"[ \t]*$", visible).group()
+            if len(prefix) > len(current_prefix):
+                group.insert(0, Span(prefix[:len(prefix) - len(current_prefix)]))
+            if len(suffix) > len(current_suffix):
+                group.append(Span(suffix[len(current_suffix):]))
+        result.extend(group)
+    return tuple(result)
+
+
 @lru_cache(maxsize=128)
-def parse(source):
+def parse(source, preserve_whitespace=False):
     """CommonMark plus strikethrough; retain soft line breaks used in old comments."""
     parser = MarkdownIt("commonmark", {"html": False}).enable("strikethrough")
     blocks, lists, items = [], [], []
     heading = quote = 0
+    raw_lines = str(source).replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    cursor = 0
 
     def block(spans=(), **options):
         prefix = ""
         if items and items[-1] is not None:
             prefix, items[-1] = items[-1], None
         return Block(tuple(spans), heading=heading, indent=max(0, len(lists) - 1) + int(bool(lists) and not prefix),
-                     prefix=prefix, quote=bool(quote), **options)
+                     prefix=prefix, quote=bool(quote), preserve_whitespace=preserve_whitespace, **options)
+
+    def append_block(value, token):
+        nonlocal cursor
+        if preserve_whitespace and token.map:
+            for line in raw_lines[cursor:token.map[0]]:
+                if not line.strip():
+                    blocks.append(Block((Span(line),), preserve_whitespace=True))
+            cursor = max(cursor, token.map[1])
+        blocks.append(value)
 
     for token in parser.parse(str(source)):
         kind = token.type
@@ -90,11 +131,22 @@ def parse(source):
         elif kind == "heading_close":
             heading = 0
         elif kind == "inline":
-            blocks.append(block(inline_spans(token.children)))
+            spans = inline_spans(token.children)
+            if preserve_whitespace and token.map:
+                spans = caption_spans(spans, raw_lines[token.map[0]:token.map[1]],
+                                      not (heading or lists or quote))
+            append_block(block(spans), token)
         elif kind in ("fence", "code_block"):
-            blocks.append(block((Span(token.content.removesuffix("\n"), code=True),), code=True))
+            spans = (Span(token.content.removesuffix("\n"), code=True),)
+            if preserve_whitespace and kind == "code_block" and token.map:
+                spans = caption_spans(spans, raw_lines[token.map[0]:token.map[1]], True)
+            append_block(block(spans, code=True), token)
         elif kind == "hr":
-            blocks.append(block(rule=True))
+            append_block(block(rule=True), token)
+    if preserve_whitespace and source:
+        for line in raw_lines[cursor:]:
+            if not line.strip():
+                blocks.append(Block((Span(line),), preserve_whitespace=True))
     return tuple(blocks)
 
 
@@ -185,7 +237,7 @@ def layout(blocks, width, size):
             descent = max(item.getmetrics()[1] for item in fonts)
             lines.append(Line(runs, ascent + descent, ascent, indent,
                               block.prefix if first else "", base,
-                              max(1, round(size * .35)) if first and number else 0, block))
+                              max(1, round(size * .35)) if first and number and not block.preserve_whitespace else 0, block))
             runs, first = [], False
 
         def append(parts):
@@ -200,19 +252,32 @@ def layout(blocks, width, size):
             return sum(font(base.size, part.bold or bool(block.heading), part.italic,
                             part.code or block.code).getlength(part.text) for part in parts)
 
+        def append_whitespace(parts):
+            for part in parts:
+                for character in part.text:
+                    piece = replace(part, text=character)
+                    if sum(run.width for run in runs) + measure([piece]) > available:
+                        if not runs or measure([piece]) > available:
+                            raise ValueError("Poster text area is too narrow.")
+                        emit()
+                    append([piece])
+
         for kind, parts in tokens(block.spans):
             if kind == "newline":
-                if block.code:
+                if block.preserve_whitespace:
+                    append_whitespace(pending)
+                elif block.code:
                     append(pending)
                 emit()
                 pending = []
             elif kind == "space":
-                pending = parts if block.code else [replace(parts[0], text=" ")]
+                pending = parts if block.code or block.preserve_whitespace else [replace(parts[0], text=" ")]
             else:
-                spacing = pending if runs or block.code else []
+                spacing = pending if runs or block.code or block.preserve_whitespace else []
                 if sum(run.width for run in runs) + measure(spacing + parts) > available and runs:
                     emit()
-                    spacing = []
+                    if not block.preserve_whitespace:
+                        spacing = []
                 if measure(spacing + parts) <= available:
                     append(spacing + parts)
                 else:
@@ -228,13 +293,15 @@ def layout(blocks, width, size):
                                 raise ValueError("Poster text area is too narrow.")
                             append([piece])
                 pending = []
+        if block.preserve_whitespace:
+            append_whitespace(pending)
         if runs or first:
             emit()
     return Layout(lines)
 
 
-def fit(texts, width, max_height, preferred, minimum):
-    documents = [parse(text) for text in texts]
+def fit(texts, width, max_height, preferred, minimum, *, preserve_whitespace=False):
+    documents = [parse(text, preserve_whitespace=preserve_whitespace) for text in texts]
     for size in range(max(1, preferred), max(1, minimum) - 1, -1):
         try:
             layouts = [layout(blocks, width, size) for blocks in documents]

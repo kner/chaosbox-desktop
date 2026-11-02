@@ -625,7 +625,7 @@ def poster_draw_text(draw, lines, font, line_height, left, top, width):
 
 
 def poster_caption(record):
-    return str(record.get("comment", "")).strip()
+    return str(record.get("comment", ""))
 
 
 def poster_parts(record):
@@ -1127,7 +1127,8 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
         raise ValueError("Poster cells are too small for frames. Increase SIZE/LIMIT or reduce COLS/ROWS.")
     comments = [poster_caption(record) for record in metadata]
     captions, caption_height = markdown_render.fit(
-        comments, int(cell_width), cell_height * .4, round(3 * scale), round(1 * scale))
+        comments, int(cell_width), cell_height * .4, round(3 * scale), round(1 * scale),
+        preserve_whitespace=True)
     caption_space = caption_height + (max(1, round(scale)) if caption_height else 0)
     canvas = frozen_base.copy() if frozen_base is not None else poster_background((width, height), settings.background_color, setup_dir, progress)
     if frozen_base is None:
@@ -1194,7 +1195,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
                     local_width, local_height = local_height, local_width
                 documents, text_height = markdown_render.fit(
                     [comments[index]], local_width, local_height * .4,
-                    round(3 * scale), round(1 * scale))
+                    round(3 * scale), round(1 * scale), preserve_whitespace=True)
                 text_gap = max(1, round(scale)) if text_height else 0
                 image_height = local_height - text_height - text_gap
                 if image_height < 1:

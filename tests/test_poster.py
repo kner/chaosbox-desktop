@@ -448,6 +448,17 @@ class PosterTests(unittest.TestCase):
                 self.assertEqual(centers[1] < centers[0], angle == 90)
         self.assertEqual(self.paths[0].read_bytes(), before)
 
+    def test_caption_whitespace_survives_rotated_and_upright_rendering(self):
+        comment = "\n  Caption   text  \n\n"
+        self.assertEqual(core.poster_caption({"comment": comment}), comment)
+        for rotation in (0, 90):
+            with self.subTest(rotation=rotation):
+                with patch("core.markdown_render.draw_poster", wraps=core.markdown_render.draw_poster) as draw:
+                    core.create_poster(self.paths[:1], self.profile,
+                        core.PosterSettings(600, 100, 100, 1, 1, True),
+                        metadata=[{"device": f"1/0/0/{rotation}", "comment": comment}])
+                self.assertEqual(draw.call_args.args[1].plain_lines, ['', '  Caption   text  ', '', ''])
+
     def test_only_comment_is_caption(self):
         record = {"box": "Title", "comment": "Original", "category": "Category"}
         self.assertEqual(core.poster_caption(record), "Original")
@@ -469,11 +480,11 @@ class PosterTests(unittest.TestCase):
             output = core.create_poster(self.paths[:1], self.profile,
                                         core.PosterSettings(1200, 200, 150, 1, 1), metadata=[record])
         layout = draw.call_args.args[1]
-        self.assertEqual(layout.plain_lines, ["Heading", "Bold and italic", "Code", "Link"])
-        self.assertGreater(layout.lines[0].height, layout.lines[1].height)
-        self.assertTrue(layout.lines[1].runs[0].span.bold)
-        self.assertEqual(layout.lines[2].prefix, "•")
-        self.assertTrue(layout.lines[2].runs[0].span.code)
+        self.assertEqual(layout.plain_lines, ["Heading", "", "Bold and italic", "", "Code", "Link"])
+        self.assertGreater(layout.lines[0].height, layout.lines[2].height)
+        self.assertTrue(layout.lines[2].runs[0].span.bold)
+        self.assertEqual(layout.lines[4].prefix, "•")
+        self.assertTrue(layout.lines[4].runs[0].span.code)
         self.assertEqual(record["comment"], source)
         self.assertEqual(self.paths[0].read_bytes(), before)
         with Image.open(output) as image:
