@@ -471,6 +471,9 @@ class PosterSettings:
     background_color: str = "9bb195"
     image_background_color: str = "FFFFFF"
     image_padding: float = 2
+    transparency: float | None = None
+    date_rotation: int | None = None
+    font_size: float | None = None
 
 
 def poster_settings(text):
@@ -496,13 +499,26 @@ def poster_settings(text):
     padding = float(values.get("poster-image-padding", "2"))
     if not math.isfinite(padding) or padding < 0:
         raise ValueError("POSTER-IMAGE-PADDING must be finite, nonnegative millimeters.")
+    def optional_number(key, minimum, maximum):
+        raw = values.get(key, "").strip()
+        if raw.casefold() in ("", "none"):
+            return None
+        value = float(raw)
+        if not math.isfinite(value) or not minimum <= value <= maximum:
+            raise ValueError(f"{key.upper()} must be between {minimum:g} and {maximum:g}.")
+        return value
+    transparency = optional_number("poster-transparency", 0, 100)
+    font_size = optional_number("poster-font-size", .1, 1000)
+    rotation = values.get("poster-date-rotation", "").strip()
+    date_rotation = int(rotation) if rotation in ("0", "90") else None
     colors = {key: values.get("poster-" + key.replace("_", "-"), default)
               for key, default in (("frames", "eeee"), ("background_color", "9bb195"),
                                    ("image_background_color", "FFFFFF"))}
     for key, value in colors.items():
         poster_color(value)
     return PosterSettings(limit, height, width, cols, rows, fixed == "true",
-                          **{"margin_" + side: value for side, value in margins.items()}, image_padding=padding, **colors)
+                          **{"margin_" + side: value for side, value in margins.items()}, image_padding=padding, transparency=transparency,
+                          date_rotation=date_rotation, font_size=font_size, **colors)
 
 
 def poster_color(value):
@@ -740,8 +756,30 @@ def poster_angle(record):
     return poster_transform(record)[1]
 
 
-def poster_transparency(record):
-    return poster_transform(record)[2]
+def poster_transparency(record, default=0):
+    return poster_transform(record)[2] if poster_parts(record)[4] else default
+
+
+def initial_poster_record(record, settings):
+    record = dict(record)
+    if settings.transparency is not None:
+        parts = poster_parts(record)
+        parts[4] = f"{settings.transparency:g}"
+        record["device"] = "/".join(parts).rstrip("/")
+    return record
+
+
+def poster_date(path, record):
+    # Use the same inferred creation date as the image chooser.
+    try:
+        date = datetime.fromtimestamp(selection_creation_time(path))
+    except (OSError, ValueError):
+        try:
+            date = datetime.fromisoformat(str(record.get("created", "")))
+        except ValueError:
+            return ""
+    return f"{date.day}.{date.month}.{date.year}"
+
 
 
 def poster_rotated_size(width, height, angle):
@@ -1147,6 +1185,24 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
     return outputs
 
 
+def poster_date_overlay(photo, text, font, rotation):
+    """Put a readable date badge inside the photo's bottom-right corner."""
+    if not text or rotation not in (0, 90):
+        return
+    left, top, right, bottom = font.getbbox(text)
+    padding = max(1, round(font.size * .15))
+    badge = Image.new("RGBA", (right - left + 2 * padding, bottom - top + 2 * padding),
+                      (0, 0, 0, 102))  # 60% transparent = 40% opacity.
+    ImageDraw.Draw(badge).text((padding - left, padding - top), text,
+                               font=font, fill=(255, 255, 255, 255))
+    if rotation == 90:
+        badge = badge.rotate(90, expand=True)
+    if badge.width > photo.width or badge.height > photo.height:
+        raise ValueError("Poster date does not fit inside the image at POSTER-FONT-SIZE. "
+                         "Reduce the font size or grid.")
+    photo.alpha_composite(badge, (photo.width - badge.width, photo.height - badge.height))
+
+
 def create_poster(paths, profile, settings, progress=lambda _: None, *,
                   title=None, metadata=None, placements=None, setup_dir=None,
                   layout_state=None, previous_page=None, changed_indices=None, fixed_modes=None, frozen_cells=None, selection_numbers=None):
@@ -1218,9 +1274,15 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
     cell_height -= 2 * inset
     if min(cell_width, cell_height) < 2:
         raise ValueError("Poster cells are too small for frames. Increase SIZE/LIMIT or reduce COLS/ROWS.")
+    text_size = (max(1, round(settings.font_size * 25.4 / 72 * scale))
+                 if settings.font_size is not None else round(3 * scale))
+    text_minimum = text_size if settings.font_size is not None else round(1 * scale)
+    date_font = poster_font(text_size)
+    dates = ([poster_date(path, record) for path, record in zip(paths, metadata)]
+             if settings.date_rotation in (0, 90) else [""] * len(paths))
     comments = [poster_caption(record) for record in metadata]
     captions, caption_height = markdown_render.fit(
-        comments, int(cell_width), cell_height * .4, round(3 * scale), round(1 * scale),
+        comments, int(cell_width), cell_height * .4, text_size, text_minimum,
         preserve_whitespace=True)
     caption_space = caption_height + (max(1, round(scale)) if caption_height else 0)
     canvas = frozen_base.copy() if frozen_base is not None else poster_background((width, height), settings.background_color, setup_dir, progress)
@@ -1240,7 +1302,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
             if layout_state is not None:
                 layout_state["panels"][index] = (Image.new("RGBA", (1, 1)), (0, 0))
             return
-        opacity = 1 - poster_transparency(metadata[index]) / 100
+        opacity = 1 - poster_transparency(metadata[index], settings.transparency or 0) / 100
         def panel_color(value):
             red, green, blue, alpha = poster_color(value)
             return red, green, blue, round(alpha * opacity)
@@ -1288,12 +1350,13 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
                     local_width, local_height = local_height, local_width
                 documents, text_height = markdown_render.fit(
                     [comments[index]], local_width, local_height * .4,
-                    round(3 * scale), round(1 * scale), preserve_whitespace=True)
+                    text_size, text_minimum, preserve_whitespace=True)
                 text_gap = max(1, round(scale)) if text_height else 0
                 image_height = local_height - text_height - text_gap
                 if image_height < 1:
                     raise ValueError("No room for images below poster captions.")
                 photo = ImageOps.contain(photo, (local_width, image_height), Image.Resampling.LANCZOS)
+                poster_date_overlay(photo, dates[index], date_font, settings.date_rotation)
                 group = Image.new("RGBA", (local_width, photo.height + text_gap + text_height))
                 group.alpha_composite(photo, ((local_width - photo.width) // 2, 0))
                 markdown_render.draw_poster(ImageDraw.Draw(group), documents[0],
@@ -1308,6 +1371,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
             if image_height < 1:
                 raise ValueError("No room for images below poster captions.")
             photo = ImageOps.contain(photo, (right - left, image_height), Image.Resampling.LANCZOS)
+            poster_date_overlay(photo, dates[index], date_font, settings.date_rotation)
             own_caption_height = captions[index].height
             text_gap = max(1, round(scale)) if own_caption_height else 0
             group_height = photo.height + text_gap + own_caption_height
@@ -1707,7 +1771,7 @@ def selection_creation_time(path, discrepancy_seconds=48 * 3600, *, creation_dat
               else preferred)
     if creation_dates is not None:
         date = datetime.fromtimestamp(chosen)
-        creation_dates[path] = f"({date.day}.{date.month}.{date.year})"
+        creation_dates[path] = f"{date.day}.{date.month}.{date.year}"
     return chosen
 
 

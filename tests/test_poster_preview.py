@@ -316,3 +316,34 @@ class PosterRefreshTests(unittest.TestCase):
             self.app.load_poster_project()
         self.app.task.assert_not_called()
         self.app.poster_preview.replace.assert_not_called()
+
+
+class LargePosterPreviewTests(unittest.TestCase):
+    def test_preview_is_bounded_and_original_file_is_unchanged(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'large.jpg'
+            Image.new('RGB', (4000, 2000), 'red').save(path)
+            original = path.read_bytes()
+            image = PosterPreview.load_page(path)
+            self.assertEqual(image.size, (1600, 800))
+            self.assertEqual(path.read_bytes(), original)
+
+    def test_show_queues_loading_without_waiting_for_image(self):
+        preview = SimpleNamespace(outputs=[Path('large.jpg')], page_future=None,
+                                  page_worker=Mock(), page_poll=None, after=Mock(),
+                                  load_page=PosterPreview.load_page, poll_page=Mock(),
+                                  page=Mock(), previous=Mock(), next=Mock(),
+                                  t=lambda text, **kw: text.format(**kw))
+        PosterPreview.show(preview, 0)
+        preview.page_worker.submit.assert_called_once_with(PosterPreview.load_page, Path('large.jpg'))
+        preview.page_future.result.assert_not_called()
+        preview.after.assert_called_once_with(40, preview.poll_page)
+
+    def test_canvas_destruction_does_not_call_chooser_tooltip(self):
+        from app import ImageCanvas
+        canvas = ImageCanvas.__new__(ImageCanvas)
+        canvas.pending = None
+        with patch('app.tk.Canvas.destroy') as destroy:
+            ImageCanvas.destroy(canvas)
+        destroy.assert_called_once()

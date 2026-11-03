@@ -39,12 +39,12 @@ class CreationSortTests(unittest.TestCase):
             with patch.object(core, 'open_image_metadata'), patch.object(core, 'image_capture_tags') as tags:
                 tags.return_value = {'DateTimeOriginal': '2024:01:02 02:04:05'}
                 self.assertEqual(core.selection_creation_time(path), named)
-                self.assertEqual(core.sort_media_for_selection([path]).creation_dates, {path: '(2.1.2024)'})
+                self.assertEqual(core.sort_media_for_selection([path]).creation_dates, {path: '2.1.2024'})
                 tags.return_value = {'DateTimeOriginal': '2020:01:01 00:00:00'}
                 self.assertEqual(core.selection_creation_time(path), datetime(2020, 1, 1).timestamp())
                 selection = core.sort_media_for_selection([path])
                 self.assertEqual(selection, [path])
-                self.assertEqual(selection.creation_dates, {path: '(1.1.2020)'})
+                self.assertEqual(selection.creation_dates, {path: '1.1.2020'})
                 tags.return_value = {'DateTimeOriginal': '2025:01:01 00:00:00'}
                 self.assertEqual(core.selection_creation_time(path), named)
                 older = datetime(2019, 1, 1).timestamp()

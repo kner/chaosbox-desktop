@@ -266,11 +266,16 @@ class PosterPreview(tk.Toplevel):
         self.app, self.t = app, app.t
         self.outputs, self.temporary, self.directory = outputs, temporary, directory
         self.index, self.saving = 0, False
+        self.page_worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="poster-preview")
+        self.page_future = None
+        self.page_poll = None
         self.frozen, self.project_path = False, None
         self.title(self.t("Poster preview"))
-        self.geometry("1000x800")
+        self.geometry(f"{min(1000, self.winfo_screenwidth() - 60)}x{min(800, self.winfo_screenheight() - 100)}")
         self.minsize(480, 360)
-        self.transient(app.root)
+        # Editing happens in the main window while this preview stays open.
+        # A transient relationship lets the window manager keep the preview
+        # above its owner, interfering with clicks when the windows overlap.
         controls = ttk.Frame(self)
         controls.pack(side="bottom", fill="x", padx=10, pady=10)
         self.previous = ttk.Button(controls, text=self.t("Previous"), command=lambda: self.show(self.index - 1))
@@ -303,6 +308,12 @@ class PosterPreview(tk.Toplevel):
 
     def cleanup(self, event):
         if event.widget is self:
+            if self.page_poll is not None:
+                self.after_cancel(self.page_poll)
+                self.page_poll = None
+            if self.page_future is not None:
+                self.page_future.cancel()
+            self.page_worker.shutdown(wait=False, cancel_futures=True)
             self.temporary.cleanup()
             if getattr(self.app, "poster_preview", None) is self:
                 self.app.poster_preview = None
@@ -317,12 +328,37 @@ class PosterPreview(tk.Toplevel):
     def show(self, index):
         if not 0 <= index < len(self.outputs):
             return
-        with Image.open(self.outputs[index]) as image:
-            self.viewer.set_image(image.copy())
+        if self.page_future is not None:
+            self.page_future.cancel()
+        self.page_future = self.page_worker.submit(self.load_page, self.outputs[index])
+        if self.page_poll is None:
+            self.page_poll = self.after(40, self.poll_page)
         self.index = index
         self.page.configure(text=self.t("Page {current}/{total}", current=index + 1, total=len(self.outputs)))
         self.previous.configure(state="normal" if index else "disabled")
         self.next.configure(state="normal" if index + 1 < len(self.outputs) else "disabled")
+
+    @staticmethod
+    def load_page(path):
+        # Decode JPEGs at reduced resolution; saved posters retain their exact bytes.
+        with Image.open(path) as image:
+            image.draft("RGB", (1600, 1600))
+            image.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
+            return image.copy()
+
+    def poll_page(self):
+        self.page_poll = None
+        future = self.page_future
+        if future is None:
+            return
+        if not future.done():
+            self.page_poll = self.after(40, self.poll_page)
+            return
+        self.page_future = None
+        try:
+            self.viewer.set_image(future.result())
+        except Exception as error:
+            self.page.configure(text=describe(error, self.t))
 
     def close(self):
         if not self.saving:
@@ -591,6 +627,8 @@ class MediaGrid(ttk.Frame):
         super().__init__(parent)
         self.t = translator
         self.creation_dates = getattr(paths, "creation_dates", {})
+        self.filename_tooltip = None
+        self.hovered_path = None
         self.paths, self.base, self.changed = list(paths), base, changed
         self.selected = {}
         self.anchor = None
@@ -618,6 +656,8 @@ class MediaGrid(ttk.Frame):
         self.canvas.bind("<Button-5>", lambda e: self.scroll("scroll", 1, "units"))
         self.canvas.bind("<MouseWheel>", lambda e: self.scroll("scroll", -1 if e.delta > 0 else 1, "units"))
         self.canvas.bind("<Control-a>", lambda e: self.select_all())
+        self.canvas.bind("<Motion>", self.show_filename)
+        self.canvas.bind("<Leave>", lambda e: self.hide_filename())
         self.pending = self.after(60, self.poll)
 
     def set_columns(self, value):
@@ -628,7 +668,41 @@ class MediaGrid(ttk.Frame):
         self.show_user_comment = bool(value)
         self.redraw()
 
+    def hide_filename(self):
+        if self.filename_tooltip is not None:
+            self.filename_tooltip.destroy()
+            self.filename_tooltip = None
+        self.hovered_path = None
+
+    def show_filename(self, event):
+        if not hasattr(self, "cell_width"):
+            return
+        column = int(event.x // self.cell_width)
+        row = int(self.canvas.canvasy(event.y) // self.cell_height)
+        index = row * self.columns + column
+        if not (0 <= column < self.columns and row >= 0 and 0 <= index < len(self.paths)):
+            self.hide_filename()
+            return
+        path = self.paths[index]
+        if path != self.hovered_path:
+            self.hide_filename()
+            self.hovered_path = path
+            tip = self.filename_tooltip = tk.Toplevel(self)
+            tip.wm_overrideredirect(True)
+            label = str(path.relative_to(self.base)) if path.is_relative_to(self.base) else path.name
+            tk.Label(tip, text=label, background="#fff9c4", foreground="#0f172a",
+                     relief="solid", borderwidth=1, padx=6, pady=3,
+                     wraplength=500, justify="left").pack()
+            tip.update_idletasks()
+        tip = self.filename_tooltip
+        x = min(event.x_root + 14, self.winfo_screenwidth() - tip.winfo_reqwidth())
+        y = event.y_root + 20
+        if y + tip.winfo_reqheight() > self.winfo_screenheight():
+            y = event.y_root - tip.winfo_reqheight() - 8
+        tip.geometry(f"+{max(0, x)}+{max(0, y)}")
+
     def scroll(self, *args):
+        self.hide_filename()
         self.canvas.yview(*args)
         self.redraw()
 
@@ -681,8 +755,7 @@ class MediaGrid(ttk.Frame):
         width = max(1, canvas.winfo_width())
         self.cell_width = width / self.columns
         self.thumb_size = max(24, int(self.cell_width) - 16)
-        date_height = 18 if self.creation_dates else 0
-        self.cell_height = self.thumb_size + 66 + date_height
+        self.cell_height = self.thumb_size + 40
         if self.show_user_comment:
             chars_per_line = max(1, int((self.cell_width - 14) / 10))
             comment_lines = 1
@@ -733,19 +806,12 @@ class MediaGrid(ttk.Frame):
             else:
                 canvas.create_text(x + self.cell_width / 2, y + self.thumb_size / 2,
                                    text=self.t("Lädt …"), width=self.thumb_size, fill="#64748b")
-            label = str(path.relative_to(self.base)) if path.is_relative_to(self.base) else path.name
-            max_chars = max(6, int((self.cell_width - 14) / 8) * 2)
-            if len(label) > max_chars:
-                label = label[:max_chars - 1] + "…"
-            canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 12,
-                               anchor="n", text=label, width=max(12, self.cell_width - 14),
-                               font=("Sans", 9), fill="#0f172a")
             if path in self.creation_dates:
-                canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 48,
+                canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 12,
                                    anchor="n", text=self.creation_dates[path],
                                    font=("Sans", 9), fill="#475569")
             if self.show_user_comment:
-                canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 62 + date_height,
+                canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 38,
                                    anchor="n", text=self.comments.get(index, self.t("Metadaten werden geladen …")),
                                    width=max(12, self.cell_width - 14),
                                    font=("Sans", 9), fill="#475569")
@@ -804,6 +870,7 @@ class MediaGrid(ttk.Frame):
         self.pending = self.after(60, self.poll)
 
     def destroy(self):
+        self.hide_filename()
         if self.pending is not None:
             self.after_cancel(self.pending)
             self.pending = None
@@ -1797,6 +1864,9 @@ class App:
         def work():
             records = ([dict(project_records[path]) for path in dict.fromkeys(paths)] if project_records is not None
                        else core.read_metadata_batch(list(dict.fromkeys(paths)), self.log))
+            poster_settings = getattr(getattr(self, "settings", None), "poster", None)
+            if project_records is None and poster_settings is not None:
+                records = [core.initial_poster_record(record, poster_settings) for record in records]
             return records, self.preview_result(paths[0])
         def done(result):
             records, (image, warning) = result
@@ -1843,6 +1913,7 @@ class App:
             self.open_media(paths, project_records=records)
         self.refresh_profile()
         self.root.lift()
+        self.root.focus_set()
 
     def load_poster_project(self):
         if self.busy:
