@@ -631,7 +631,7 @@ Poster field 3 (`device`) uses `Page/X/Y/Rotation/Transparency/Z-order`. For exa
 
 Page numbering starts at 1. An explicit page becomes the starting page for subsequent images until another page is supplied. Automatic placement overflows onto later pages when necessary. Empty intervening pages are included so preview and output page numbers stay consistent. Explicit positions allow overlap. Overflow is cropped at the image area, with padding and borders kept inside. Images fully outside that area are invisible, not an error. Old A1-style positions remain readable for compatibility and are displayed as numeric X/Y values when editing; older project configurations are migrated to the six-section interpretation when loaded.
 
-Field 4 (`alias`) controls the layout mode. `1`, `true` or `t` (case insensitive) selects fixed layout for that image and subsequent images; another non-empty value such as `0` or `false` switches to flexible layout. Empty fields inherit the previous mode; the first image starts with `POSTER-FIX`. Fixed images use one row and reserve as many columns as the zoom value in field 2 (`Z=2` reserves two fields). Fractional zoom values round up to whole fields. Reserved fields are occupied; automatic placement searches for the next contiguous free region in reading order, including later rows and pages. An automatic fixed zoom wider than POSTER-COLS reports an error because no row can fit it. Explicit X/Y positioning still takes priority and permits cropping outside the grid. Flexible images use the existing portrait and zoom allocation rules. Fixed cells retain their grid positions when a page contains both modes.
+Field 4 (`alias`) controls the layout mode. `1`, `true` or `t` (case insensitive) selects fixed layout for the entire page; another non-empty value such as `0` or `false` selects flexible layout for the entire page. The last non-empty value on a page in selection order decides its mode. A page with no value uses `POSTER-FIX` from setup.ini; modes do not carry onto other pages, including automatic overflow pages. Fixed images enlarge both axes by the zoom value in field 2 (`Z=2` reserves a 2 × 2 region). Fractional zoom values round up to whole fields. Reserved fields are occupied; automatic placement searches for the next contiguous free region in reading order, including later rows and pages. An automatic fixed zoom exceeding POSTER-COLS or POSTER-ROWS reports an error because the grid cannot fit it. Explicit X/Y positioning still takes priority and permits cropping outside the grid. Flexible images use the existing portrait and zoom allocation rules.
 
 Rotation applies to the photo and caption together; the page title remains upright. Transparency ranges from 0 (opaque) to 100 (transparent), with intermediate percentages supported. Empty rotation and transparency default to zero. Photos and captions retain their own opacity; transparent panels reveal earlier images or the poster background.
 
@@ -654,3 +654,21 @@ Higher z-order values paint over lower values. Omitted z-order uses the original
 Poster captions preserve leading and trailing spaces, repeated spaces, and blank lines, including when rotated. Markdown styling still applies, and whitespace is included when fitting the caption into its available area.
 
 Changing zoom on an automatically positioned fixed image recalculates occupied fields and pagination, including in an open or loaded project, so subsequent images use the remaining free fields.
+
+While the desktop app is open, it checks configured profiles every two seconds.
+New or changed media and JSON files enter the search index automatically after
+two consecutive stable checks; deleted files are removed from the index.
+Subfolders of JPG and TXT (including empty folders) also appear in the category
+selection. Hidden folders, symlink folders, and the internal `unassigned` category
+folder are excluded. Existing form entries remain unchanged.
+
+The media chooser initially sorts newest first by inferred creation time, with
+filename dates taking priority. It recognizes compact camera/phone dates and
+timestamps, separated year-month-day and day-month-year dates, and English month
+names. Ambiguous numeric dates use day-month-year; unambiguous US dates also work.
+If filename, EXIF capture/digitization, or filesystem dates differ by more than
+48 hours, the oldest available date wins. Without a filename date, EXIF is preferred,
+then filesystem birth time (when available) or modification time. Unix inode-change
+time is not treated as creation time. This sorting does not rewrite stored metadata.
+The chooser displays the chosen creation date beneath every filename, formatted
+as `(1.12.2026)` without leading zeros, whether or not the date sources disagree.

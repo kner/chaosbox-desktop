@@ -590,6 +590,7 @@ class MediaGrid(ttk.Frame):
     def __init__(self, parent, paths, base, changed, translator=translate):
         super().__init__(parent)
         self.t = translator
+        self.creation_dates = getattr(paths, "creation_dates", {})
         self.paths, self.base, self.changed = list(paths), base, changed
         self.selected = {}
         self.anchor = None
@@ -680,7 +681,8 @@ class MediaGrid(ttk.Frame):
         width = max(1, canvas.winfo_width())
         self.cell_width = width / self.columns
         self.thumb_size = max(24, int(self.cell_width) - 16)
-        self.cell_height = self.thumb_size + 66
+        date_height = 18 if self.creation_dates else 0
+        self.cell_height = self.thumb_size + 66 + date_height
         if self.show_user_comment:
             chars_per_line = max(1, int((self.cell_width - 14) / 10))
             comment_lines = 1
@@ -738,8 +740,12 @@ class MediaGrid(ttk.Frame):
             canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 12,
                                anchor="n", text=label, width=max(12, self.cell_width - 14),
                                font=("Sans", 9), fill="#0f172a")
+            if path in self.creation_dates:
+                canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 48,
+                                   anchor="n", text=self.creation_dates[path],
+                                   font=("Sans", 9), fill="#475569")
             if self.show_user_comment:
-                canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 62,
+                canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 62 + date_height,
                                    anchor="n", text=self.comments.get(index, self.t("Metadaten werden geladen …")),
                                    width=max(12, self.cell_width - 14),
                                    font=("Sans", 9), fill="#475569")
@@ -841,6 +847,8 @@ class App:
         self.editor_files = {}
         self.editor_file_candidates = {}
         self.editor_watch_after = None
+        self.index_monitor = core.IndexMonitor()
+        self.index_monitor_future = None
         self.search_mode, self.before_search, self.last_search = False, None, None
         self.cancel_upload = threading.Event()
         self.uploading = False
@@ -1095,7 +1103,7 @@ class App:
         actions = ttk.Frame(self.root, padding=(10, 0, 10, 4))
         actions.pack(fill="x")
         self.save_button = self.button(actions, self.t("Save"), self.save, side="left", padx=2)
-        self.open_media_button = self.button(actions, self.t("Open JPG / MP4"), self.choose_media, side="left")
+        self.open_media_button = self.button(actions, self.t("Open JPG / PNG / MP4"), self.choose_media, side="left")
         self.open_json_button = self.button(actions, self.t("Open JSON"), self.choose_json, side="left", padx=2)
         self.search_button = self.button(actions, self.t("Search"), self.search_clicked, side="left", padx=2)
         self.repeat_button = self.button(actions, self.t("Repeat search"), self.repeat_search, side="left", padx=2)
@@ -1193,12 +1201,12 @@ class App:
             if key == "device" and configured.casefold() in {"orientation", "ausrichtung", "position and orientation"}:
                 configured = self.t("Poster Page / X / Y / Rotation / Transparency / Z-order")
             if key == "alias" and (configured or self.media):
-                configured = self.t("Fixed layout (1/true/t)")
+                configured = self.t("Page fixed layout (1/true/t)")
             label.configure(text=self.t(core.LABELS[i]) if configured == core.LABELS[i] else configured)
             row.pack_forget()
             if configured:
                 row.pack(fill="both" if key == "comment" else "x", expand=key == "comment", pady=(0, 3))
-        self.field_widgets["category"].configure(values=sorted(self.profile.categories, key=str.casefold))
+        self.field_widgets["category"].configure(values=core.available_categories(self.profile))
         self.update_controls()
 
     def update_controls(self):
@@ -1295,7 +1303,23 @@ class App:
         def done(entries):
             self.newindex = False
             self.status.set(self.t("{count} records · {path}", count=len(entries), path=self.settings.index))
+            self.check_installation_files()
         self.task(work, done)
+
+    def check_installation_files(self):
+        if self.closing:
+            return
+        future = self.index_monitor_future
+        if future is not None and future.done():
+            self.index_monitor_future = None
+            try:
+                categories = future.result()
+                self.field_widgets["category"].configure(values=categories.get(self.profile.id, []))
+            except Exception as error:
+                self.status.set(str(error))
+        if self.index_monitor_future is None and not self.busy:
+            self.index_monitor_future = self.executor.submit(self.index_monitor.poll, self.settings)
+        self.root.after(2000, self.check_installation_files)
 
     def show_preview_link(self, event):
         if self.preview_path is None:
@@ -1490,14 +1514,13 @@ class App:
         if self.busy or self.search_mode:
             return
         folder = self.media_folder()
-        self.task(lambda: sorted(core.files(folder, core.MEDIA, recursive=False),
-                                 key=lambda path: path.stat().st_mtime_ns, reverse=True),
+        self.task(lambda: core.sort_media_for_selection(core.files(folder, core.IMPORTS, recursive=False)),
                   lambda paths: self.media_dialog(paths, folder))
 
     def media_dialog(self, paths, folder=None, on_select=None):
         folder = folder or self.media_folder()
         dialog = tk.Toplevel(self.root)
-        dialog.title(self.t("Bild oder Video auswählen" if on_select else "JPG / MP4 auswählen"))
+        dialog.title(self.t("Bild oder Video auswählen" if on_select else "JPG / PNG / MP4 auswählen"))
         dialog.geometry("1000x700")
         dialog.minsize(640, 400)
         # Keep normal window decorations: transient dialogs can lose their
@@ -1528,13 +1551,12 @@ class App:
         navigation = ttk.Frame(dialog, padding=(4, 3))
         navigation.pack(fill="x")
         def open_folder(chosen):
-            extensions = core.IMPORTS if on_select else core.MEDIA
+            extensions = core.IMPORTS
             def loaded(paths):
                 self.remember_media_folder(chosen)
                 dialog.destroy()
                 self.media_dialog(paths, chosen, on_select=on_select)
-            self.task(lambda: sorted(core.files(chosen, extensions, recursive=False),
-                                     key=lambda path: path.stat().st_mtime_ns, reverse=True), loaded)
+            self.task(lambda: core.sort_media_for_selection(core.files(chosen, extensions, recursive=False)), loaded)
         def change_folder():
             chosen = MediaFolderDialog(dialog, folder, self.t).result
             dialog.grab_set()
@@ -1708,9 +1730,8 @@ class App:
     def select_media_for_json(self):
         if self.busy or self.box_path is None or self.search_mode:
             return
-        paths = sorted(core.files(self.profile.images, core.IMPORTS),
-                       key=lambda path: path.stat().st_mtime_ns, reverse=True)
-        self.media_dialog(paths, self.profile.images, on_select=self.use_media_for_json)
+        self.task(lambda: core.sort_media_for_selection(core.files(self.profile.images, core.IMPORTS)),
+                  lambda paths: self.media_dialog(paths, self.profile.images, on_select=self.use_media_for_json))
 
     def use_media_for_json(self, path):
         if self.busy or self.box_path is None or self.search_mode:

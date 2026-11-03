@@ -12,7 +12,7 @@ _TEXT = {
         "File": "File", "Modified · newest first": "Modified · newest first",
         'Folder …': 'Folder …', 'Other …': 'Other …', 'Metadata': 'Metadata', 'All': 'All', 'None': 'None', 'Edit all': 'Edit all', 'Individual': 'Individual',
         "Kein Bild oder Video ausgewählt": "No image or video selected", "Bild oder Video auswählen": "Select an image or video",
-        "JPG / MP4 auswählen": "Select JPG / MP4", "Ordner wählen …": "Choose folder …", "Klick wählt aus · Umschalt-Klick wählt einen Bereich · {action}": "Click to select · Shift-click for a range · {action}",
+        "JPG / PNG / MP4 auswählen": "Select JPG / PNG / MP4", "Ordner wählen …": "Choose folder …", "Klick wählt aus · Umschalt-Klick wählt einen Bereich · {action}": "Click to select · Shift-click for a range · {action}",
         "Doppelklick wählt eine Datei aus": "Double-click selects a file", "Doppelklick öffnet eine Datei": "Double-click opens a file",
         "Spalten": "Columns", "Metadaten anzeigen": "Show metadata", "Andere Dateien …": "Other files …",
         "Alle auswählen": "Select all", "Auswahl aufheben": "Clear selection", "Abbrechen": "Cancel", "Auswählen": "Select",
@@ -57,7 +57,7 @@ _TEXT = {
         "Poster project collection is unavailable: {name}": "Sammlung des Posterprojekts ist nicht verfügbar: {name}",
 
         "Poster Page / X / Y / Rotation / Transparency / Z-order": "Posterseite / X / Y / Drehung / Transparenz / Z-Reihenfolge",
-        "Fixed layout (1/true/t)": "Festes Layout (1/true/t)",
+        "Page fixed layout (1/true/t)": "Festes Seitenlayout (1/true/t)",
 
         "Poster preview": "Postervorschau", "Save posters": "Poster speichern",
         "Previous": "Zurück", "Next": "Weiter", "Page {current}/{total}": "Seite {current}/{total}",
@@ -83,7 +83,7 @@ _TEXT = {
         "Comment diagnostic: changed in form = {changed}; read-back matches = {verified}.": "Kommentarprüfung: Im Formular geändert = {changed}; Rücklesen stimmt überein = {verified}.",
         "External editor changes indexed.": "Änderungen aus dem Grafikeditor wurden indexiert.",
         "yes": "ja", "no": "nein",
-        "Open JPG / MP4": "JPG / MP4 öffnen", "Open JSON": "JSON öffnen", "Save": "Speichern",
+        "Open JPG / PNG / MP4": "JPG / PNG / MP4 öffnen", "Open JSON": "JSON öffnen", "Save": "Speichern",
         "Poster": "Poster", "Search": "Suchen", "Run search": "Suche ausführen",
         "Repeat search": "Suche wiederholen", "Clear all": "Alles leeren", "Clear fields": "Felder leeren",
         "Setup": "Einstellungen", "Upload saved files": "Gespeicherte Dateien hochladen",
@@ -103,7 +103,7 @@ _TEXT = {
         "Einzelbild gespeichert. Sie können weiterblättern oder die Felder leeren.":
             "Einzelbild gespeichert. Sie können weiterblättern oder die Felder leeren.",
         "Kein Bild oder Video ausgewählt": "Kein Bild oder Video ausgewählt",
-        "Bild oder Video auswählen": "Bild oder Video auswählen", "JPG / MP4 auswählen": "JPG / MP4 auswählen",
+        "Bild oder Video auswählen": "Bild oder Video auswählen", "JPG / PNG / MP4 auswählen": "JPG / PNG / MP4 auswählen",
         "Ordner wählen …": "Ordner wählen …", "Klick wählt aus · Umschalt-Klick wählt einen Bereich · {action}":
             "Klick wählt aus · Umschalt-Klick wählt einen Bereich · {action}",
         "Doppelklick wählt eine Datei aus": "Doppelklick wählt eine Datei aus",
@@ -173,7 +173,7 @@ _TEXT = {
         "Markdown": "Markdown", "Preview": "Aperçu", "Delete": "Supprimer", "ChaosBox startup": "Échec du démarrage de ChaosBox", "Bilder und Videos": "Images et vidéos", "Alle Dateien": "Tous les fichiers",
         "Box": "Boîte", "Quantity": "Quantité", "Device": "Appareil", "Alias": "Alias", "Category": "Catégorie",
         "Comment": "Commentaire", "Package": "Lot", "Select JPG, PNG or MP4 files": "Sélectionner des fichiers JPG, PNG ou MP4", "Preview: {path}": "Aperçu : {path}",
-        "Open JPG / MP4": "Ouvrir JPG / MP4", "Open JSON": "Ouvrir JSON", "Save": "Enregistrer",
+        "Open JPG / PNG / MP4": "Ouvrir JPG / PNG / MP4", "Open JSON": "Ouvrir JSON", "Save": "Enregistrer",
         "Poster": "Affiche", "Search": "Rechercher", "Run search": "Lancer la recherche",
         "Repeat search": "Répéter la recherche", "Clear all": "Tout effacer", "Clear fields": "Effacer les champs",
         "Setup": "Paramètres", "Upload saved files": "Téléverser les fichiers enregistrés",
@@ -193,7 +193,7 @@ _TEXT = {
         "Einzelbild gespeichert. Sie können weiterblättern oder die Felder leeren.":
             "Image enregistrée. Vous pouvez parcourir les images ou effacer les champs.",
         "Kein Bild oder Video ausgewählt": "Aucune image ni vidéo sélectionnée",
-        "Bild oder Video auswählen": "Sélectionner une image ou une vidéo", "JPG / MP4 auswählen": "Sélectionner JPG / MP4",
+        "Bild oder Video auswählen": "Sélectionner une image ou une vidéo", "JPG / PNG / MP4 auswählen": "Sélectionner JPG / PNG / MP4",
         "Ordner wählen …": "Choisir un dossier …", "Klick wählt aus · Umschalt-Klick wählt einen Bereich · {action}":
             "Cliquer pour sélectionner · Maj-clic pour une plage · {action}",
         "Doppelklick wählt eine Datei aus": "Double-clic pour sélectionner un fichier",
@@ -257,7 +257,7 @@ _TEXT = {
         "Markdown": "Markdown", "Preview": "Anteprima", "Delete": "Elimina", "ChaosBox startup": "Avvio di ChaosBox non riuscito", "Bilder und Videos": "Immagini e video", "Alle Dateien": "Tutti i file",
         "Box": "Box", "Quantity": "Quantità", "Device": "Dispositivo", "Alias": "Alias", "Category": "Categoria",
         "Comment": "Commento", "Package": "Confezione", "Select JPG, PNG or MP4 files": "Seleziona file JPG, PNG o MP4", "Preview: {path}": "Anteprima: {path}",
-        "Open JPG / MP4": "Apri JPG / MP4", "Open JSON": "Apri JSON", "Save": "Salva",
+        "Open JPG / PNG / MP4": "Apri JPG / PNG / MP4", "Open JSON": "Apri JSON", "Save": "Salva",
         "Poster": "Poster", "Search": "Cerca", "Run search": "Avvia ricerca",
         "Repeat search": "Ripeti ricerca", "Clear all": "Cancella tutto", "Clear fields": "Cancella campi",
         "Setup": "Impostazioni", "Upload saved files": "Carica i file salvati",
@@ -274,7 +274,7 @@ _TEXT = {
         "Einzelbild gespeichert. Sie können weiterblättern oder die Felder leeren.":
             "Immagine salvata. Puoi sfogliare le immagini o cancellare i campi.",
         "Kein Bild oder Video ausgewählt": "Nessuna immagine o video selezionato", "Bild oder Video auswählen": "Seleziona immagine o video",
-        "JPG / MP4 auswählen": "Seleziona JPG / MP4", "Ordner wählen …": "Scegli cartella …",
+        "JPG / PNG / MP4 auswählen": "Seleziona JPG / PNG / MP4", "Ordner wählen …": "Scegli cartella …",
         "Klick wählt aus · Umschalt-Klick wählt einen Bereich · {action}": "Clic per selezionare · Maiusc-clic per un intervallo · {action}",
         "Doppelklick wählt eine Datei aus": "Doppio clic per selezionare un file", "Doppelklick öffnet eine Datei": "Doppio clic per aprire un file",
         "Columns": "Colonne", "Spalten": "Colonne", "Metadaten anzeigen": "Mostra metadati", "Andere Dateien …": "Altri file …",

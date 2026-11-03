@@ -675,14 +675,30 @@ def poster_page(record):
     return int(candidate)
 
 
-def poster_layout_modes(metadata, default):
-    fixed = default
-    modes = []
-    for record in metadata:
-        value = str(record.get("alias", "") or "").strip().casefold()
+def poster_page_mode(metadata, indices, default):
+    mode, owner = default, None
+    for index in indices:
+        value = str(metadata[index].get("alias", "") or "").strip().casefold()
         if value:
-            fixed = value in {"1", "true", "t"}
-        modes.append(fixed)
+            mode, owner = value in {"1", "true", "t"}, index
+    return mode, owner
+
+
+def poster_layout_modes(metadata, default, pages=None):
+    """Resolve one mode per page; an empty page starts from the setup default."""
+    if pages is None:
+        groups, number = {}, 1
+        for index, record in enumerate(metadata):
+            number = poster_page(record) or number
+            groups.setdefault(number, []).append(index)
+        indices_by_page = groups.values()
+    else:
+        indices_by_page = [[item[0] for item in (page["placements"] if isinstance(page, dict) else page)] for page in pages]
+    modes = [default] * len(metadata)
+    for indices in indices_by_page:
+        mode, _ = poster_page_mode(metadata, indices, default)
+        for index in indices:
+            modes[index] = mode
     return modes
 
 
@@ -810,7 +826,9 @@ def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
             width = max(1, math.ceil(zoom))
             if width > cols and (positions is None or positions[index] is None):
                 raise ValueError(f"Fixed poster zoom in field 2 requires {width} columns, but POSTER-COLS is {cols}.")
-            shapes.append((1, width))
+            if width > rows and (positions is None or positions[index] is None):
+                raise ValueError(f"Fixed poster zoom in field 2 requires {width} rows, but POSTER-ROWS is {rows}.")
+            shapes.append((width, width))
             continue
         if zoom <= 1:
             shapes.append((base_rows, 1))
@@ -907,14 +925,57 @@ def poster_photo_pages(paths, metadata, settings, *, ignore_pages=False, fixed_m
             width, height = poster_rotated_size(photo.width, photo.height, poster_angle(record))
             portraits.append(width + 1e-8 < height)
             aspects.append(width / height)
-    modes = fixed_modes if fixed_modes is not None else poster_layout_modes(metadata, settings.fixed)
     zooms = [poster_zoom(record) for record in metadata]
-    return poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed,
-                        zooms=zooms, aspect_ratios=aspects,
-                        positions=[poster_position(record) for record in metadata],
-                        page_numbers=[1] * len(paths) if force_page else None if ignore_pages else [poster_page(record) for record in metadata],
-                        fixed_modes=modes,
-                        cell_aspect=settings.width * settings.rows / (settings.height * settings.cols))
+    positions = [poster_position(record) for record in metadata]
+    numbers = [1] * len(paths) if force_page else [None] * len(paths) if ignore_pages else [poster_page(record) for record in metadata]
+    def pack(indices, mode):
+        return poster_pages([portraits[index] for index in indices], settings.cols, settings.rows,
+                            fixed=mode, zooms=[zooms[index] for index in indices],
+                            aspect_ratios=[aspects[index] for index in indices],
+                            positions=[positions[index] for index in indices],
+                            page_numbers=[1 if numbers[index] == number else None for index in indices],
+                            cell_aspect=settings.width * settings.rows / (settings.height * settings.cols))
+    if fixed_modes is not None or not any(str(record.get("alias", "") or "").strip() for record in metadata):
+        return poster_pages(portraits, settings.cols, settings.rows, fixed=settings.fixed,
+                            zooms=zooms, aspect_ratios=aspects, positions=positions, page_numbers=numbers,
+                            fixed_modes=fixed_modes,
+                            cell_aspect=settings.width * settings.rows / (settings.height * settings.cols))
+    floors, floor = [], 1
+    for requested in numbers:
+        floor = requested or floor
+        floors.append(floor)
+    pending, pages = list(range(len(paths))), []
+    while pending:
+        number = len(pages) + 1
+        eligible = [index for index in pending if floors[index] <= number]
+        if not eligible:
+            pages.append([])
+            continue
+        blocked, committed_owner = set(), None
+        mode, _ = poster_page_mode(metadata, eligible, settings.fixed)
+        while True:
+            candidates = [index for index in eligible if index not in blocked]
+            if not candidates:
+                page = []
+                break
+            planned = pack(candidates, mode)
+            page = [(candidates[local], *placement) for local, *placement in planned[0]]
+            accepted = [item[0] for item in page]
+            # If an override cannot fit after applying its mode, it belongs to
+            # a later page and must not control this page (or cause oscillation).
+            if committed_owner is not None and committed_owner not in accepted:
+                blocked.add(committed_owner)
+                committed_owner = None
+                mode, _ = poster_page_mode(metadata, accepted, settings.fixed)
+                continue
+            desired, owner = poster_page_mode(metadata, accepted, settings.fixed)
+            if desired == mode:
+                break
+            mode, committed_owner = desired, owner
+        pages.append(page)
+        accepted = {item[0] for item in page}
+        pending = [index for index in pending if index not in accepted]
+    return pages
 
 
 def poster_grid_cells(placements, cols, rows, bounds, gap):
@@ -983,7 +1044,7 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
     if previous_layout is not None:
         metadata = [record if index in changed else dict(previous_layout["metadata"][index])
                     for index, record in enumerate(metadata)]
-    modes = poster_layout_modes(metadata, settings.fixed)
+    modes = poster_layout_modes(metadata, settings.fixed, previous_layout["pages"] if previous_layout is not None else None)
     recalculate_pages = set()
     if previous_layout is not None:
         # Keep every untouched panel on its page, even when an edited image moves.
@@ -994,7 +1055,6 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
                 if index not in changed:
                     continue
                 old_record, record = previous_layout["metadata"][index], metadata[index]
-                old_shape = row_span, col_span
                 old_mode = previous_layout.get("fixed_modes", modes)[index]
                 if ((poster_transform(record)[:2], poster_zoom(record), modes[index]) !=
                         (poster_transform(old_record)[:2], poster_zoom(old_record), old_mode)):
@@ -1004,7 +1064,7 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
                     if position is not None:
                         row, col = position
                 number = poster_page(record) or old_number
-                if modes[index] and poster_position(record) is None and (old_shape != (row_span, col_span) or old_mode != modes[index]):
+                if modes[index] and poster_position(record) is None and poster_zoom(record) != poster_zoom(old_record):
                     recalculate_pages.add(old_number)
                 if poster_page(record) is not None and poster_position(record) is None and (
                         number != old_number or poster_page(record) != poster_page(old_record)):
@@ -1013,15 +1073,33 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
                     pages.append([])
                 pages[number - 1].append((index, row, col, row_span, col_span))
         pages = [sorted(page) for page in pages]
+        resolved_modes = poster_layout_modes(metadata, settings.fixed, pages)
+        mode_pages = {number for number, page in enumerate(pages, 1)
+                      if any(resolved_modes[item[0]] != previous_layout.get("fixed_modes", modes)[item[0]]
+                             for item in page)}
         if recalculate_pages:
             # A page override also reconsiders images previously deferred by flexible sizing.
             pages = poster_photo_pages(paths, metadata, settings)
+            replanned_modes = poster_layout_modes(metadata, settings.fixed, pages)
             for number, page in enumerate(pages, 1):
                 old_pages = previous_layout["pages"]
-                if number > len(old_pages) or page != old_pages[number - 1]["placements"]:
+                if (number > len(old_pages) or page != old_pages[number - 1]["placements"] or
+                        any(replanned_modes[item[0]] !=
+                            previous_layout.get("fixed_modes", modes)[item[0]] for item in page)):
                     recalculate_pages.add(number)
+        else:
+            # A page mode edit repacks that page without moving untouched images
+            # to other pages through the running explicit-page starting point.
+            for number in mode_pages:
+                indices = [item[0] for item in pages[number - 1]]
+                replanned = poster_photo_pages([paths[index] for index in indices],
+                    [metadata[index] for index in indices], settings, force_page=True,
+                    fixed_modes=[resolved_modes[index] for index in indices])[0]
+                pages[number - 1] = [(indices[local], *placement) for local, *placement in replanned]
+            recalculate_pages.update(mode_pages)
     else:
         pages = poster_photo_pages(paths, metadata, settings)
+    modes = poster_layout_modes(metadata, settings.fixed, pages)
     if layout_state is not None:
         layout_state.update(metadata=[dict(record) for record in metadata], fixed_modes=list(modes), pages=[])
     outputs = []
@@ -1114,7 +1192,7 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
         if layout_state is not None:
             layout_state["base"] = canvas.convert("RGBA")
         return save_poster_canvas(canvas, profile, settings, width, height)
-    modes = fixed_modes if fixed_modes is not None else poster_layout_modes(metadata, settings.fixed)
+    modes = fixed_modes if fixed_modes is not None else [poster_page_mode(metadata, range(len(metadata)), settings.fixed)[0]] * len(metadata)
     if all(modes) or any(poster_position(record) is not None for record in metadata):
         cells = poster_grid_cells(placements, settings.cols, settings.rows, bounds, gap)
     elif any(modes):
@@ -1551,6 +1629,109 @@ def write_video_metadata(path, record):
     video_key_comments(path, payload)
 
 
+def filename_creation_date(path):
+    """Recognize full dates, without treating counters or partial years as dates."""
+    stem = Path(path).stem
+    months = {name: number for number, names in enumerate((
+        ('jan', 'january'), ('feb', 'february'), ('mar', 'march'),
+        ('apr', 'april'), ('may',), ('jun', 'june'), ('jul', 'july'),
+        ('aug', 'august'), ('sep', 'sept', 'september'), ('oct', 'october'),
+        ('nov', 'november'), ('dec', 'december')), 1) for name in names}
+    year = r'(?:19|20)\d{2}'
+    patterns = [
+        (rf'(?P<y>{year})(?P<m>\d{{2}})(?P<d>\d{{2}})', False),
+        (rf'(?P<y>{year})[-_. ](?P<m>\d{{1,2}})[-_. ](?P<d>\d{{1,2}})', False),
+        (rf'(?P<d>\d{{1,2}})[-_. ](?P<m>\d{{1,2}})[-_. ](?P<y>{year})', True),
+        (rf'(?P<d>\d{{1,2}})[-_. ](?P<m>[A-Za-z]+)[-_. ](?P<y>{year})', False),
+        (rf'(?P<m>[A-Za-z]+)[-_. ](?P<d>\d{{1,2}})[-_. ,]+(?P<y>{year})', False),
+        (rf'(?P<y>{year})[-_. ](?P<m>[A-Za-z]+)[-_. ](?P<d>\d{{1,2}})', False),
+    ]
+    candidates = []
+    for pattern, day_first in patterns:
+        for match in re.finditer(r'(?<!\d)' + pattern + r'(?!\d)', stem):
+            values = match.groupdict()
+            month = months.get(values['m'].lower(), 0) if values['m'].isalpha() else int(values['m'])
+            day = int(values['d'])
+            if day_first and month > 12 and day <= 12:
+                month, day = day, month  # Unambiguous US month/day/year.
+            try:
+                date = datetime(int(values['y']), month, day)
+            except ValueError:
+                continue
+            tail = stem[match.end():]
+            clock = re.match(r'^[Tt _.-]?(\d{2})[_.:-]?(\d{2})[_.:-]?(\d{2})(?!\d)', tail)
+            if clock:
+                try:
+                    date = date.replace(hour=int(clock[1]), minute=int(clock[2]), second=int(clock[3]))
+                except ValueError:
+                    pass
+            candidates.append((match.start(), date))
+    # Compact date+time has no digit boundary after the date.
+    for match in re.finditer(r'(?<!\d)((?:19|20)\d{12})(?!\d)', stem):
+        try:
+            candidates.append((match.start(), datetime.strptime(match[1], '%Y%m%d%H%M%S')))
+        except ValueError:
+            pass
+    return min(candidates, key=lambda item: item[0])[1] if candidates else None
+
+
+def selection_creation_time(path, discrepancy_seconds=48 * 3600, *, creation_dates=None):
+    """Infer capture time for browsing only; never rewrite stored metadata."""
+    path = Path(path)
+    stat = path.stat()
+    filesystem = [stat.st_mtime]
+    birth = getattr(stat, 'st_birthtime', None)
+    if birth is not None:
+        filesystem.append(birth)
+    # Unix ctime is an inode-change time, not a file-creation time.
+    metadata_dates = []
+    try:
+        tags = (video_metadata(path)[1] if path.suffix.lower() == '.mp4'
+                else image_capture_tags(open_image_metadata(path)))
+    except Exception:
+        tags = {}  # Unreadable metadata must not prevent selecting other files.
+    for key, offset in (('DateTimeOriginal', 'OffsetTimeOriginal'), ('CreateDate', 'OffsetTimeDigitized')):
+        value = re.sub(r'^(\d{4}):(\d{2}):(\d{2})', r'\1-\2-\3', str(tags.get(key, '')))
+        try:
+            date = datetime.fromisoformat(value)
+            if date.tzinfo is None and tags.get(offset):
+                date = datetime.fromisoformat(value + str(tags[offset]))
+            metadata_dates.append(date.timestamp())
+        except (ValueError, OverflowError, OSError):
+            continue
+    named = filename_creation_date(path)
+    alternatives = metadata_dates + filesystem
+    preferred = named.timestamp() if named else metadata_dates[0] if metadata_dates else min(filesystem)
+    chosen = (min([preferred] + alternatives)
+              if any(abs(preferred - date) > discrepancy_seconds for date in alternatives)
+              else preferred)
+    if creation_dates is not None:
+        date = datetime.fromtimestamp(chosen)
+        creation_dates[path] = f"({date.day}.{date.month}.{date.year})"
+    return chosen
+
+
+class SelectionMedia(list):
+    """Ordered chooser paths and date labels computed in the same worker pass."""
+
+    def __init__(self, paths, creation_dates):
+        super().__init__(paths)
+        self.creation_dates = creation_dates
+
+
+def sort_media_for_selection(paths):
+    ranked = []
+    creation_dates = {}
+    for path in paths:
+        try:
+            ranked.append((selection_creation_time(path, creation_dates=creation_dates), path))
+        except FileNotFoundError:
+            continue  # A file removed while the chooser loads is no longer selectable.
+    return SelectionMedia(
+        [path for _, path in sorted(ranked, key=lambda item: (-item[0], str(item[1]).casefold(), str(item[1])))],
+        creation_dates)
+
+
 def media_created(path, existing=None, *, tags=None):
     """Prefer capture metadata, then filename, saved creation date, and source mtime."""
     path = Path(path)
@@ -1915,6 +2096,54 @@ def ensure_index(settings, progress=lambda _: None, newindex=False):
         for warning in migrate_media(profile, progress, metadata_cache=metadata):
             progress(warning)
     return build_index(settings, progress, metadata_cache=metadata)
+
+
+def available_categories(profile):
+    categories = {value.casefold(): value for value in profile.categories}
+    for folder in (profile.images, profile.data):
+        for base, directories, _ in os.walk(folder, followlinks=False):
+            directories[:] = [name for name in directories
+                              if not name.startswith('.') and not (Path(base) / name).is_symlink()]
+            for name in directories:
+                if name.casefold() != 'unassigned':
+                    categories.setdefault(name.casefold(), name.upper())
+    return sorted(categories.values(), key=str.casefold)
+
+
+class IndexMonitor:
+    """Reconcile disk sources, waiting for two stable observations before reading."""
+
+    def __init__(self):
+        self.previous = {}
+        self.indexed = {}
+        self.initialized = False
+
+    def poll(self, settings):
+        current = {}
+        for profile in settings.profiles:
+            for path in files(profile.images, MEDIA) + json_files(profile):
+                try:
+                    stat = path.stat()
+                    current[path] = (stat.st_mtime_ns, stat.st_size, stat.st_ino)
+                except FileNotFoundError:
+                    continue
+        if not self.initialized:
+            # Re-read existing sources as well: cached metadata may predate startup.
+            self.indexed = {entry.source: None for entry in load_index(settings)}
+            self.initialized = True
+        changed = [path for path in current
+                   if current[path] == self.previous.get(path)
+                   and current[path] != self.indexed.get(path)]
+        changed.extend(path for path in self.indexed if path not in current and path not in self.previous)
+        self.previous = current
+        if changed:
+            update_index(settings, changed)
+            for path in changed:
+                if path in current:
+                    self.indexed[path] = current[path]
+                else:
+                    self.indexed.pop(path, None)
+        return {profile.id: available_categories(profile) for profile in settings.profiles}
 
 
 def update_index(target, changed, progress=lambda _: None):

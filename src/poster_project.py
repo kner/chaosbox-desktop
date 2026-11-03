@@ -176,6 +176,8 @@ def load_project(path, output_dir):
             layout["pages"].append(page)
         if seen != set(range(len(sources))):
             raise ValueError("Poster project layout is missing images.")
+        modes = core.poster_layout_modes(records, settings.fixed, layout["pages"])
+        layout["fixed_modes"] = modes
         profile_id = manifest["profile_id"]
         if not isinstance(profile_id, str) or not profile_id:
             raise ValueError("Invalid poster project collection.")

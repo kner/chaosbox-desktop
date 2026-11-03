@@ -287,7 +287,9 @@ class DesktopTests(unittest.TestCase):
         Image.new("RGBA", (200, 100), (0, 0, 0, 0)).save(png)
         png_before = png.read_bytes()
         converted = core.save_media(png, self.profile, self.record, 60)
+        self.assertEqual(converted.suffix, ".jpg")
         with Image.open(converted) as image:
+            self.assertEqual(image.format, "JPEG")
             self.assertEqual(image.size, (60, 30))
             self.assertEqual(image.getpixel((10, 10)), (255, 255, 255))
         self.assertEqual(png.read_bytes(), png_before)
