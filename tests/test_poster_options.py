@@ -59,14 +59,14 @@ class PosterOptionTests(unittest.TestCase):
                 photo = Image.new('RGBA', (300, 200), (255, 255, 255, 255))
                 core.poster_date_overlay(photo, '1.12.2026', core.poster_font(20), rotation)
                 self.assertEqual(photo.getpixel((0, 0)), (255, 255, 255, 255))
-                self.assertEqual(photo.getpixel((299, 199)), (153, 153, 153, 255))
+                self.assertEqual(photo.getpixel((299, 199)), (191, 191, 191, 255))
                 colors = set(photo.getdata())
                 self.assertIn((255, 255, 255, 255), colors)
                 self.assertTrue(all(pixel[3] == 255 for pixel in colors))
                 # Render on transparent photo to distinguish opaque glyphs from background.
                 layer = Image.new('RGBA', (300, 200))
                 core.poster_date_overlay(layer, '1.12.2026', core.poster_font(20), rotation)
-                self.assertEqual(layer.getpixel((299, 199)), (0, 0, 0, 102))
+                self.assertEqual(layer.getpixel((299, 199)), (0, 0, 0, 64))
                 self.assertIn((255, 255, 255, 255), set(layer.getdata()))
 
     def test_date_badge_disabled_and_oversized(self):

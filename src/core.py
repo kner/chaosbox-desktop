@@ -1192,7 +1192,7 @@ def poster_date_overlay(photo, text, font, rotation):
     left, top, right, bottom = font.getbbox(text)
     padding = max(1, round(font.size * .15))
     badge = Image.new("RGBA", (right - left + 2 * padding, bottom - top + 2 * padding),
-                      (0, 0, 0, 102))  # 60% transparent = 40% opacity.
+                      (0, 0, 0, 64))  # 75% transparent = 25% opacity.
     ImageDraw.Draw(badge).text((padding - left, padding - top), text,
                                font=font, fill=(255, 255, 255, 255))
     if rotation == 90:

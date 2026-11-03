@@ -689,7 +689,7 @@ the panel background and frame; the photo and text retain their opacity.
 `POSTER-DATE-ROTATION=0` prints the inferred creation date horizontally inside
 the image at the bottom-right edge; `90` rotates the date 90 degrees
 counterclockwise at the same corner. The date has opaque white text on a black
-background with 60% transparency (40% opacity). The badge rotates with the photo.
+background with 75% transparency (25% opacity). The badge rotates with the photo.
 Missing or other values hide dates. Dates use `1.12.2026` and the same inference as the image chooser.
 `POSTER-FONT-SIZE` specifies the date and comment font size in typographic points
 (1 pt = 1/72 inch), converted using the poster's physical size and resolution.
