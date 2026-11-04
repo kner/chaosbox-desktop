@@ -313,7 +313,16 @@ class PosterPreview(tk.Toplevel):
                 self.page_poll = None
             if self.page_future is not None:
                 self.page_future.cancel()
+                self.page_future = None
             self.page_worker.shutdown(wait=False, cancel_futures=True)
+            # Destroying Tk widgets does not release Python attributes. Drop the
+            # large buffers now, even if callbacks still reference this window.
+            # Do not close shared images: an in-flight edit may still use them.
+            self.layout_state = None
+            self.viewer.original = None
+            self.viewer.photo = None
+            self.source_paths = []
+            self.outputs = []
             self.temporary.cleanup()
             if getattr(self.app, "poster_preview", None) is self:
                 self.app.poster_preview = None

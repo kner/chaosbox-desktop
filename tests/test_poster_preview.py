@@ -71,6 +71,35 @@ class PosterPreviewTests(unittest.TestCase):
         self.preview.destroy.assert_called_once()
         self.assertFalse(self.preview.directory.exists())
 
+    def test_destroy_releases_buffers_even_when_window_is_still_referenced(self):
+        import weakref
+        from concurrent.futures import Future
+        from PIL import Image
+        base, panel, thumbnail = [Image.new('RGBA', (32, 32)) for _ in range(3)]
+        references = [weakref.ref(image) for image in (base, panel, thumbnail)]
+        self.preview.layout_state = {'pages': [{'base': base, 'panels': [(panel, (0, 0))]}]}
+        self.preview.viewer = SimpleNamespace(original=thumbnail, photo=Mock())
+        self.preview.page_future = Future()
+        self.preview.page_future.set_result(thumbnail)
+        self.preview.page_worker = Mock()
+        self.preview.page_poll = 'pending'
+        self.preview.after_cancel = Mock()
+        self.preview.temporary = Mock()
+        self.app.poster_preview = self.preview
+        del base, panel, thumbnail
+        # Child-widget destruction must leave the active layout intact.
+        PosterPreview.cleanup(self.preview, SimpleNamespace(widget=object()))
+        self.assertTrue(all(reference() is not None for reference in references))
+        PosterPreview.cleanup(self.preview, SimpleNamespace(widget=self.preview))
+        self.assertTrue(all(reference() is None for reference in references))
+        self.assertIsNone(self.preview.viewer.photo)
+        self.assertIsNone(self.preview.page_future)
+        self.assertIsNone(self.app.poster_preview)
+        self.assertEqual(self.preview.source_paths, [])
+        self.preview.after_cancel.assert_called_once_with('pending')
+        self.preview.page_worker.shutdown.assert_called_once_with(wait=False, cancel_futures=True)
+        self.preview.temporary.cleanup.assert_called_once()
+
     def test_close_waits_for_save(self):
         self.preview.saving = True
         PosterPreview.close(self.preview)
