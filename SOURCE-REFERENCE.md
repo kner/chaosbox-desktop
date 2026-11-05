@@ -8,7 +8,7 @@ This reference covers every versioned production source, script, and test source
 | --- | --- |
 | `src/app.py` | Tk user interface: collection selection, metadata editing, media previews, searching, poster creation, and background tasks. `App` coordinates all UI state; dialog and canvas classes isolate individual controls. |
 | `src/core.py` | Domain layer for setup parsing, profile discovery, media metadata, JSON records, indexes, posters, searching, deletion, and synchronization orchestration. `Settings` derives safe local and remote paths; `Profile` represents a selected box. |
-| `src/chaos_sync.py` | Transport-independent immutable journal. `Store` captures local changes, merges operations, detects conflicts, applies records and media, and maintains recovery history. |
+| `src/KBox_sync.py` | Transport-independent immutable journal. `Store` captures local changes, merges operations, detects conflicts, applies records and media, and maintains recovery history. |
 | `src/sync_transport.py` | SFTP, SSH, and rsync transport adapters. It locks the remote journal, transfers operations and blobs, writes JSON/media projections, and maintains manifests/checkpoints. |
 | `src/i18n.py` | Translation tables and lookup helpers for the desktop UI. |
 | `src/markdown_render.py` | Small, safe Markdown-to-Tk-text renderer used by help/content dialogs. |

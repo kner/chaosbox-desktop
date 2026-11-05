@@ -1,6 +1,6 @@
 
 Use this prompt to recreate the current application:
-Build a complete, working native desktop application named “ChaosBox Desktop” for Ubuntu 24.04.
+Build a complete, working native desktop application named “KBox Desktop” for Ubuntu 24.04.
 
 The application manages images, videos, and inventory records using file-based storage. Implement the application, installation scripts, documentation, and tests—not just a mockup or implementation plan.
 
@@ -26,7 +26,7 @@ Provide these defaults:
 - The installation itself has no media folders and is not a selectable profile.
 - Child projects: <installdir>/<Titel>/JPG and <installdir>/<Titel>/TXT.
 
-Default --installdir to ~/ChaosBox. Store setup.ini, .indices and .state inside it.
+Default --installdir to ~/KBox. Store setup.ini, .indices and .state inside it.
 
 Support:
 - [App] configures inherited defaults; only Box sections are selectable, starting with the first.
@@ -103,7 +103,7 @@ In the folder picker:
 
 5. Show metadata
 
-Place a checkbox labeled “Metadaten anzeigen” beside the column selector.
+Place a checKBox labeled “Metadaten anzeigen” beside the column selector.
 
 When enabled, display the parsed metadata values below each thumbnail in this exact order:
 
@@ -131,8 +131,8 @@ Convert PNG to JPEG with a white background. Resize images only when they exceed
 
 Store image metadata as individual embedded XMP properties using the GExiv2 Python binding:
 - Comment in dc:description (x-default), created in xmp:CreateDate.
-- box, anzahl, device, alias, category and package in the ChaosBox namespace urn:chaosbox:metadata:1.0/.
-- chaosbox:version=1 marks a complete record, including cleared fields.
+- box, anzahl, device, alias, category and package in the KBox namespace urn:chaosbox:metadata:1.0/.
+- KBox:version=1 marks a complete record, including cleared fields.
 Read legacy EXIF UserComment records and migrate them on save, removing UserComment and its XMP EXIF mirror only from the successfully saved output. Preserve other image metadata.
 Store MP4 metadata as JSON in ItemList Comment using Mutagen, synchronizing existing Keys Comment metadata. Use FFprobe for capture dates and legacy comment fallback. Do not depend on ExifTool.
 
@@ -193,5 +193,5 @@ Include a Tk smoke test for GUI workflows. Use temporary test data and never con
 
 Implement the complete application, run the available checks, and report the resulting files, launch commands, test results, and any verification limitations.
 
-Window and desktop app title: Chaosbox-<installation directory name>.
+Window and desktop app title: KBox-<installation directory name>.
 install-desktop.sh --installdir creates a separate app and launcher bound to that full path.

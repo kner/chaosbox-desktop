@@ -1,4 +1,4 @@
-"""Desktop storage and metadata operations, compatible with ChaosBox Android."""
+"""Desktop storage and metadata operations, compatible with KBox Android."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,7 +25,8 @@ import xml.etree.ElementTree as ET
 from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageColor
 
 import markdown_render
-import chaos_sync
+import KBox_sync
+from legacy_names import installation_root, installation_title
 import sync_transport
 
 _version_file = Path(__file__).resolve().parent / "VERSION"
@@ -35,7 +36,7 @@ VERSION = _version_file.read_text(encoding="utf-8").strip()
 
 def installation_icon(app_id):
     """Tint the desktop and window icon consistently for one installation."""
-    with Image.open(Path(__file__).with_name("chaosbox.png")) as original:
+    with Image.open(Path(__file__).with_name("KBox.png")) as original:
         icon = original.convert("RGBA")
     # Hash the full ID so similar installation names get unrelated colors.
     shift = int.from_bytes(hashlib.sha256(app_id.encode("utf-8")).digest()[:2], "big") % 256
@@ -57,8 +58,8 @@ RECORD_KEYS = set(FIELDS) | {"count", "pack", "created", "modified", "id", "revi
 REPO = Path(__file__).resolve().parent.parent
 DEFAULT_SETUP = Path(__file__).with_name("setup.ini")
 XMP_NAMESPACE = "urn:chaosbox:metadata:1.0/"
-XMP_FIELDS = {field: f"Xmp.chaosbox.{field}" for field in FIELDS if field != "comment"}
-XMP_FIELDS.update({key: "Xmp.chaosbox." + key for key in ("id", "revision", "base_revision")})
+XMP_FIELDS = {field: f"Xmp.KBox.{field}" for field in FIELDS if field != "comment"}
+XMP_FIELDS.update({key: "Xmp.KBox." + key for key in ("id", "revision", "base_revision")})
 XMP_FIELDS.update(comment="Xmp.dc.description", created="Xmp.xmp.CreateDate")
 
 
@@ -68,7 +69,7 @@ def image_metadata_library():
     import gi
     gi.require_version("GExiv2", "0.10")
     from gi.repository import GExiv2
-    GExiv2.Metadata.try_register_xmp_namespace(XMP_NAMESPACE, "chaosbox")
+    GExiv2.Metadata.try_register_xmp_namespace(XMP_NAMESPACE, "KBox")
     return GExiv2
 
 
@@ -176,7 +177,7 @@ def atomic_write(path, content, newer=False, mode=None):
         raise ValueError(f"Refusing to replace a symbolic link: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
     previous = path.stat() if path.exists() else None
-    fd, temporary = tempfile.mkstemp(prefix=".chaosbox-", dir=path.parent)
+    fd, temporary = tempfile.mkstemp(prefix=".KBox-", dir=path.parent)
     try:
         with os.fdopen(fd, "wb") as out:
             out.write(content if isinstance(content, bytes) else content.encode("utf-8"))
@@ -208,6 +209,7 @@ class Profile:
 
 class Settings:
     def __init__(self, root, state_dir=None, setup=None):
+        root = installation_root(root)
         if Path(root).expanduser().is_symlink():
             raise ValueError("Installation directory must not be a symbolic link")
         self.root = Path(root).expanduser().resolve()
@@ -217,11 +219,10 @@ class Settings:
             if not within(owned.resolve(), self.root):
                 raise ValueError("Setup and state must stay inside the installation directory")
         self.index = self.root / ".indices"
-        self.title = ("KBox-" + self.root.name[5:] if self.root.name.casefold().startswith("kbox-")
-                      else f"Chaosbox-{self.root.name}")
-        self.app_id = "chaosbox-" + hashlib.sha256(str(self.root).encode()).hexdigest()[:16]
-        self.icon_id = self.title if self.root.name.casefold().startswith("kbox-") else self.app_id
-        self.window_class = "Chaosbox-" + self.app_id.removeprefix("chaosbox-")
+        self.title = installation_title(self.root)
+        self.app_id = "KBox-" + hashlib.sha256(str(self.root).encode()).hexdigest()[:16]
+        self.icon_id = self.title if self.root.name.casefold().startswith("KBox-".casefold()) else self.app_id
+        self.window_class = "KBox-" + self.app_id.removeprefix("KBox-")
         self.profiles = []
         self.image_width = 3000
         self.editor = None
@@ -1539,7 +1540,7 @@ def image_comment(metadata, complete=False):
 
 def image_record(path, metadata):
     # A complete XMP record takes precedence, even when fields have been cleared.
-    complete = metadata.try_has_tag("Xmp.chaosbox.version")
+    complete = metadata.try_has_tag("Xmp.KBox.version")
     record = {} if complete else parse_metadata(legacy_image_comment(path, metadata))
     for field, tag in XMP_FIELDS.items():
         if not metadata.try_has_tag(tag):
@@ -1645,7 +1646,7 @@ def read_user_comment(path):
     if path.suffix.lower() == ".mp4":
         return video_metadata(path)[0]
     metadata = open_image_metadata(path)
-    if any(metadata.try_has_tag(tag) for tag in (*XMP_FIELDS.values(), "Xmp.chaosbox.version")):
+    if any(metadata.try_has_tag(tag) for tag in (*XMP_FIELDS.values(), "Xmp.KBox.version")):
         return json.dumps(image_record(path, metadata), ensure_ascii=False)
     return legacy_image_comment(path, metadata)
 
@@ -1682,9 +1683,9 @@ def write_image_metadata(original, target, record, dimensions=None):
     metadata.try_clear_tag("Exif.Photo.UserComment")
     # Remove obsolete mirrored UserComment metadata, retaining unrelated XMP.
     metadata.try_clear_tag("Xmp.exif.UserComment")
-    metadata.try_set_tag_string("Xmp.chaosbox.version", "1")
+    metadata.try_set_tag_string("Xmp.KBox.version", "1")
     for field, tag in XMP_FIELDS.items():
-        if field in chaos_sync.SYNC_KEYS and field not in record: continue
+        if field in KBox_sync.SYNC_KEYS and field not in record: continue
         value = str(record.get(field, ""))
         if field == "comment":
             value = 'lang="x-default" ' + value
@@ -2034,7 +2035,7 @@ def sync_store(profile):
             os.utime(temporary,ns=(previous.st_atime_ns,previous.st_mtime_ns))
             os.replace(temporary,path)
         finally: temporary.unlink(missing_ok=True)
-    return chaos_sync.Store(profile.images, profile.data, read, write)
+    return KBox_sync.Store(profile.images, profile.data, read, write)
 
 
 def profile_for_path(path):

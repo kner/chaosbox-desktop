@@ -16,20 +16,20 @@ from app import App, MediaGrid
 
 
 def main():
-    with tempfile.TemporaryDirectory(prefix="chaosbox-ui-test-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="KBox-ui-test-") as temporary:
         home = Path(temporary)
         settings = core.Settings(home, home / ".config")
         settings.ensure()
         source = home / "source.jpg"
         Image.new("RGB", (320, 180), "teal").save(source)
         errors = []
-        root = tk.Tk(className="Chaosbox")
+        root = tk.Tk(className="KBox")
         root.withdraw()
         root.report_callback_exception = lambda kind, error, traceback: errors.append(error)
         with patch("tkinter.messagebox.showerror", lambda *a, **k: errors.append(a)), \
              patch("tkinter.messagebox.showwarning", lambda *a, **k: errors.append(a)):
             app = App(root, settings)
-            assert root.winfo_class() == "Chaosbox"
+            assert root.winfo_class() == "KBox"
             assert app.window_icon.width() == 128
             def settle():
                 deadline = time.monotonic() + 30

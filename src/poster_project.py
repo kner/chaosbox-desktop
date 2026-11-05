@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import core
 
 
-FORMAT = "chaosbox-poster"
+FORMAT = "KBox-poster"
 SCHEMA = 3
 
 

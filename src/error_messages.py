@@ -2,7 +2,7 @@
 
 RULES = [(['untracked'],
   'A destination file already exists, but its contents do not match a known synchronized version. '
-  'ChaosBox refused to overwrite or remove that file.',
+  'KBox refused to overwrite or remove that file.',
   'Keep both: copy the existing file to a backup outside the synchronized JPG/TXT folders, verify '
   'the copy, then move the original out of the way and retry synchronization. Compare the '
   'downloaded version with your backup. To keep your local version, import it afterward as a '

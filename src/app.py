@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ChaosBox desktop editor for Ubuntu. All Tk operations run on the UI thread."""
+"""KBox desktop editor for Ubuntu. All Tk operations run on the UI thread."""
 from __future__ import annotations
 
 import argparse
@@ -423,7 +423,7 @@ class PosterPreview(tk.Toplevel):
 class MetadataModeDialog(simpledialog.Dialog):
     def __init__(self, parent, labels, translator=None):
         self.labels = labels
-        self.t = translator or getattr(parent, "_chaosbox_translator", translate)
+        self.t = translator or getattr(parent, "_KBox_translator", translate)
         super().__init__(parent, title=self.t("Multiple selection"))
 
     def body(self, master):
@@ -916,7 +916,7 @@ class App:
         root.title(settings.title)
         root.geometry("1240x850")
         root.minsize(850, 620)
-        self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="chaosbox")
+        self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="KBox")
         self.events = queue.Queue()
         self.busy, self.closing = False, False
         self.media, self.box_path, self.records, self.record_index = [], None, [], None
@@ -1031,14 +1031,14 @@ class App:
         # window-addressed file-manager drops reach the same media handler.
         target = widget
         while target is not None:
-            if getattr(target, "_chaosbox_drop_context", None) != context:
+            if getattr(target, "_KBox_drop_context", None) != context:
                 drop = target.register(lambda data: self.drop_media(data, dialog, on_select))
                 action = target.register(lambda target=target: self.media_drop_action(target))
                 target.tk.call("tkdnd::drop_target", "register", target._w, "DND_Files")
                 for event in ("<<DropEnter>>", "<<DropPosition>>"):
                     target.tk.call("bind", target._w, event, action)
                 target.tk.call("bind", target._w, "<<Drop:DND_Files>>", drop + " %D")
-                target._chaosbox_drop_context = context
+                target._KBox_drop_context = context
             if isinstance(target, (tk.Tk, tk.Toplevel)):
                 break
             target = target.master
@@ -1373,7 +1373,7 @@ class App:
     def error(self, error):
         message = describe(error, self.t)
         self.status.set(message.splitlines()[0] if message else type(error).__name__)
-        messagebox.showerror(self.t("ChaosBox"), message, parent=self.root)
+        messagebox.showerror(self.t("KBox"), message, parent=self.root)
 
     def initialize(self):
         def work():
@@ -1973,7 +1973,7 @@ class App:
         records = dict(zip(paths, preview.layout_state["metadata"]))
         layout = {}
         def work(progress):
-            temporary = tempfile.TemporaryDirectory(prefix="chaosbox-poster-setup-")
+            temporary = tempfile.TemporaryDirectory(prefix="KBox-poster-setup-")
             try:
                 profile = SimpleNamespace(images=Path(temporary.name) / "JPG")
                 outputs = core.create_posters(paths, profile, settings, progress,
@@ -2014,7 +2014,7 @@ class App:
             return
         path = selected
         def work():
-            temporary = tempfile.TemporaryDirectory(prefix="chaosbox-poster-project-")
+            temporary = tempfile.TemporaryDirectory(prefix="KBox-poster-project-")
             try:
                 project = poster_project.load_project(path, Path(temporary.name) / "poster")
                 names = project.get("poster_names", [])
@@ -2141,7 +2141,7 @@ class App:
                     profile, settings, setup_dir = preview.profile, preview.settings, preview.setup_dir
         layout_state = {}
         def work(progress):
-            temporary = tempfile.TemporaryDirectory(prefix="chaosbox-poster-")
+            temporary = tempfile.TemporaryDirectory(prefix="KBox-poster-")
             try:
                 preview_profile = SimpleNamespace(images=Path(temporary.name) / "JPG")
                 outputs = core.create_posters(paths, preview_profile, settings, progress,
@@ -2718,14 +2718,14 @@ class App:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ChaosBox desktop editor")
-    parser.add_argument("directory", nargs="?", type=Path, help="Installation directory (default: ~/ChaosBox)")
+    parser = argparse.ArgumentParser(description="KBox desktop editor")
+    parser.add_argument("directory", nargs="?", type=Path, help="Installation directory (default: ~/KBox)")
     parser.add_argument("--state-dir", type=Path, help="Override installation-local .state directory")
     parser.add_argument("--setup", type=Path)
     parser.add_argument("--newindex", action="store_true", help="Rebuild the shared search index for all profiles")
     parser.add_argument("--check", action="store_true", help="Check dependencies without opening a window or changing data")
     args = parser.parse_args()
-    installdir = args.directory or Path.home() / "ChaosBox"
+    installdir = args.directory or Path.home() / "KBox"
     if args.check:
         import shutil
         import paramiko
@@ -2744,7 +2744,7 @@ def main():
         settings.ensure()
         app = App(root, settings, newindex=args.newindex)
     except Exception as error:
-        messagebox.showerror(translate("ChaosBox startup", getattr(settings, "language", "en")), describe(error), parent=root)
+        messagebox.showerror(translate("KBox startup", getattr(settings, "language", "en")), describe(error), parent=root)
         root.destroy()
         raise SystemExit(1)
     root.deiconify()

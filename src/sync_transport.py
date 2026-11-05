@@ -16,8 +16,8 @@ import threading
 import time
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from chaos_sync import digest
-from chaos_sync import Store, operation_label, canonical, checksum_manifest, valid_manifest
+from KBox_sync import digest
+from KBox_sync import Store, operation_label, canonical, checksum_manifest, valid_manifest
 
 class RemoteLockError(FileExistsError):
     """A different transfer owns the server lock; never remove it automatically."""
@@ -174,7 +174,7 @@ def publish_sftp_manifest(store, sftp, remote, check, previous=None):
     path=store.root/'checksums.json'
     if previous==value:
         check()
-        from chaos_sync import atomic
+        from KBox_sync import atomic
         atomic(path,canonical(value)+'\n')
         return value
     # The checksum only covers immutable operation content, including blob references.
@@ -191,7 +191,7 @@ def publish_sftp_manifest(store, sftp, remote, check, previous=None):
         else:sftp.remove(target)
         sftp.rename(temporary,target)
         atomic_content=canonical(value)+'\n'
-        from chaos_sync import atomic
+        from KBox_sync import atomic
         atomic(path,atomic_content)
     finally:
         try:sftp.remove(temporary)
@@ -705,7 +705,7 @@ def shell_exchange(store, ssh, transport, cancel, progress=print, initialize=Fal
         run(args+['if [ ! -e '+q(protected)+' ]; then printf \'%s\\n\' \'Require all denied\' > '+q(protected)+'; fi'])
         # Work in staging so transport failures never expose partial operations.
         import tempfile
-        with tempfile.TemporaryDirectory(prefix='chaosbox-sync-') as temporary:
+        with tempfile.TemporaryDirectory(prefix='KBox-sync-') as temporary:
             staging=Path(temporary)
             progress('Downloading remote journal over '+transport+' …')
             if transport=='rsync':

@@ -20,6 +20,9 @@ import build_user_uninstaller
 import sync_transport
 
 
+from legacy_names import installation_root, repository
+
+
 def run(*args, **kwargs):
     subprocess.run([str(arg) for arg in args], check=True, **kwargs)
 
@@ -150,7 +153,7 @@ def _make_all(name, install_dir, android, web):
     ensure_server_key(ssh)
     print('[2/6] Web-Anwendung hochladen', flush=True)
     # Use the existing uploader with the installation’s explicit SSH identity.
-    with tempfile.TemporaryDirectory(prefix='kbox-ssh-') as temp:
+    with tempfile.TemporaryDirectory(prefix='KBox-ssh-') as temp:
         wrapper = Path(temp) / 'ssh'
         options = ['-p', ssh['port'], '-i', ssh['keyfile'], '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes',
                    '-o', 'StrictHostKeyChecking=yes', '-o', 'UserKnownHostsFile=' + ssh['knownhosts']]
@@ -169,7 +172,7 @@ def _make_all(name, install_dir, android, web):
     core.upload(settings, profile, threading.Event(), print)
     print('[4/6] Signierte APK mit Installations-Setup bauen', flush=True)
     apk_name = f'KBox-{name}-{versions[0].replace(".", "")}.apk'
-    with tempfile.TemporaryDirectory(prefix='kbox-android-') as temp:
+    with tempfile.TemporaryDirectory(prefix='KBox-android-') as temp:
         stage = Path(temp) / 'android'
         shutil.copytree(android, stage, ignore=shutil.ignore_patterns('.git', '.gradle', '.tooling', 'build', 'released', '*.apk', 'signing-keys'))
         for directory in ('.tooling', 'signing-keys'):
@@ -182,7 +185,7 @@ def _make_all(name, install_dir, android, web):
         shutil.copyfile(ssh['keyfile'], assets / 'android_copy')
         shutil.copyfile(ssh['knownhosts'], assets / 'known_hosts')
         run('bash', stage / 'sign.sh', '--installdir', name,
-            env={**os.environ, 'KBOX_SETUP_FILE': str(setup_file)})
+            env={**os.environ, 'KBox_SETUP_FILE': str(setup_file)})
         built = stage / 'released' / apk_name
         with zipfile.ZipFile(built) as archive:
             if archive.read('assets/initial/Setup/setup.ini').decode('utf-8') != setup:
@@ -212,13 +215,13 @@ def make_all(name, install_dir, android, web):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('name', help='z.B. Bilder → ~/Kbox-Bilder und Android KBox-Bilder')
+    parser.add_argument('name', help='z.B. Bilder → ~/KBox-Bilder und Android KBox-Bilder')
     args = parser.parse_args()
     if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]{0,39}', args.name):
         parser.error('NAME: Buchstabe, danach Buchstaben/Ziffern/_/-, maximal 40 Zeichen')
     try:
-        make_all(args.name, (Path.home() / f'Kbox-{args.name}').resolve(),
-                 ROOT.parent / 'chaosbox-android', ROOT.parent / 'chaosbox-kner-at')
+        make_all(args.name, installation_root(Path.home() / f'KBox-{args.name}').resolve(),
+                 repository(ROOT.parent, 'KBox-android'), repository(ROOT.parent, 'KBox-kner-at'))
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         parser.exit(1, f'Abgebrochen: {error}\n')
 

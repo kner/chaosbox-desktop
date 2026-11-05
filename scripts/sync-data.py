@@ -8,14 +8,14 @@ import sys
 project_src = Path(__file__).resolve().parent.parent / 'src'
 sys.path.insert(0, str(project_src if project_src.is_dir() else Path(__file__).resolve().parent))
 import core
-import chaos_sync
+import KBox_sync
 from error_messages import describe
 
 def report_error(kind, error, traceback):
     if issubclass(kind, KeyboardInterrupt):
         sys.__excepthook__(kind, error, traceback)
     else:
-        print("chaosbox-desktop sync: " + describe(error), file=sys.stderr)
+        print("KBox-desktop sync: " + describe(error), file=sys.stderr)
 sys.excepthook = report_error
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--data',required=True,type=Path,help='Profile directory containing JPG and TXT')
@@ -72,7 +72,7 @@ with store.locked():
         if a.whole_box:store.delete_box(a.delete)
         else:store.delete(a.delete,a.record)
     elif a.exchange:
-        other=chaos_sync.Store(a.exchange/'JPG',a.exchange/'TXT')
+        other=KBox_sync.Store(a.exchange/'JPG',a.exchange/'TXT')
         store.capture()
         for folder,suffix in [('blobs','.blob'),('ops','.op')]:
             for first,second in [(store,other),(other,store)]:

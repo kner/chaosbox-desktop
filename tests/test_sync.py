@@ -1,7 +1,7 @@
 import unittest,tempfile,json,sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from chaos_sync import Store,atomic,canonical
+from KBox_sync import Store,atomic,canonical
 
 class SyncTests(unittest.TestCase):
     def setUp(self):
@@ -30,7 +30,7 @@ class SyncTests(unittest.TestCase):
         self.assertTrue((self.a.images/'shared.jpg').exists())
 
     def test_null_comment_matches_empty_without_losing_literal_text(self):
-        from chaos_sync import normalized
+        from KBox_sync import normalized
         for key in ('comment','kommentar','Kommentar'):
             for value in (None,'','null','Grüße 東京'):
                 with self.subTest(key=key,value=value):

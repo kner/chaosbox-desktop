@@ -55,7 +55,7 @@ class InstallationCliTests(unittest.TestCase):
     def test_default_and_explicit_installations(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
-            for arguments, expected in (([], home / "ChaosBox"),
+            for arguments, expected in (([], home / "KBox"),
                                         ([str(home / "cb2")], home / "cb2"),
                                         ([str(home / "cb2"), "--newindex"], home / "cb2")):
                 with self.subTest(arguments=arguments), patch("sys.argv", ["app.py", *arguments]), \
@@ -68,7 +68,7 @@ class InstallationCliTests(unittest.TestCase):
                     self.assertEqual(settings.state_dir, expected / ".state")
                     self.assertEqual(settings.default, settings.profiles[0].id)
                     self.assertTrue(all(profile.images.parent != expected for profile in settings.profiles))
-                    self.assertEqual(settings.title, f"Chaosbox-{expected.name}")
+                    self.assertEqual(settings.title, f"KBox-{expected.name}")
                     self.assertEqual(application.call_args.kwargs["newindex"], "--newindex" in arguments)
 
 

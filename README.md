@@ -1,4 +1,4 @@
-# ChaosBox Desktop for Ubuntu 24.04
+# KBox Desktop for Ubuntu 24.04
 
 A native Python/Tk application using the same metadata fields, JSON records and
 setup profile format as the Android app. No browser or Android emulator is needed.
@@ -39,7 +39,7 @@ Each installation gets its own application menu entry; all boxes use one shared 
 
 Without `--installdir`, the installer detects all registered installations and
 updates their application and launchers while preserving setup, media and records.
-It creates `~/ChaosBox` only when no existing installation is found. Use
+It creates `~/KBox` only when no existing installation is found. Use
 `--installdir` to add a new installation or explicitly update a particular one.
 An existing `setup.ini` in the installation directory is kept unchanged,
 including its SSH settings. A default setup is created only if the file is missing.
@@ -47,12 +47,12 @@ An existing empty directory is also accepted. When creating a new setup,
 only the first box receives missing files from `assets/JPG` and
 `assets/TXT` in its respective folders, including subdirectories. Other boxes
 start empty. If the setup contains no `[Box]` section, the installer adds
-`[Box]` with `Titel=ChaosBox` and copies the assets there.
+`[Box]` with `Titel=KBox` and copies the assets there.
 
-Launch **Chaosbox-cb1** or **Chaosbox-cb2** from the Ubuntu application menu.
+Launch **KBox-cb1** or **KBox-cb2** from the Ubuntu application menu.
 Each launcher is permanently bound to its installation directory. Shared application files
-are stored under `~/.local/share/chaosbox/desktop`; box launchers are stored under
-`~/.local/share/chaosbox/installations/<installation-id>`;
+are stored under `~/.local/share/KBox/desktop`; box launchers are stored under
+`~/.local/share/KBox/installations/<installation-id>`;
 menu entries are `~/.local/share/applications/<installation-id>.desktop`.
 The ID and window class depend on the full installation path, so directories
 with the same final name still have distinct launchers. Run the installer once,
@@ -67,21 +67,21 @@ To uninstall a per-user installation, close its windows and run:
 ./scripts/uninstall-desktop.sh --installdir=~/cb1
 ```
 
-Without `--installdir`, this selects `~/ChaosBox`. The script removes that
+Without `--installdir`, this selects `~/KBox`. The script removes that
 installation's launcher and application menu entry. Shared application files
 are removed after the last installation's launcher is removed. All directories,
 box data, `setup.ini`, indexes, UI state and SSH credentials remain intact.
 Run it once for each installation you want to uninstall. Repeated runs are safe.
 ## Data and settings
 
-`--installdir` selects an independent installation, defaulting to `~/ChaosBox`.
+`--installdir` selects an independent installation, defaulting to `~/KBox`.
 The installation directory manages setup, shared index and UI state. It is not
 a selectable box and has no JPG or TXT folders. Only configured boxes appear in
-the selector; the first box is selected at startup. The title is `Chaosbox-cb2`
+the selector; the first box is selected at startup. The title is `KBox-cb2`
 for an installation at `/x/y/cb2`:
 
 ```text
-~/ChaosBox/
+~/KBox/
   setup.ini
   .indices/             # common search index for all projects
   .state/               # UI state and SSH credentials
@@ -119,7 +119,7 @@ Fields=Box,,,Tags,Category,Comment
 Categories=Familie,Berg,Urlaub
 
 [Box]
-Title=Chaosbox1
+Title=KBox1
 Categories=Haushalt,Garten
 ```
 
@@ -218,9 +218,9 @@ rebuilding the index; duplicate names are retained without overwriting files.
 - JPG metadata is stored as individual embedded XMP properties:
   - `dc:description` (language `x-default`): Comment.
   - `xmp:CreateDate`: the preserved creation date.
-  - `chaosbox:box`, `chaosbox:anzahl`, `chaosbox:device`, `chaosbox:alias`,
-    `chaosbox:category`, `chaosbox:package`: inventory fields, using the namespace
-    `urn:chaosbox:metadata:1.0/`. `chaosbox:version=1` marks a complete record,
+  - `KBox:box`, `KBox:anzahl`, `KBox:device`, `KBox:alias`,
+    `KBox:category`, `KBox:package`: inventory fields, using the namespace
+    `urn:chaosbox:metadata:1.0/`. `KBox:version=1` marks a complete record,
     including fields deliberately left empty.
   Other EXIF, IPTC and XMP metadata is retained; resized images retain their ICC
   profile, with corrected orientation/dimensions and obsolete thumbnails removed.
@@ -266,7 +266,7 @@ rebuilding the index; duplicate names are retained without overwriting files.
   MP4 files show a still preview; double-click opens the video in its default player.
 - **Poster** creates a JPEG poster from the selected JPG/PNG images in selection
   order, left to right and top to bottom. It saves to `poster` beside the profile's
-  image folder, for example `~/ChaosBox/poster`. Source images stay intact;
+  image folder, for example `~/KBox/poster`. Source images stay intact;
   repeated exports get distinct filenames. Videos are rejected.
   Configure the poster in **Setup** (existing setups receive the section when opened):
 
@@ -339,10 +339,10 @@ server. `[SSH] Transport=sftp`, `rsync` or `ssh` selects SFTP, rsync over SSH,
 or tar streams over SSH. No synchronization starts automatically. Configure
 Host, Port, User, KeyFile, KnownHosts and DataDestination in setup.ini; the
 existing Setup editor can edit these values. ShellDataDestination accounts
-for a different path namespace on SSH hosts. The common root is `chaosbox-data`.
+for a different path namespace on SSH hosts. The common root is `KBox-data`.
 See [SYNC-PROTOCOL.md](SYNC-PROTOCOL.md) for exact paths and the format.
 After exchanging the journal, synchronization also publishes current media under
-`chaosbox-data/JPG/` with their original filenames and category subfolders.
+`KBox-data/JPG/` with their original filenames and category subfolders.
 Renames and explicit deletions update that view; conflicts retain its existing
 copy until resolved. Unrelated server files are retained. SSH/rsync requires
 `sha256sum` on the server.
@@ -360,10 +360,10 @@ history, restore a version, list device acknowledgments and retire a device.
 There is no automatic garbage collection. Missing files alone never delete data.
 
 ```sh
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --transport rsync
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --conflicts
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --history OBJECT_ID
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --restore OBJECT_ID REVISION
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --transport rsync
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --conflicts
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --history OBJECT_ID
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --restore OBJECT_ID REVISION
 ```
 
 ## Verification
@@ -379,15 +379,15 @@ cover metadata round-trips, encoded image/video preservation, JSON edits,
 category persistence, search, installation, Markdown parsing/rendering and source
 preservation, UI workflows and simulated SFTP.
 They do not connect to the live SSH server.
-# chaosboxDesktop
-# chaosboxDesktop
-# chaosboxDesktop
-# chaosbox-desktop
+# KBoxDesktop
+# KBoxDesktop
+# KBoxDesktop
+# KBox-desktop
 ===
 
 The companion website and `push-data`/`pull-data` scripts use the same source layout
 on both machines: media in `JPG/`, JSON sources in `TXT/` under the configured
-data root. The shared journal is `chaosbox-data/TXT/.chaosbox-sync`; media versions are content-addressed blobs there. Existing installations
+data root. The shared journal is `KBox-data/TXT/.chaosbox-sync`; media versions are content-addressed blobs there. Existing installations
 can override these with `ImageDestination` and `DataDestination` in their setup.ini.
 Generated website catalogs live in `.indices/web-catalog.json` below the website
 data root and are not JSON sources. Desktop keeps its shared `.indices` at the
@@ -500,7 +500,7 @@ files.
 Select one collection directory containing TXT and JPG. Preview is the default:
 
 ```bash
-python3 ~/.local/share/chaosbox/desktop/cleanup-sync.py --data ~/CBHaushalt/Haushalt
+python3 ~/.local/share/KBox/desktop/cleanup-sync.py --data ~/CBHaushalt/Haushalt
 ```
 
 To permanently remove the previewed candidates, repeat with `--apply`. By default,
@@ -533,15 +533,15 @@ The immutable journal remains the synchronization history.
 
 ## Gesamtablauf: Desktop, Web und Android
 
-Aus diesem Projekt starten (die Geschwisterprojekte `chaosbox-android` und
-`chaosbox-kner-at` müssen daneben liegen):
+Aus diesem Projekt starten (die Geschwisterprojekte `KBox-android` und
+`KBox-kner-at` müssen daneben liegen):
 
 ```bash
 ./KBox-make-all.sh Bilder
 # Names may also contain hyphens, e.g. Bilder-5.
 ```
 
-1. Installiert/aktualisiert Desktop für `~/Kbox-Bilder` mit dem bestehenden Installer.
+1. Installiert/aktualisiert Desktop für `~/KBox-Bilder` mit dem bestehenden Installer.
 2. Lädt die Web-Anwendung zum Server aus den SSH-Einstellungen hoch (standardmäßig
    die Website sync-kner.at, Verzeichnis `l1`). Die Server-setup.ini bleibt erhalten.
 3. Synchronisiert alle in der Installation konfigurierten Boxen bidirektional.
@@ -552,15 +552,15 @@ Aus diesem Projekt starten (die Geschwisterprojekte `chaosbox-android` und
    `ImageWidth` wird pro Box vererbt oder überschrieben.
    Desktop-Einstellungen ohne Android-Unterstützung bleiben auskommentiert.
 5. Baut den Desktop-Benutzer-Installer mit derselben zentralen setup.ini unter
-   `chaosbox-desktop/released/KBox-Bilder_<Version>_user.run` und den passenden
-   Deinstaller `chaosbox-desktop/released/KBox-Bilder_uninstall.run`, jeweils samt SHA-256-Prüfsumme.
+   `KBox-desktop/released/KBox-Bilder_<Version>_user.run` und den passenden
+   Deinstaller `KBox-desktop/released/KBox-Bilder_uninstall.run`, jeweils samt SHA-256-Prüfsumme.
 6. Veröffentlicht die APK unter `l1/storage/apk/` und Desktop-Installer sowie Deinstaller samt
    Prüfsummen unter `l1/storage/desktop/` mit abschließender atomarer Umbenennung.
    Auf der Homepage erscheint er unter „Linux-Installer“. Nach der Installation
    startet das eigene farbige Desktop-Symbol die zugehörige Box.
 
 Der Name bestimmt das Installationsverzeichnis: `Bilder` verwendet immer
-`~/Kbox-Bilder`. Ein abweichendes Verzeichnis kann nicht angegeben werden.
+`~/KBox-Bilder`. Ein abweichendes Verzeichnis kann nicht angegeben werden.
 
 Das Skript führt echte Uploads durch. Vorhandene lokale Einstellungen und Daten
 bleiben erhalten. Eine neue Installation erhält das Standardsetup des Installers.
@@ -599,19 +599,19 @@ are preserved. No data folders are renamed by this migration.
 
 Setup keys are English: `Title`, `Fields`, `Categories`. Legacy `Titel`, `Felder`, and `Kategorie` remain readable; saving a setup converts these keys while preserving values, comments and text snippets. Section names are already English and remain unchanged.
 
-Desktop installations named `Kbox-NAME` or `KBox-NAME` display `KBox-NAME`
+Desktop installations named `KBox-NAME` or `KBox-NAME` display `KBox-NAME`
 in the window, application header and application menu. Reinstall to refresh an
 existing menu entry, then reopen running windows.
 
 ## Benutzer-Installer (ohne sudo)
 
-`python3 scripts/build_user_installer.py` erstellt `released/chaosbox-desktop_3.16_user.run` und eine SHA-256-Prüfsumme. Mit `sh chaosbox-desktop_3.16_user.run` installieren. Der Startbefehl liegt unter `~/.local/bin/chaosbox`, die Programmdateien unter `~/.local/share/chaosbox/desktop`. Vorhandene Boxen werden aktualisiert und ihre Einstellungen beibehalten. Benötigte Systembibliotheken können mit dem beiliegenden `install-dependencies.sh` eingerichtet werden. Der Installer prüft sie vor der Installation.
+`python3 scripts/build_user_installer.py` erstellt `released/KBox-desktop_3.16_user.run` und eine SHA-256-Prüfsumme. Mit `sh KBox-desktop_3.16_user.run` installieren. Der Startbefehl liegt unter `~/.local/bin/KBox`, die Programmdateien unter `~/.local/share/KBox/desktop`. Vorhandene Boxen werden aktualisiert und ihre Einstellungen beibehalten. Benötigte Systembibliotheken können mit dem beiliegenden `install-dependencies.sh` eingerichtet werden. Der Installer prüft sie vor der Installation.
 
-Ein Installer für eine bestimmte Installation wird mit `python3 scripts/build_user_installer.py --name Bilder3 --setup ~/Kbox-Bilder3/setup.ini` gebaut. `KBox-Bilder3_3.16_user.run` installiert gezielt nach `~/KBox-Bilder3` und zeigt den Namen **KBox-Bilder3** an. Das Setup wird eingebettet; SSH-Dateipfade werden relativ zur Zielinstallation gesetzt. Private Schlüssel werden nicht übernommen, bekannte Hostschlüssel schon. Updates erhalten das vorhandene Setup der Zielinstallation.
+Ein Installer für eine bestimmte Installation wird mit `python3 scripts/build_user_installer.py --name Bilder3 --setup ~/KBox-Bilder3/setup.ini` gebaut. `KBox-Bilder3_3.16_user.run` installiert gezielt nach `~/KBox-Bilder3` und zeigt den Namen **KBox-Bilder3** an. Das Setup wird eingebettet; SSH-Dateipfade werden relativ zur Zielinstallation gesetzt. Private Schlüssel werden nicht übernommen, bekannte Hostschlüssel schon. Updates erhalten das vorhandene Setup der Zielinstallation.
 
-Für mehrere Installationen jeweils separat bauen: `python3 scripts/build_user_installer.py --name Bilder3 --setup ~/Kbox-Bilder3/setup.ini` und `python3 scripts/build_user_installer.py --name Bilder4 --setup ~/Kbox-Bilder4/setup.ini`. Jeder Download enthält sein eigenes Setup. Jede Installation erhält ein eigenes farbiges Icon im Anwendungsmenü und auf dem Desktop sowie einen eigenen Startbefehl `~/.local/bin/KBox-Bilder3` bzw. `~/.local/bin/KBox-Bilder4`. Der Desktop-Ordner wird aus `user-dirs.dirs` übernommen (sonst `~/Desktop`). Falls die Desktop-Umgebung es verlangt, beim ersten Start „Start erlauben“ wählen.
+Für mehrere Installationen jeweils separat bauen: `python3 scripts/build_user_installer.py --name Bilder3 --setup ~/KBox-Bilder3/setup.ini` und `python3 scripts/build_user_installer.py --name Bilder4 --setup ~/KBox-Bilder4/setup.ini`. Jeder Download enthält sein eigenes Setup. Jede Installation erhält ein eigenes farbiges Icon im Anwendungsmenü und auf dem Desktop sowie einen eigenen Startbefehl `~/.local/bin/KBox-Bilder3` bzw. `~/.local/bin/KBox-Bilder4`. Der Desktop-Ordner wird aus `user-dirs.dirs` übernommen (sonst `~/Desktop`). Falls die Desktop-Umgebung es verlangt, beim ersten Start „Start erlauben“ wählen.
 
-`./KBox-make-all.sh Bilder5` erzeugt und veröffentlicht entsprechend `KBox-Bilder5_<Version>_user.run` mit dem Setup aus `~/Kbox-Bilder5/setup.ini` sowie die passende APK. Jeder Name bekommt einen separaten Download und ein eigenes Desktop-Symbol.
+`./KBox-make-all.sh Bilder5` erzeugt und veröffentlicht entsprechend `KBox-Bilder5_<Version>_user.run` mit dem Setup aus `~/KBox-Bilder5/setup.ini` sowie die passende APK. Jeder Name bekommt einen separaten Download und ein eigenes Desktop-Symbol.
 
 Desktop-Benutzer-Installer binden jede Box über `[SSH.<Title>]` mit explizitem `Installation=` und `RemoteProfile=` an denselben Server-Datenbestand wie die Quellinstallation und die APK. Die lokale Installationsidentität und SSH-Schlüssel bleiben eigenständig. Bereits vorhandene Ziel-setups bleiben bei Updates erhalten.
 
@@ -619,7 +619,7 @@ Ein eigenständiger Deinstaller wird mit `python3 scripts/build_user_uninstaller
 
 Jeder Aufruf von `./KBox-make-all.sh NAME` erzeugt und veröffentlicht auch `KBox-NAME_uninstall.run`. Beispielsweise steht nach `./KBox-make-all.sh Bilder5` zusätzlich `KBox-Bilder5_uninstall.run` auf der Homepage unter „Linux-Installer“ bereit. Deinstaller erhalten Nutzerdaten und Einstellungen.
 
-KBox-make-all erzeugt die Android-setup.ini ausschließlich aus der Desktop-Installation und übergibt sie als externe Datei über `KBOX_SETUP_FILE` an den Android-Build. Im Android-Projekt wird keine Konfigurationsvorlage mehr gepflegt.
+KBox-make-all erzeugt die Android-setup.ini ausschließlich aus der Desktop-Installation und übergibt sie als externe Datei über `KBox_SETUP_FILE` an den Android-Build. Im Android-Projekt wird keine Konfigurationsvorlage mehr gepflegt.
 
 SFTP uploads batches of media payloads over up to four independent channels,
 falling back to the main channel when the server refuses additional channels.
@@ -696,3 +696,13 @@ Missing or other values hide dates. Dates use `1.12.2026` and the same inference
 If the text cannot fit at that size, reduce the font size or grid density.
 Omitting this key retains automatic comment sizing. These settings are included
 in saved poster projects.
+
+## KBox naming compatibility
+
+New code and distribution files use **KBox**. Existing installation directories
+and configured dataset identities are reused. The historical XMP namespace URI
+and `.chaosbox-sync` journal directory remain stable for exchange with existing
+apps and data. XMP now uses the `KBox` prefix; XML namespace identity is unchanged.
+Old setup environment variables and web configuration keys remain accepted as
+fallbacks. Existing GitHub repository URLs remain valid; local tooling also
+accepts the new `KBox-desktop`, `KBox-android` and `KBox-kner-at` directory names.

@@ -2,7 +2,7 @@ import os,sys,tempfile,unittest,threading,stat,json,types,time
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from chaos_sync import Store,atomic,canonical
+from KBox_sync import Store,atomic,canonical
 import sync_transport
 
 class FileSftp:

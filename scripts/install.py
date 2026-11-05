@@ -13,6 +13,7 @@ import sys
 PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT / "src"))
 import core
+from legacy_names import application_bases, repository
 
 
 def desktop_directory(home):
@@ -34,8 +35,9 @@ def desktop_directory(home):
 def installed_roots(home):
     """Read registered installation paths without executing their launchers."""
     roots = []
-    installations = Path(home) / ".local/share/chaosbox/installations"
-    for launcher in sorted(installations.glob("*/run-desktop.sh")):
+    launchers = [launcher for base in application_bases(home)
+                 for launcher in (base / "installations").glob("*/run-desktop.sh")]
+    for launcher in sorted(launchers):
         for line in launcher.read_text(encoding="utf-8").splitlines():
             if not line.startswith("exec "):
                 continue
@@ -63,7 +65,7 @@ def install_all(home=None, credentials=True, installdir=None):
     home = Path.home() if home is None else Path(home)
     roots = [installdir] if installdir is not None else installed_roots(home)
     if not roots:
-        roots = [home / "ChaosBox"]
+        roots = [home / "KBox"]
     return [install(home, credentials=credentials, installdir=root) for root in roots]
 
 
@@ -71,19 +73,19 @@ def install(home=None, credentials=True, installdir=None):
     home = Path.home() if home is None else Path(home)
     source = PROJECT
     payload = source / "src"
-    settings = core.Settings(installdir if installdir is not None else home / "ChaosBox")
+    settings = core.Settings(installdir if installdir is not None else home / "KBox")
     seed_assets = not settings.path.exists()
     settings.root.mkdir(parents=True, exist_ok=True)
     if seed_assets and (source / "install-defaults.json").is_file():
         core.atomic_write(settings.path, (payload / "setup.ini").read_bytes())
         settings.reload()
     elif seed_assets:
-        settings.ensure(default_box="ChaosBox")
+        settings.ensure(default_box="KBox")
     else:
         settings.reload()
-    shared = home / ".local/share/chaosbox/desktop"
+    shared = home / ".local/share/KBox/desktop"
     shared.mkdir(parents=True, exist_ok=True)
-    for name in ("VERSION", "app.py", "core.py", "poster_project.py", "error_messages.py", "chaos_sync.py", "sync_transport.py", "sync-data.py", "cleanup-sync.py", "i18n.py", "markdown_render.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
+    for name in ("VERSION", "app.py", "core.py", "poster_project.py", "error_messages.py", "KBox_sync.py", "chaos_sync.py", "legacy_names.py", "sync_transport.py", "sync-data.py", "cleanup-sync.py", "i18n.py", "markdown_render.py", "setup.ini", "KBox.svg", "KBox.png"):
         origin = source / "VERSION" if name == "VERSION" else payload / name
         if name in ("sync-data.py", "cleanup-sync.py"):
             origin = source / "scripts" / name
@@ -93,14 +95,17 @@ def install(home=None, credentials=True, installdir=None):
     target.mkdir(parents=True, exist_ok=True)
     # Upgrade launchers produced by the per-box installer, retaining their
     # installation arguments verbatim (including shell quoting and "$@").
-    for existing in installations.glob("*/run-desktop.sh"):
+    for existing in [launcher for base in application_bases(home)
+                     for launcher in (base / "installations").glob("*/run-desktop.sh")]:
         old_command = f'exec /usr/bin/python3 {shlex.quote(str(existing.parent / "desktop/app.py"))} '
         new_command = f'exec /usr/bin/python3 {shlex.quote(str(shared / "app.py"))} '
         script = existing.read_text(encoding="utf-8")
+        for base in application_bases(home):
+            script = script.replace(str(base / "desktop/app.py"), str(shared / "app.py"))
         migrated = "".join(new_command + line[len(old_command):] if line.startswith(old_command) else line
                            for line in script.splitlines(keepends=True))
         migrated = migrated.replace(" --installdir=", " ").replace(" --installdir ", " ")
-        if migrated != script:
+        if migrated != existing.read_text(encoding="utf-8"):
             core.atomic_write(existing, migrated, mode=0o755)
     icon = shared.parent / "icons" / f"{settings.app_id}.png"
     icon_data = io.BytesIO()
@@ -111,10 +116,10 @@ def install(home=None, credentials=True, installdir=None):
               f'exec /usr/bin/python3 {shlex.quote(str(shared / "app.py"))} '
               f'{shlex.quote(str(settings.root))} "$@"\n')
     core.atomic_write(launcher, script, mode=0o755)
-    command = home / ".local/bin/chaosbox"
+    command = home / ".local/bin/KBox"
     core.atomic_write(command, '#!/bin/sh\nexec ' + shlex.quote(str(launcher)) + ' "$@"\n', mode=0o755)
     named_command = home / ".local/bin" / settings.app_id
-    if settings.root.name.casefold().startswith("kbox-"):
+    if settings.root.name.casefold().startswith("KBox-".casefold()):
         named_command = home / ".local/bin" / settings.title
     core.atomic_write(named_command, '#!/bin/sh\nexec ' + shlex.quote(str(launcher)) + ' "$@"\n', mode=0o755)
     state = settings.state_dir
@@ -135,7 +140,7 @@ def install(home=None, credentials=True, installdir=None):
                             "-C", settings.app_id, "-f", str(key)], check=True)
         os.chmod(key, 0o600)
         # Host identities may be shared; private authentication keys may not.
-        assets = PROJECT.parent / "chaosbox-android/app/src/main/assets"
+        assets = repository(PROJECT.parent, "KBox-android") / "app/src/main/assets"
         for name in ("known_hosts",):
             destination = credential_dir / name
             seed = source / "initial_known_hosts"
@@ -165,7 +170,7 @@ def install(home=None, credentials=True, installdir=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Update all existing installations, or create ~/ChaosBox on first install")
+    parser = argparse.ArgumentParser(description="Update all existing installations, or create ~/KBox on first install")
     parser.add_argument("--installdir", type=Path,
                         help="Install or update a specific box (shared app updates apply to all boxes)")
     args = parser.parse_args()

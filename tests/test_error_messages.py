@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from error_messages import describe
-from chaos_sync import Store
+from KBox_sync import Store
 
 class ErrorMessagesTest(unittest.TestCase):
     def test_collision_retains_local_file_and_explains_recovery(self):

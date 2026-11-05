@@ -1,16 +1,16 @@
-# ChaosBox – Systemdokumentation
+# KBox – Systemdokumentation
 
 Diese Dokumentation beschreibt Desktop, Android und Web als ein Gesamtsystem: die wichtigsten Bausteine, ihre Zuständigkeiten und die Schnittstellen, über die sie Konfiguration, Daten und Veröffentlichungen austauschen. Das Synchronisationsformat ist in [`SYNC-PROTOCOL.md`](SYNC-PROTOCOL.md) ausführlich festgehalten; dieses Dokument erklärt, wie die Komponenten darin zusammenspielen.
 
 ## 1. Überblick
 
-ChaosBox besteht aus drei Anwendungen in drei gemeinsam versionierten Projekten:
+KBox besteht aus drei Anwendungen in drei gemeinsam versionierten Projekten:
 
 | Projekt | Aufgabe | Zentrale Bausteine |
 | --- | --- | --- |
-| `chaosbox-desktop` | Bilder und Datensätze am Desktop verwalten, synchronisieren und Installationspakete bauen | Tk-Oberfläche, Python-Domänenlogik, Journal und Transport |
-| `chaosbox-android` | Bilder und Datensätze mobil verwalten und synchronisieren | Android-Oberfläche, lokale Speicherverwaltung, Journal und SFTP |
-| `chaosbox-kner-at` | Synchronisierte Daten im Web anzeigen und Installer/APKs bereitstellen | PHP-Anwendung, Datenkatalog, Bildzugriff und Download-Endpunkte |
+| `KBox-desktop` | Bilder und Datensätze am Desktop verwalten, synchronisieren und Installationspakete bauen | Tk-Oberfläche, Python-Domänenlogik, Journal und Transport |
+| `KBox-android` | Bilder und Datensätze mobil verwalten und synchronisieren | Android-Oberfläche, lokale Speicherverwaltung, Journal und SFTP |
+| `KBox-kner-at` | Synchronisierte Daten im Web anzeigen und Installer/APKs bereitstellen | PHP-Anwendung, Datenkatalog, Bildzugriff und Download-Endpunkte |
 
 Die Clients schreiben nicht in eine zentrale Datenbank. Jeder Client besitzt eine lokale Installation und gleicht Änderungen über ein unveränderliches Journal auf dem Webserver ab. Die Webanwendung liest die daraus erzeugten Dateien und stellt sie dar.
 
@@ -47,7 +47,7 @@ Die Darstellung `JPG/` und `TXT/` ist eine Projektion des zusammengeführten Jou
 
 ### 2.1 Desktop
 
-Der Desktop ist eine Python-/Tk-Anwendung für Ubuntu. Die Einstiegsschicht in `src/app.py` verwaltet Fenster, Dialoge, Medienauswahl, Bearbeitung und Hintergrundaktionen. `src/core.py` bildet die Domänenschicht: Sie liest `setup.ini`, ermittelt Profile, verwaltet Medien und JSON-Datensätze, baut Suchindizes und koordiniert Synchronisation. `src/chaos_sync.py` implementiert den plattformübergreifenden Journalkern. `src/sync_transport.py` überträgt Journaldateien und aktualisiert die Dateiprojektion.
+Der Desktop ist eine Python-/Tk-Anwendung für Ubuntu. Die Einstiegsschicht in `src/app.py` verwaltet Fenster, Dialoge, Medienauswahl, Bearbeitung und Hintergrundaktionen. `src/core.py` bildet die Domänenschicht: Sie liest `setup.ini`, ermittelt Profile, verwaltet Medien und JSON-Datensätze, baut Suchindizes und koordiniert Synchronisation. `src/KBox_sync.py` implementiert den plattformübergreifenden Journalkern. `src/sync_transport.py` überträgt Journaldateien und aktualisiert die Dateiprojektion.
 
 Die ausführbaren Einstiege liegen in `scripts/`: etwa `run-desktop.sh`, `install-desktop.sh`, `sync-data.py` sowie der Gesamtbuild `make_all.py`. Der Aufruf `KBox-make-all.sh` bleibt im Projektstamm und delegiert an `scripts/make_all.py`.
 
@@ -73,7 +73,7 @@ Jede Android-Installation besitzt ihr eigenes Verzeichnis unter dem ausgewählte
 
 ### 2.3 Web
 
-Die PHP-Anwendung ist die Anzeige- und Download-Schicht. `ChaosBoxSync` liest und prüft Journalinformationen; `ChaosBoxCatalog` bereitet die synchronisierten Boxen für die Webansicht auf. `public/index.php` liefert die Hauptansicht, `public/image.php` bedient kontrollierte Bildabrufe. `public/apk.php` und `public/installer.php` listen beziehungsweise liefern veröffentlichte Installationspakete.
+Die PHP-Anwendung ist die Anzeige- und Download-Schicht. `KBoxSync` liest und prüft Journalinformationen; `KBoxCatalog` bereitet die synchronisierten Boxen für die Webansicht auf. `public/index.php` liefert die Hauptansicht, `public/image.php` bedient kontrollierte Bildabrufe. `public/apk.php` und `public/installer.php` listen beziehungsweise liefern veröffentlichte Installationspakete.
 
 Die Webanwendung ist kein Schreibclient des Journals. Sie liest die synchronisierten Dateien und aktualisiert bei Bedarf ihren Webkatalog unter `.indices/`. Installer und APKs liegen getrennt vom Profildatenbestand unter `storage/desktop/` beziehungsweise `storage/apk/`.
 
@@ -169,7 +169,7 @@ Näheres zu Operationen, Validierung, Wiederherstellung, Konfliktauflösung und 
 | Synchronisationsjournal | Desktop/Android ↔ Server | Dateien unter `.chaosbox-sync/`; validierte JSON-Ops und SHA-256-Blobs, kein Zeitstempel-Merge |
 | SSH/SFTP | Desktop/Android → Server | SSH-Authentisierung mit bekanntem Hostschlüssel; Android nur SFTP, Desktop SFTP oder SSH-basierter Tar-/rsync-Transport |
 | HTTP/HTTPS | Browser → Web | PHP-Endpunkte für Ansicht, Bilder, APK- und Installerdownloads; der Browser verändert das Journal nicht |
-| Build-Übergabe | Desktop-Build → Android | gemeinsame `VERSION`, temporäres Setup über `KBOX_SETUP_FILE`, Installationsname und benötigte Android-Assets |
+| Build-Übergabe | Desktop-Build → Android | gemeinsame `VERSION`, temporäres Setup über `KBox_SETUP_FILE`, Installationsname und benötigte Android-Assets |
 | Veröffentlichung | Desktop-Build → Webserver | Webcode per Uploadskript; fertige APKs unter `storage/apk/`, Desktop-Pakete und Prüfsummen unter `storage/desktop/` |
 
 Die SSH-Identität und der bekannte Hostschlüssel sind lokale Zugangsdaten. Unbekannte Hostschlüssel werden abgelehnt. Der Webserver muss den Profildatenbestand lesen können; Schreibrechte der Webanwendung sind auf ihren Katalog-/Cachebereich begrenzt.

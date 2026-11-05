@@ -10,10 +10,10 @@ class UninstallTests(unittest.TestCase):
     def test_preserves_data_and_keeps_shared_app_until_last_launcher(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
-            base = home / ".local/share/chaosbox"
+            base = home / ".local/share/KBox"
             shared = base / "desktop"
             shared.mkdir(parents=True)
-            for name in ("app.py", "core.py", "markdown_render.py", "setup.ini", "chaosbox.svg", "chaosbox.png"):
+            for name in ("app.py", "core.py", "markdown_render.py", "setup.ini", "KBox.svg", "KBox.png"):
                 (shared / name).write_text("application")
             (shared / "unknown.txt").write_text("keep")
             roots = [home / "one box", home / "two box"]
@@ -26,7 +26,7 @@ class UninstallTests(unittest.TestCase):
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_bytes(b"preserved")
                     preserved[path] = path.read_bytes()
-                app_id = "chaosbox-" + hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:16]
+                app_id = "KBox-" + hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:16]
                 launcher = base / "installations" / app_id / "run-desktop.sh"
                 launcher.parent.mkdir(parents=True)
                 launcher.write_text("launcher")
@@ -54,7 +54,7 @@ class UninstallTests(unittest.TestCase):
             outside.mkdir()
             sentinel = outside / "app.py"
             sentinel.write_text("keep")
-            base = home / ".local/share/chaosbox"
+            base = home / ".local/share/KBox"
             base.mkdir(parents=True)
             (base / "desktop").symlink_to(outside, target_is_directory=True)
             with self.assertRaises(ValueError):
@@ -65,7 +65,7 @@ class UninstallTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             root, removed = uninstall.uninstall(home)
-            self.assertEqual(root, home / "ChaosBox")
+            self.assertEqual(root, home / "KBox")
             self.assertEqual(removed, [])
             self.assertEqual(list(home.iterdir()), [])
 
@@ -86,7 +86,7 @@ class UninstallTests(unittest.TestCase):
             with patch.dict(os.environ, env):
                 other = install.install(home, credentials=False, installdir=home / 'KBox-Bilder8')
                 targets = [install.install(home, credentials=False, installdir=home / directory)
-                           for directory in ('Kbox-Bilder7', 'KBox-Bilder7')]
+                           for directory in ('KBox-Bilder7', 'KBox-Bilder7')]
             preserved = {}
             for _, setup, _ in targets:
                 for name in ('Box/JPG/photo.jpg', '.state/credentials/private-key'):
@@ -104,14 +104,14 @@ class UninstallTests(unittest.TestCase):
             for target, _, desktop in targets:
                 self.assertFalse((target / 'run-desktop.sh').exists())
                 self.assertFalse(desktop.exists())
-                self.assertFalse((home / '.local/share/chaosbox/icons' / f'{target.name}.png').exists())
+                self.assertFalse((home / '.local/share/KBox/icons' / f'{target.name}.png').exists())
             self.assertFalse((home / '.local/bin/KBox-Bilder7').exists())
-            self.assertFalse((home / '.local/bin/chaosbox').exists())
+            self.assertFalse((home / '.local/bin/KBox').exists())
             self.assertFalse((home / 'My Desktop/KBox-Bilder7.desktop').exists())
             self.assertEqual({p: p.read_bytes() for p in preserved}, preserved)
             self.assertEqual({p: p.read_bytes() for p in other_files}, other_files)
-            self.assertTrue((home / '.local/share/chaosbox/desktop/app.py').exists())
+            self.assertTrue((home / '.local/share/KBox/desktop/app.py').exists())
             with patch.dict(os.environ, env):
                 uninstall.uninstall(home, home / 'KBox-Bilder8')
-            self.assertFalse((home / '.local/share/chaosbox/desktop/VERSION').exists())
-            self.assertFalse((home / '.local/share/chaosbox/desktop/sync_transport.py').exists())
+            self.assertFalse((home / '.local/share/KBox/desktop/VERSION').exists())
+            self.assertFalse((home / '.local/share/KBox/desktop/sync_transport.py').exists())

@@ -40,7 +40,7 @@ def main():
     parser.add_argument('--screenshot', type=Path)
     args = parser.parse_args()
     root = tk.Tk()
-    root.title('ChaosBox — Markdown comment preview')
+    root.title('KBox — Markdown comment preview')
     root.geometry('720x760+10+10')
     errors = []
     root.report_callback_exception = lambda kind, error, traceback: errors.append(error)

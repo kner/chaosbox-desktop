@@ -15,8 +15,10 @@ def build(name, output=None):
     output.mkdir(parents=True, exist_ok=True)
     package = output / f'KBox-{name}_uninstall.run'
     source = (SOURCE / 'scripts/uninstall.py').read_text().split('if __name__ == "__main__":')[0]
+    compatibility = (SOURCE / 'src/legacy_names.py').read_text()
+    source = source.replace('from legacy_names import application_bases, installation_root, installation_title, LEGACY_SHARE, LEGACY_DEFAULT', compatibility)
     version = (SOURCE / 'VERSION').read_text().strip()
-    script = '#!/bin/sh\nset -eu\nexec /usr/bin/python3 - "$@" <<\'CHAOSBOX_UNINSTALL_PY\'\n'
+    script = '#!/bin/sh\nset -eu\nexec /usr/bin/python3 - "$@" <<\'KBox_UNINSTALL_PY\'\n'
     script += source
     script += f'''
 import sys
@@ -27,13 +29,13 @@ if len(sys.argv) > 1:
 print("KBox-{name} uninstaller · (c) kner.at · {version}")
 removed = []
 try:
-    for directory in ("KBox-{name}", "Kbox-{name}"):
+    for directory in ("KBox-{name}",):
         _, files = uninstall(installdir=Path.home() / directory)
         removed.extend(files)
 except (OSError, ValueError) as error:
     sys.exit(f"Uninstall failed: {{error}}")
 print(f"Removed {{len(removed)}} application files. Data, settings and SSH credentials preserved.")
-CHAOSBOX_UNINSTALL_PY
+KBox_UNINSTALL_PY
 '''
     package.write_text(script)
     package.chmod(0o755)

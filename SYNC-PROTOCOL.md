@@ -14,7 +14,7 @@ upload helper writes only this copy's setup.ini. Joining an existing Desktop
 generation is an explicit recovery/connection choice, not an automatic reset action.
 
 A web installation owns `storage/` below its installed code directory. External
-CHAOSBOX_DATA_DIR settings and storage symlinks are rejected. Removing/reinstalling
+KBox_DATA_DIR settings and storage symlinks are rejected. Removing/reinstalling
 the web directory leaves no cached data source. Legacy push/pull commands now
 require an existing --desktop-install and use only its current generation; they
 cannot select old shared journals through --source or --local-dir overrides.
@@ -22,21 +22,21 @@ cannot select old shared journals through --source or --local-dir overrides.
 Stop the clients before deleting their roots. No automatic migration or deletion
 of old data is performed; old generations can remain archived on the server.
 
-# ChaosBox-Synchronisation v1
+# KBox-Synchronisation v1
 
 Android, Desktop und Webanzeige verwenden dasselbe Journal. Der Transport
 entscheidet nicht über den Datenstand. Änderungszeiten dienen nicht zur Konfliktauflösung.
 
 ## Gemeinsames Ziel
 
-Für das Profil ChaosBox gilt auf dem ausgewählten Server:
+Für das Profil KBox gilt auf dem ausgewählten Server:
 
-- SFTP: `chaosbox-data/TXT/.chaosbox-sync/`
+- SFTP: `KBox-data/TXT/.chaosbox-sync/`
 - SSH/rsync auf dem bestehenden Webspace:
-  `/kunden/homepages/13/d983197478/htdocs/chaosbox-data/TXT/.chaosbox-sync/`
-- Webanzeige: `CHAOSBOX_DATA_DIR` zeigt auf den absoluten Ordner `chaosbox-data`.
+  `/kunden/homepages/13/d983197478/htdocs/KBox-data/TXT/.chaosbox-sync/`
+- Webanzeige: `KBox_DATA_DIR` zeigt auf den absoluten Ordner `KBox-data`.
 
-Andere Profile erhalten standardmäßig `chaosbox-data/profiles/<profilname>/TXT`.
+Andere Profile erhalten standardmäßig `KBox-data/profiles/<profilname>/TXT`.
 Gleiche Datenbestände müssen auf allen Geräten auf dasselbe Ziel zeigen;
 unterschiedliche Datenbestände brauchen unterschiedliche Ziele.
 
@@ -45,8 +45,8 @@ Desktop `setup.ini`, optional auch in der Konfiguration eines einzelnen Profils:
 ```ini
 [SSH]
 Transport=rsync
-DataDestination=chaosbox-data/TXT
-ShellDataDestination=/kunden/homepages/13/d983197478/htdocs/chaosbox-data/TXT
+DataDestination=KBox-data/TXT
+ShellDataDestination=/kunden/homepages/13/d983197478/htdocs/KBox-data/TXT
 ```
 
 `Transport=sftp`, `rsync` oder `ssh` ist möglich. `ssh` verwendet Tar-Datenströme
@@ -58,10 +58,10 @@ KnownHosts bleiben konfigurierbar. Die vorhandene Setup-Bearbeitung kann diese
 Werte ändern; zusätzlich gibt es die Desktop-CLI:
 
 ```sh
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --transport rsync
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --transport rsync
 ```
 
-Android verwendet SFTP. In `ChaosBox/Setup/setup.ini` können `[SSH]` und ein
+Android verwendet SFTP. In `KBox/Setup/setup.ini` können `[SSH]` und ein
 profilspezifisches `[SSH.Bilderbox]` Host, Port, User und DataDestination
 überschreiben. Der vorhandene private SSH-Schlüssel und KnownHosts werden
 weiterverwendet; unbekannte Hostschlüssel werden nicht automatisch akzeptiert.
@@ -72,8 +72,8 @@ Lokal bleiben Medien in JPG und Datensätze in TXT beziehungsweise im
 konfigurierten Android-JSON-Ordner. JSON-Dateien bleiben Listen von Datensätzen;
 alte Einzelobjekte und gruppierte Objekte werden beim Übernehmen unterstützt.
 Jeder Datensatz und jedes Medium erhält eine dauerhafte UUID `id` sowie eine
-`revision`. Neue Medien speichern sie in `Xmp.chaosbox.id` und
-`Xmp.chaosbox.revision`; MP4 verwendet dieselben JSON-Felder im Comment.
+`revision`. Neue Medien speichern sie in `Xmp.KBox.id` und
+`Xmp.KBox.revision`; MP4 verwendet dieselben JSON-Felder im Comment.
 Beim ersten Abgleich erhalten auch übernommene Medien diese Felder. JSON-
 Zusatzfelder und alte count/pack-Aliase bleiben erhalten.
 
@@ -148,14 +148,14 @@ Formularwerte bleiben erhalten.
 Desktop-CLI (IDs/Revisionen durch die angezeigten Werte ersetzen):
 
 ```sh
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --conflicts
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --resolve OBJECT_ID REVISION
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --history OBJECT_ID
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --restore OBJECT_ID REVISION
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --delete ~/ChaosBox/ChaosBox/TXT/a11.json --record 0
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --delete ~/ChaosBox/ChaosBox/TXT/a11.json --whole-box
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --devices
-/usr/bin/python3 scripts/sync-data.py --data ~/ChaosBox/ChaosBox --retire DEVICE_ID
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --conflicts
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --resolve OBJECT_ID REVISION
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --history OBJECT_ID
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --restore OBJECT_ID REVISION
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --delete ~/KBox/KBox/TXT/a11.json --record 0
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --delete ~/KBox/KBox/TXT/a11.json --whole-box
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --devices
+/usr/bin/python3 scripts/sync-data.py --data ~/KBox/KBox --retire DEVICE_ID
 ```
 
 Gerätebestätigungen (kind=device, action=ack) enthalten die bekannten
@@ -281,17 +281,17 @@ Explizites Installation ändert nur das Serverziel, nicht die lokale Identität.
 Desktop zeigt die ID beim Synchronisieren an. Ohne Übertragung anzeigen:
 
 ```sh
-/usr/bin/python3 scripts/sync-data.py --install-dir ~/ChaosBox --data ~/ChaosBox/ChaosBox --show-target
+/usr/bin/python3 scripts/sync-data.py --install-dir ~/KBox --data ~/KBox/KBox --show-target
 ```
 
 Android verbindet sich ausdrücklich mit einer Installation. In
-ChaosBox/Setup/setup.ini unter [SSH] oder [SSH.Profilname] eintragen:
+KBox/Setup/setup.ini unter [SSH] oder [SSH.Profilname] eintragen:
 
 ```ini
 [SSH]
-Installation=chaosbox-47ebae22f7cbec2c
+Installation=KBox-47ebae22f7cbec2c
 ; Bei abweichendem Android-Profilnamen optional:
-; RemoteProfile=chaosbox
+; RemoteProfile=KBox
 ```
 
 Die Beispiel-ID muss durch die tatsächliche Desktop-ID ersetzt werden.
@@ -304,11 +304,11 @@ Installation / Sammlung als Auswahl an. Suche, JSON-Auswahl und Bildabrufe
 bleiben im gewählten Datenbestand. Der gemeinsame Login gewährt weiterhin
 Zugriff auf alle dort sichtbaren Installationen; dies sind keine getrennten
 Benutzerkonten. Der Betreiber steuert die Sichtbarkeit über das konfigurierte
-CHAOSBOX_DATA_DIR und die darunter vorhandenen Installationen.
+KBox_DATA_DIR und die darunter vorhandenen Installationen.
 
 ```sh
 php scripts/rebuild-index.php --all
-php scripts/rebuild-index.php --installation INSTALLATIONS-ID/chaosbox
+php scripts/rebuild-index.php --installation INSTALLATIONS-ID/KBox
 ```
 
 Die bisherigen push-data/pull-data-Hilfsskripte verwenden explizite Datenziele;

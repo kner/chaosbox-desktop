@@ -1,4 +1,4 @@
-# Shared ChaosBox product version
+# Shared KBox product version
 
 Android, desktop and web share the product version in their root `VERSION` files.
 The baseline is 1.0. For each subsequent user-requested behavior or UI change,
@@ -16,7 +16,15 @@ journal, cache, XMP, or desktop-entry format schema versions.
 # User workflow shorthand
 
 When the user says `--install`, build and install the newest desktop version for
-`/home/roland/Kbox-Bilder1`, then stage, commit, and push the pending project
+`/home/roland/KBox-Bilder1`, then stage, commit, and push the pending project
 changes. Include required shared-version updates in the Android and web
 repositories. Keep the existing installation setup and data. Do not bump the
 product version solely for this workflow.
+
+# Product naming and compatibility
+
+Use `KBox` for new product names, files, code identifiers, environment variables,
+installers and paths. Historical names are permitted only for compatibility:
+existing installation/repository paths, configuration aliases, XMP namespace
+URIs and the shared sync journal path must remain readable. Preserve dataset
+identities, existing setup files, credentials and synchronization history.

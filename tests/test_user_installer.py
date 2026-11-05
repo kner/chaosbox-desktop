@@ -11,7 +11,7 @@ import core
 class UserInstallerTests(unittest.TestCase):
     @unittest.skipIf(os.getuid() == 0, 'Installer requires a normal user')
     def test_downloaded_installer_and_update_preserve_box(self):
-        with tempfile.TemporaryDirectory(prefix='chaosbox installer ') as temp:
+        with tempfile.TemporaryDirectory(prefix='KBox installer ') as temp:
             root = Path(temp)
             package = build_user_installer.build(root / 'downloads')
             home = root / 'home with spaces'
@@ -19,16 +19,16 @@ class UserInstallerTests(unittest.TestCase):
             env = {**os.environ, 'HOME': str(home)}
             for attempt in range(2):
                 subprocess.run(['sh', str(package)], env=env, check=True, capture_output=True)
-                launcher = home / '.local/bin/chaosbox'
+                launcher = home / '.local/bin/KBox'
                 self.assertTrue(os.access(launcher, os.X_OK))
                 subprocess.run([str(launcher), '--check'], env=env, check=True, capture_output=True)
-                shared = home / '.local/share/chaosbox/desktop'
+                shared = home / '.local/share/KBox/desktop'
                 self.assertEqual((shared / 'VERSION').read_bytes(), (build_user_installer.SOURCE / 'VERSION').read_bytes())
-                setup = home / 'ChaosBox/setup.ini'
+                setup = home / 'KBox/setup.ini'
                 if attempt == 0:
                     setup.write_text(setup.read_text() + '\n; preserve custom setup\n')
                     original = setup.read_bytes()
-                    key = home / 'ChaosBox/.state/credentials/id_ed25519'
+                    key = home / 'KBox/.state/credentials/id_ed25519'
                     original_key = key.read_bytes()
                 else:
                     self.assertEqual(setup.read_bytes(), original)
@@ -36,7 +36,7 @@ class UserInstallerTests(unittest.TestCase):
 
     @unittest.skipIf(os.getuid() == 0, 'Installer requires a normal user')
     def test_named_installer_embeds_setup_and_targets_only_named_box(self):
-        with tempfile.TemporaryDirectory(prefix='chaosbox named ') as temp:
+        with tempfile.TemporaryDirectory(prefix='KBox named ') as temp:
             root = Path(temp)
             setup = root / 'setup.ini'
             setup.write_text('[App]\nLanguage=de\n[Box]\nTitle=Fotos\nCategories=Reisen,Familie\n'
@@ -55,7 +55,7 @@ class UserInstallerTests(unittest.TestCase):
             # An unrelated installation must not divert a named installer.
             generic = build_user_installer.build(root / 'downloads')
             subprocess.run(['sh', str(generic)], env=env, check=True, capture_output=True)
-            unrelated = (home / 'ChaosBox/setup.ini').read_bytes()
+            unrelated = (home / 'KBox/setup.ini').read_bytes()
             for attempt in range(2):
                 subprocess.run(['sh', str(package)], env=env, check=True, capture_output=True)
                 target = home / 'KBox-Bilder3'
@@ -71,10 +71,10 @@ class UserInstallerTests(unittest.TestCase):
                 self.assertIn('KeyFile=.state/credentials/id_ed25519', text)
                 self.assertNotIn('/original/', text)
                 self.assertEqual((target / '.state/credentials/known_hosts').read_bytes(), hosts.read_bytes())
-                self.assertEqual((home / 'ChaosBox/setup.ini').read_bytes(), unrelated)
+                self.assertEqual((home / 'KBox/setup.ini').read_bytes(), unrelated)
                 desktops = list((home / '.local/share/applications').glob('*.desktop'))
                 self.assertTrue(any('Name=KBox-Bilder3\n' in p.read_text() for p in desktops))
-                command = (home / '.local/bin/chaosbox').read_text()
+                command = (home / '.local/bin/KBox').read_text()
                 import shlex
                 launcher = Path(shlex.split(command.splitlines()[1])[1])
                 self.assertIn(str(target), launcher.read_text())
@@ -88,7 +88,7 @@ class UserInstallerTests(unittest.TestCase):
     def test_two_installers_have_independent_desktop_launchers_setups_and_icons(self):
         import shlex
         from PIL import Image
-        with tempfile.TemporaryDirectory(prefix='chaosbox multi ') as temp:
+        with tempfile.TemporaryDirectory(prefix='KBox multi ') as temp:
             root = Path(temp)
             home = root / 'home'
             (home / '.config').mkdir(parents=True)
@@ -153,7 +153,7 @@ class UserInstallerTests(unittest.TestCase):
             recipient.reload()
             self.assertEqual([p.options[2]['datadestination'] for p in source.profiles],
                              [p.options[2]['datadestination'] for p in recipient.profiles])
-            android = Path(__file__).resolve().parents[2] / 'chaosbox-android'
+            android = Path(__file__).resolve().parents[2] / 'KBox-android'
             apk_blocks = core.sections(make_all.android_setup(source, android))
             for profile in source.profiles:
                 section = 'SSH.' + profile.id

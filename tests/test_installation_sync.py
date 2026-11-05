@@ -42,8 +42,8 @@ class InstallationSyncTests(unittest.TestCase):
 
     def test_directories_and_profiles_never_share_default_targets(self):
         with tempfile.TemporaryDirectory() as folder:
-            first=core.Settings(Path(folder)/'one/ChaosBox');first.ensure(default_box='ChaosBox')
-            second=core.Settings(Path(folder)/'two/ChaosBox');second.root.mkdir(parents=True)
+            first=core.Settings(Path(folder)/'one/KBox');first.ensure(default_box='KBox')
+            second=core.Settings(Path(folder)/'two/KBox');second.root.mkdir(parents=True)
             second.path.write_bytes(first.path.read_bytes());second.reload()
             self.assertNotEqual(first.installation_id,second.installation_id)
             self.assertEqual(first.installation_id,core.Settings(first.root).installation_id)
@@ -57,8 +57,8 @@ class InstallationSyncTests(unittest.TestCase):
     def test_old_defaults_and_copied_scoped_paths_are_isolated(self):
         with tempfile.TemporaryDirectory() as folder:
             s=core.Settings(folder);s.root.mkdir(exist_ok=True)
-            for destination in ('chaosbox-data/TXT','chaosbox-data/installations/other/profiles/chaosbox/TXT'):
-                s.path.write_text('[Box]\nTitel=ChaosBox\n[SSH]\nDataDestination='+destination+'\n')
+            for destination in ('KBox-data/TXT','KBox-data/installations/other/profiles/KBox/TXT'):
+                s.path.write_text('[Box]\nTitel=KBox\n[SSH]\nDataDestination='+destination+'\n')
                 s.reload();s.profile(s.default)
                 self.assertIn('/installations/'+s.installation_id+'/',s.ssh['datadestination'])
                 self.assertEqual(s.ssh['shelldatadestination'],'/kunden/homepages/13/d983197478/htdocs/'+s.ssh['datadestination'])
@@ -70,12 +70,12 @@ class InstallationSyncTests(unittest.TestCase):
         import shutil
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder)/'CBHaushalt'
-            first=core.Settings(root);first.ensure(default_box='ChaosBox')
+            first=core.Settings(root);first.ensure(default_box='KBox')
             old_id=first.installation_id;old_setup=first.path.read_bytes()
             first.profile(first.default);old_destination=first.ssh['datadestination']
             self.assertEqual(core.Settings(root).installation_id,old_id)
             shutil.rmtree(root)
-            second=core.Settings(root);second.ensure(default_box='ChaosBox')
+            second=core.Settings(root);second.ensure(default_box='KBox')
             self.assertNotEqual(second.installation_id,old_id)
             second.path.write_bytes(old_setup);second.reload();second.profile(second.default)
             self.assertNotEqual(second.ssh['datadestination'],old_destination)
@@ -88,13 +88,13 @@ class InstallationSyncTests(unittest.TestCase):
     def test_open_client_cannot_reconnect_after_directory_is_deleted(self):
         import shutil,threading
         with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder)/'CBHaushalt';settings=core.Settings(root);settings.ensure(default_box='ChaosBox')
+            root=Path(folder)/'CBHaushalt';settings=core.Settings(root);settings.ensure(default_box='KBox')
             profile=settings.profile(settings.default)
             shutil.rmtree(root)
             with self.assertRaisesRegex(ValueError,'removed or reset'):
                 core.upload(settings,profile,threading.Event())
             self.assertFalse(root.exists())
-            fresh=core.Settings(root);fresh.ensure(default_box='ChaosBox')
+            fresh=core.Settings(root);fresh.ensure(default_box='KBox')
             with self.assertRaises(ValueError):settings.assert_current()
     def test_external_index_symlink_is_rejected(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -103,8 +103,8 @@ class InstallationSyncTests(unittest.TestCase):
             with self.assertRaises(ValueError):core.Settings(root)
     def test_sync_target_is_inside_website_storage(self):
         with tempfile.TemporaryDirectory() as folder:
-            settings=core.Settings(folder);settings.ensure(default_box='ChaosBox')
-            self.assertEqual(settings.ssh['datadestination'],'l1/storage/installations/'+settings.installation_id+'/profiles/chaosbox/TXT')
+            settings=core.Settings(folder);settings.ensure(default_box='KBox')
+            self.assertEqual(settings.ssh['datadestination'],'l1/storage/installations/'+settings.installation_id+'/profiles/KBox/TXT')
             self.assertTrue(settings.ssh['shelldatadestination'].endswith('/htdocs/'+settings.ssh['datadestination']))
             settings.path.write_text('[Box]\nTitel=Parts\n[SSH]\nWebInstallation=../outside\n')
             with self.assertRaises(ValueError):settings.reload()

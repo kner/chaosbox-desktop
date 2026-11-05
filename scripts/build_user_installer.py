@@ -9,9 +9,9 @@ from pathlib import Path
 import tarfile
 
 SOURCE = Path(__file__).resolve().parent.parent
-FILES = ('VERSION', 'src/app.py', 'src/core.py', 'src/poster_project.py', 'src/error_messages.py', 'src/chaos_sync.py', 'src/sync_transport.py',
+FILES = ('VERSION', 'src/app.py', 'src/core.py', 'src/poster_project.py', 'src/error_messages.py', 'src/KBox_sync.py', 'src/chaos_sync.py', 'src/legacy_names.py', 'src/sync_transport.py',
          'scripts/sync-data.py', 'scripts/cleanup-sync.py', 'src/i18n.py', 'src/markdown_render.py',
-         'src/setup.ini', 'src/chaosbox.svg', 'src/chaosbox.png', 'scripts/install.py',
+         'src/setup.ini', 'src/KBox.svg', 'src/KBox.png', 'scripts/install.py',
          'scripts/install-desktop.sh', 'scripts/run-desktop.sh', 'scripts/install-dependencies.sh', 'README.md')
 
 
@@ -84,7 +84,7 @@ def build(output=None, name=None, setup=None):
     output = Path(output) if output else SOURCE / 'released'
     output.mkdir(parents=True, exist_ok=True)
     version = (SOURCE / 'VERSION').read_text().strip()
-    label = f'KBox-{name}' if name else 'chaosbox-desktop'
+    label = f'KBox-{name}' if name else 'KBox-desktop'
     package = output / f'{label}_{version}_user.run'
     header = '''#!/bin/sh
 set -eu

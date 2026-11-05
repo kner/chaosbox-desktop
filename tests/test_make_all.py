@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import core
 import make_all
 
-ANDROID = Path(__file__).resolve().parents[2] / 'chaosbox-android'
+ANDROID = Path(__file__).resolve().parents[2] / 'KBox-android'
 
 
 class MakeAllTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class MakeAllTests(unittest.TestCase):
              patch.object(make_all, 'make_all') as build:
             make_all.main()
         self.assertEqual(build.call_args.args[0], 'Bilder-5')
-        self.assertEqual(build.call_args.args[1], Path.home() / 'Kbox-Bilder-5')
+        self.assertEqual(build.call_args.args[1], Path.home() / 'KBox-Bilder-5')
 
     def test_export_binds_each_box_and_preserves_snippets(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -74,8 +74,8 @@ class MakeAllTests(unittest.TestCase):
             (web / 'scripts/upload-exif.sh').touch()
             with patch.object(make_all, 'run', side_effect=RuntimeError('stop after seeding')):
                 with self.assertRaisesRegex(RuntimeError, 'stop after seeding'):
-                    make_all._make_all('Haushalt', root / 'Kbox-Haushalt', android, web)
-            setup = (root / 'Kbox-Haushalt/setup.ini').read_text()
+                    make_all._make_all('Haushalt', root / 'KBox-Haushalt', android, web)
+            setup = (root / 'KBox-Haushalt/setup.ini').read_text()
             self.assertIn('[Box]\nTitle=Haushalt', setup)
             self.assertEqual(setup, make_all.initial_setup('Haushalt'))
             self.assertIn('[Poster]', setup)
@@ -87,7 +87,7 @@ class MakeAllTests(unittest.TestCase):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            install = root / 'Kbox-Bilder-5'
+            install = root / 'KBox-Bilder-5'
             install.mkdir()
             credentials = install / '.state/credentials'
             credentials.mkdir(parents=True)
@@ -123,7 +123,7 @@ class MakeAllTests(unittest.TestCase):
                     self.assertEqual((assets / 'android_copy').read_text(), 'test credential')
                     self.assertEqual((assets / 'known_hosts').read_text(), 'test credential')
                     self.assertFalse((assets / 'initial/Setup/setup.ini').exists())
-                    setup = Path(kwargs['env']['KBOX_SETUP_FILE']).read_text()
+                    setup = Path(kwargs['env']['KBox_SETUP_FILE']).read_text()
                     self.assertIn('RemoteProfile=bilder', setup)
                     self.assertIn('[SSH.Bilder]\nRemoteProfile=bilder', setup)
                     self.assertIn('[SSH]\nHost=sync.example\nPort=2222\nUser=roland\n'
@@ -192,7 +192,7 @@ class MakeAllTests(unittest.TestCase):
         import install
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp)
-            destination = home / 'Kbox-Bilder1'
+            destination = home / 'KBox-Bilder1'
             install.install(home, installdir=destination)
             hosts = destination / '.state/credentials/known_hosts'
             bundled = ANDROID / 'app/src/main/assets/known_hosts'

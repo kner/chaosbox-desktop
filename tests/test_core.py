@@ -70,7 +70,7 @@ class MetadataBatchTests(unittest.TestCase):
             self.assertEqual(core.read_metadata(image)["comment"], comment)
             self.assertEqual(json.loads(core.read_user_comment(image))["comment"], comment)
             metadata = core.open_image_metadata(image)
-            metadata.try_set_tag_string("Xmp.chaosbox.version", "1")
+            metadata.try_set_tag_string("Xmp.KBox.version", "1")
             metadata.save_file(str(image))
             self.assertEqual(core.read_metadata(image)["comment"], comment)
 
@@ -113,17 +113,17 @@ class MetadataBatchTests(unittest.TestCase):
 
 class DesktopTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="chaosbox-desktop-test-")
+        self.temp = tempfile.TemporaryDirectory(prefix="KBox-desktop-test-")
         self.root = Path(self.temp.name)
-        self.settings = core.Settings(self.root, self.root / ".config/chaosbox")
+        self.settings = core.Settings(self.root, self.root / ".config/KBox")
         template = core.DEFAULT_SETUP.read_text()
         template = ('[App]\nImageWidth=3000\nFelder=Box,Quantity,Device,Alias,Category,Comment,Package\n'
-                    '[Box]\nTitel=Chaosbox\nKategorie=Heizung\n'
+                    '[Box]\nTitel=KBox\nKategorie=Heizung\n'
                     '[Box]\nTitel=Bilderbox\nFelder=Box,,,Tags,Category,Comment\nKategorie=Familie\n\n'
                     + template[template.index('[Poster]'):])
         core.atomic_write(self.settings.path, template)
         self.settings.ensure()
-        self.profile = self.settings.profile("Chaosbox")
+        self.profile = self.settings.profile("KBox")
         self.profile.images.mkdir(parents=True)
         self.profile.data.mkdir(parents=True)
         self.record = core.validate_record(dict(zip(core.FIELDS, ["A11", "3", "Sensor", "Alias", "Elektronik", "Grüße 🎬\n東京", "Pack"])))
@@ -141,7 +141,7 @@ class DesktopTests(unittest.TestCase):
         self.assertIn("Analysiere", self.settings.snippets["chatgpt"])
         before = self.settings.path.read_text()
         self.settings.remember_category(self.profile, "New category, HEIZUNG, new CATEGORY")
-        self.assertEqual(self.settings.profile("Chaosbox").categories.count("NEW CATEGORY"), 1)
+        self.assertEqual(self.settings.profile("KBox").categories.count("NEW CATEGORY"), 1)
         self.assertNotIn("NEW CATEGORY", self.settings.profile("Bilderbox").categories)
         self.assertEqual(self.settings.snippets["chatgpt"], core.Settings(self.root, self.root / "unused").parse(before)[3]["chatgpt"])
         unchanged = self.settings.path.read_text()
@@ -185,7 +185,7 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(sibling.categories, ["LOCAL"])
         self.assertEqual(self.settings.image_width, 1200)
         self.assertEqual(self.settings.snippets["Local"], "parent")
-        self.settings.profile("Chaosbox")
+        self.settings.profile("KBox")
         self.assertEqual(self.settings.image_width, inherited_limit)
         self.assertNotIn("Local", self.settings.snippets)
         self.assertEqual(self.settings.active_path, self.settings.path)
@@ -639,7 +639,7 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(settings.state_dir, self.root / "cb2/.state")
         self.assertEqual(settings.default, settings.profiles[0].id)
         self.assertTrue(all(profile.images.parent != settings.root for profile in settings.profiles))
-        self.assertEqual(settings.title, "Chaosbox-cb2")
+        self.assertEqual(settings.title, "KBox-cb2")
         self.assertTrue(all(profile.index == settings.index for profile in settings.profiles))
         self.assertNotEqual(settings.index, self.settings.index)
 
@@ -750,7 +750,7 @@ class DesktopTests(unittest.TestCase):
         home = self.root / "preserved setup home"
         destination = home / "custom box"
         settings = core.Settings(destination)
-        settings.ensure(default_box="ChaosBox")
+        settings.ensure(default_box="KBox")
         legacy_key = destination / ".state/credentials/android_copy"
         text = settings.path.read_text().replace(str(destination / ".state/credentials/id_ed25519"),
                                                  str(legacy_key))
@@ -770,15 +770,15 @@ class DesktopTests(unittest.TestCase):
     def test_install_preserves_data_and_excludes_credentials(self):
         home = self.root / "home"
         target, setup, launcher = install.install(home, credentials=False)
-        self.assertTrue((home / ".local/share/chaosbox/desktop/app.py").is_file())
+        self.assertTrue((home / ".local/share/KBox/desktop/app.py").is_file())
         self.assertTrue(launcher.is_file())
-        settings = core.Settings(home / "ChaosBox")
+        settings = core.Settings(home / "KBox")
         settings.reload()
-        settings.remember_category(settings.profile("Chaosbox"), "Keep this")
+        settings.remember_category(settings.profile("KBox"), "Keep this")
         asset = settings.profiles[0].data / "user-record.json"
         asset.write_text("User content")
         setup_before = setup.read_bytes()
-        shared_app = home / ".local/share/chaosbox/desktop/app.py"
+        shared_app = home / ".local/share/KBox/desktop/app.py"
         shared_app.write_text("old version")
         self.assertEqual(install.install(home, credentials=False), (target, setup, launcher))
         self.assertEqual(asset.read_text(), "User content")
@@ -786,17 +786,17 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(shared_app.read_bytes(), Path(install.__file__).resolve().parent.parent.joinpath("src/app.py").read_bytes())
         settings.reload()
         self.assertIn("KEEP THIS", settings.profile(settings.default).categories)
-        self.assertFalse((home / ".config/chaosbox/credentials/android_copy").exists())
+        self.assertFalse((home / ".config/KBox/credentials/android_copy").exists())
         self.assertIn("Exec=\"", launcher.read_text())
 
     def test_installation_icons_are_distinct_stable_and_used_by_launchers(self):
         home = self.root / "icon-home"
         first = install.install(home, credentials=False, installdir=home / "first")
         second = install.install(home, credentials=False, installdir=home / "second")
-        original = Image.open(Path(core.__file__).with_name("chaosbox.png")).convert("RGBA")
+        original = Image.open(Path(core.__file__).with_name("KBox.png")).convert("RGBA")
         icons = []
         for target, setup, desktop in (first, second):
-            path = home / ".local/share/chaosbox/icons" / f"{core.Settings(setup.parent).app_id}.png"
+            path = home / ".local/share/KBox/icons" / f"{core.Settings(setup.parent).app_id}.png"
             self.assertIn(f"Icon={path}\n", desktop.read_text())
             with Image.open(path) as image:
                 self.assertEqual(image.size, original.size)
@@ -838,7 +838,7 @@ class DesktopTests(unittest.TestCase):
             _, setup, _ = install.install(home, credentials=False)
         settings = core.Settings(setup.parent)
         settings.reload()
-        self.assertEqual([profile.id for profile in settings.profiles], ["ChaosBox"])
+        self.assertEqual([profile.id for profile in settings.profiles], ["KBox"])
         self.assertEqual(settings.image_width, 2048)
         self.assertEqual(settings.profiles[0].categories, ["EXAMPLE"])
         self.assertTrue(settings.profiles[0].images.is_dir())
@@ -875,11 +875,11 @@ class DesktopTests(unittest.TestCase):
         for target, setup, desktop in (first, second):
             settings = core.Settings(setup.parent)
             settings.reload()
-            self.assertIn("Name=Chaosbox-cb2\n", desktop.read_text())
+            self.assertIn("Name=KBox-cb2\n", desktop.read_text())
             self.assertIn(f"StartupWMClass={settings.window_class}", desktop.read_text())
             import shlex
             command = shlex.split((target / "run-desktop.sh").read_text().splitlines()[-1])
-            self.assertEqual(command[2], str(home / ".local/share/chaosbox/desktop/app.py"))
+            self.assertEqual(command[2], str(home / ".local/share/KBox/desktop/app.py"))
             self.assertEqual(command[3], str(setup.parent))
             self.assertFalse((setup.parent / "JPG").exists())
             self.assertFalse((setup.parent / "TXT").exists())
@@ -892,7 +892,7 @@ class DesktopTests(unittest.TestCase):
         import shlex
         home = self.root / "home with spaces"
         first = install.install(home, credentials=False, installdir=home / "first ' box")
-        shared = home / ".local/share/chaosbox/desktop/app.py"
+        shared = home / ".local/share/KBox/desktop/app.py"
         launcher = first[0] / "run-desktop.sh"
         old_app = first[0] / "desktop/app.py"
         core.atomic_write(old_app, 'raise RuntimeError("Obsolete runtime")\n')
@@ -919,7 +919,7 @@ class DesktopTests(unittest.TestCase):
         installed = [install.install(home, installdir=root) for root in roots]
         preserved = {path: path.read_bytes() for _, setup, _ in installed
                      for path in (setup, setup.parent / ".state/credentials/id_ed25519")}
-        shared = home / ".local/share/chaosbox/desktop/app.py"
+        shared = home / ".local/share/KBox/desktop/app.py"
         shared.write_text("old version")
         for target, _, desktop in installed:
             launcher = target / "run-desktop.sh"
@@ -928,7 +928,7 @@ class DesktopTests(unittest.TestCase):
             desktop.write_text("old menu entry")
         results = install.install_all(home)
         self.assertEqual(set(results), set(installed))
-        self.assertFalse((home / "ChaosBox").exists())
+        self.assertFalse((home / "KBox").exists())
         self.assertEqual(shared.read_bytes(), Path(install.__file__).resolve().parent.parent.joinpath("src/app.py").read_bytes())
         for target, setup, desktop in results:
             command = shlex.split((target / "run-desktop.sh").read_text().splitlines()[-1])
@@ -942,7 +942,7 @@ class DesktopTests(unittest.TestCase):
         home = self.root / "automatic first install"
         first = install.install_all(home, credentials=False)
         self.assertEqual(len(first), 1)
-        self.assertEqual(first[0][1], home / "ChaosBox/setup.ini")
+        self.assertEqual(first[0][1], home / "KBox/setup.ini")
         second = install.install_all(home, credentials=False, installdir=home / "second")
         self.assertEqual(len(second), 1)
         self.assertEqual(second[0][1], home / "second/setup.ini")
@@ -951,7 +951,7 @@ class DesktopTests(unittest.TestCase):
     def test_installer_discovery_skips_stale_launchers(self):
         home = self.root / "stale home"
         existing = install.install(home, credentials=False, installdir=home / "existing")
-        stale = home / ".local/share/chaosbox/installations/stale/run-desktop.sh"
+        stale = home / ".local/share/KBox/installations/stale/run-desktop.sh"
         core.atomic_write(stale, f'exec /usr/bin/python3 app.py --installdir="{home / "removed"}" "$@"\n')
         self.assertEqual(install.installed_roots(home), [existing[1].parent])
         self.assertEqual(install.install_all(home, credentials=False), [existing])
@@ -961,7 +961,7 @@ class DesktopTests(unittest.TestCase):
         core.atomic_write(self.root / "TXT/ignored.json", '[{"box":"ignored"}]')
         entries = core.ensure_index(self.settings)
         self.assertEqual(entries, [])
-        self.assertEqual([p.id for p in self.settings.profiles], ["Chaosbox", "Bilderbox"])
+        self.assertEqual([p.id for p in self.settings.profiles], ["KBox", "Bilderbox"])
         self.assertFalse((self.root / "JPG").exists())
         core.write_index(self.settings, [core.Entry(self.root / "TXT/ignored.json", {"box": "old"}, False, 0)])
         self.assertEqual(core.ensure_index(self.settings), [])
