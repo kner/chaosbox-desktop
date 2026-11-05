@@ -466,6 +466,33 @@ class DesktopTests(unittest.TestCase):
         self.assertNotIn("modified", (self.profile.index / "records.json").read_text())
         self.assertNotIn("modified", (self.profile.index / "desktop-index.json").read_text())
 
+    def test_batch_scans_collection_once_and_registers_each_saved_file(self):
+        unrelated = core.save_media(self.picture("existing.jpg"), self.profile, self.record, 3000)
+        sources = [self.picture("one.jpg"), self.picture("two.jpg")]
+        store = core.sync_store(self.profile)
+        with patch.object(core, "sync_store", return_value=store), \
+                patch.object(store, "sources", wraps=store.sources) as scans:
+            saved = core.save_batch(sources, self.profile, self.record, 3000)
+        # One enumeration for media and one for JSON, independent of batch size.
+        self.assertEqual(scans.call_count, 2)
+        heads_before = store.heads()
+        self.assertEqual(len([op for versions in heads_before.values() for op in versions
+                              if op['kind'] == 'media']), 3)
+        self.assertTrue(unrelated.exists())
+        self.assertTrue(all(core.read_metadata(path)['revision'] for path in saved))
+        store.capture()
+        self.assertEqual(store.heads(), heads_before)
+
+    def test_save_captures_unrelated_external_edit_before_scoped_capture(self):
+        saved = core.save_media(self.picture(), self.profile, self.record, 3000)
+        box = self.profile.data / "external.json"
+        box.write_text('[{"box":"external","comment":"outside edit"}]')
+        core.save_media(saved, self.profile, dict(self.record, comment="local edit"), 3000)
+        store = core.sync_store(self.profile)
+        records = [op['record'] for versions in store.heads().values() for op in versions]
+        self.assertTrue(any(record['comment'] == "outside edit" for record in records))
+        self.assertTrue(any(record['comment'] == "local edit" for record in records))
+
     def test_box_save_removes_legacy_modified_from_all_records(self):
         path = self.profile.data / "old.json"
         path.write_text('[{"device":"A","modified":"old"},{"device":"B","modified":"old","extra":42}]')

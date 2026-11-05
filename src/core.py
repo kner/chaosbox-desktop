@@ -1954,12 +1954,21 @@ def _save_media(source, profile, metadata, image_width):
 
 def save_batch(paths, profile, record, image_width, progress=lambda _: None, records=None):
     selection = list(paths)
-    for index, source in enumerate(selection):
+    if not selection:
+        return selection
+    store = sync_store(profile)
+    with store.locked():
         try:
-            progress(f"Saving {index + 1}/{len(selection)}: {source.name}")
-            selection[index] = save_media(source, profile, records[index] if records is not None else record, image_width)
+            store.capture()
         except Exception as error:
-            raise BatchError(f"Saved {index} of {len(selection)} files. {source.name}: {error}", selection, index) from error
+            raise BatchError(f"Saved 0 of {len(selection)} files. {selection[0].name}: {error}", selection, 0) from error
+        for index, source in enumerate(selection):
+            try:
+                progress(f"Saving {index + 1}/{len(selection)}: {source.name}")
+                selection[index] = _save_registered_media(
+                    store, source, profile, records[index] if records is not None else record, image_width)
+            except Exception as error:
+                raise BatchError(f"Saved {index} of {len(selection)} files. {source.name}: {error}", selection, index) from error
     return selection
 
 
@@ -2052,7 +2061,7 @@ def save_box(path, record, selected=None):
     with store.locked():
         store.capture()
         result = _save_box(path, record, selected)
-        store.capture()
+        store.capture(paths=[Path(path)])
         return load_box(path), result[1]
 
 
@@ -2060,20 +2069,25 @@ def save_media(source, profile, metadata, image_width):
     store = sync_store(profile)
     with store.locked():
         store.capture()
-        metadata = dict(metadata)
-        if within(Path(source), profile.images):
-            relative = Path(source).resolve().relative_to(profile.images.resolve()).as_posix()
-            candidates = [op for versions in store.heads().values() for op in versions
-                          if op['kind'] == 'media' and op['path'] == relative and op['action'] == 'put']
-            matching_id = [op for op in candidates if op['id'] == metadata.get('id')]
-            candidate = matching_id[0] if len(matching_id) == 1 else candidates[0] if len(candidates) == 1 else None
-            if candidate is not None:
-                metadata.update({key: candidate['record'][key] for key in ('id', 'revision')})
-        metadata.setdefault("id", str(uuid.uuid4()))
-        result = _save_media(source, profile, metadata, image_width)
-        store.capture()
-        store.embed_media(result)
-        return result
+        return _save_registered_media(store, source, profile, metadata, image_width)
+
+
+def _save_registered_media(store, source, profile, metadata, image_width):
+    """Save one file after capture, while the caller holds the collection lock."""
+    metadata = dict(metadata)
+    if within(Path(source), profile.images):
+        relative = Path(source).resolve().relative_to(profile.images.resolve()).as_posix()
+        candidates = [op for versions in store.heads().values() for op in versions
+                      if op['kind'] == 'media' and op['path'] == relative and op['action'] == 'put']
+        matching_id = [op for op in candidates if op['id'] == metadata.get('id')]
+        candidate = matching_id[0] if len(matching_id) == 1 else candidates[0] if len(candidates) == 1 else None
+        if candidate is not None:
+            metadata.update({key: candidate['record'][key] for key in ('id', 'revision')})
+    metadata.setdefault("id", str(uuid.uuid4()))
+    result = _save_media(source, profile, metadata, image_width)
+    store.capture(paths=[result])
+    store.embed_media(result)
+    return result
 
 
 def delete_entry(path, selected=None):

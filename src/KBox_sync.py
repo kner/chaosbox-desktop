@@ -271,20 +271,35 @@ class Store:
                       and not any(part.startswith('.') for part in p.relative_to(root).parts)
                       and p.suffix.lower() in extensions)
 
-    def capture(self, check=lambda: None, progress=lambda _: None):
+    def capture(self, check=lambda: None, progress=lambda _: None, *, paths=None):
+        """Capture all local edits, or only known changed paths after a local save.
+
+        Synchronization must use the default full scan. Scoped capture is for
+        writes performed under the same lock after an initial full capture.
+        """
+        if paths is not None:paths=tuple(map(Path,paths))
         self._capture_operations=self.operations()
-        try:self._capture(check,progress)
+        try:self._capture(check,progress,paths)
         finally:self._capture_operations=None
         self.checksums()
 
-    def _capture(self, check, progress):
+    def _capture(self, check, progress, paths=None):
         """Missing files NEVER imply deletion. Capture local edits before receiving history."""
         operations = self.operations()
         materialized = self.materialized()
         labels={(op['kind'],op['path']):operation_label(op) for op in operations.values()}
         progress('Scanning local changes …')
         for kind, root, extensions in [('record', self.data, {'.json'}), ('media', self.images, {'.jpg','.jpeg','.png','.mp4'})]:
-            sources=self.sources(root, extensions)
+            if paths is None:
+                sources=self.sources(root, extensions)
+            else:
+                sources=[]
+                for path in sorted(set(map(Path, paths))):
+                    if not path.is_relative_to(root):continue
+                    relative=path.relative_to(root)
+                    if (path.suffix.lower() in extensions and path.is_file()
+                            and not any(part.startswith('.') for part in relative.parts)):
+                        sources.append(self.safe_path(kind,relative.as_posix()))
             for index,path in enumerate(sources,1):
                 check()
                 relative = path.relative_to(root).as_posix()
