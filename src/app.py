@@ -936,12 +936,7 @@ class App:
         self.variables = {key: tk.StringVar() for key in core.FIELDS if key != "comment"}
         self.variables["category"].trace_add("write", self.uppercase_category)
         self.state_file = settings.state_dir / "desktop-state.json"
-        try:
-            state = json.loads(self.state_file.read_text())
-        except (OSError, ValueError):
-            state = {}
-        self.media_folders = state.get("media_folders", {})
-        self.profile = settings.profile(settings.default)
+        self.restore_state()
         style = ttk.Style(root)
         style.theme_use("clam")
         style.configure("TButton", padding=(3, 1), width=0)
@@ -1572,6 +1567,17 @@ class App:
         self.clear()
         self.save_state()
         self.status.set(self.t("Search index: {path}", path=self.settings.index))
+
+    def restore_state(self):
+        try:
+            state = json.loads(self.state_file.read_text())
+        except (OSError, ValueError):
+            state = {}
+        if not isinstance(state, dict):
+            state = {}
+        self.media_folders = state.get("media_folders", {})
+        name = state.get("profile")
+        self.profile = self.settings.profile(name if isinstance(name, str) else self.settings.default)
 
     def save_state(self):
         if not (self.settings.root / ".installation-id").is_file(): return
@@ -2643,6 +2649,7 @@ class App:
             else:
                 self.status.set(self.t("Please wait for the current file operation to finish before closing."))
             return
+        self.save_state()
         self.closing = True
         self.executor.shutdown(wait=False, cancel_futures=True)
         self.root.destroy()

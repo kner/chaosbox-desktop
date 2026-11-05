@@ -12,3 +12,11 @@ Display the version beside the (c) kner.at credit in every app. Android reads
 VERSION at build time; keep its numeric versionCode increasing for updates.
 Desktop and web installers must include VERSION. Product versions do not change
 journal, cache, XMP, or desktop-entry format schema versions.
+
+# User workflow shorthand
+
+When the user says `--install`, build and install the newest desktop version for
+`/home/roland/Kbox-Bilder1`, then stage, commit, and push the pending project
+changes. Include required shared-version updates in the Android and web
+repositories. Keep the existing installation setup and data. Do not bump the
+product version solely for this workflow.
