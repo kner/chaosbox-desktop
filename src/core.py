@@ -963,8 +963,10 @@ def poster_photo_pages(paths, metadata, settings, *, ignore_pages=False, fixed_m
     portraits, aspects = [], []
     for path, record in zip(paths, metadata):
         with Image.open(path) as source:
-            photo = ImageOps.exif_transpose(source)
-            width, height = poster_rotated_size(photo.width, photo.height, poster_angle(record))
+            width, height = source.size
+            if source.getexif().get(274) in (5, 6, 7, 8):
+                width, height = height, width
+            width, height = poster_rotated_size(width, height, poster_angle(record))
             portraits.append(width + 1e-8 < height)
             aspects.append(width / height)
     zooms = [poster_zoom(record) for record in metadata]
@@ -1077,11 +1079,14 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
     if any(path.suffix.lower() not in {".jpg", ".jpeg", ".png"} for path in paths):
         raise ValueError("Posters require JPG or PNG images.")
     metadata = []
-    for path, record in zip(paths, read_metadata_batch(paths, progress)):
+    metadata_cache = dict(previous_layout.get("source_cache", {})) if previous_layout else {}
+    for path, record in zip(paths, read_metadata_batch(paths, progress, cache=metadata_cache)):
         metadata.append({**record, **(field_overrides or {})} if field_baseline is None else
                         edited_metadata(record, field_overrides or {}, field_baseline,
                                         mode=edit_mode, differing_fields=differing_fields, validate=False))
         metadata[-1].update((path_overrides or {}).get(path, {}))
+    source_paths = {Path(path).resolve() for path in paths}
+    metadata_cache = {path: value for path, value in metadata_cache.items() if path in source_paths}
     changed = set(changed_indices or ())
     if previous_layout is not None:
         metadata = [record if index in changed else dict(previous_layout["metadata"][index])
@@ -1150,7 +1155,8 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
         pages = poster_photo_pages(paths, metadata, settings)
     modes = poster_layout_modes(metadata, settings.fixed, pages)
     if layout_state is not None:
-        layout_state.update(metadata=[dict(record) for record in metadata], fixed_modes=list(modes), pages=[])
+        layout_state.update(metadata=[dict(record) for record in metadata], fixed_modes=list(modes), pages=[],
+                            source_cache=metadata_cache)
     outputs = []
     try:
         for number, page in enumerate(pages, 1):
@@ -1178,6 +1184,8 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
                                  for key in ("cells", "placements", "metadata", "panels")}
                 if number <= len(old_pages):
                     previous_page.update(title=old_pages[number - 1]["title"], base=old_pages[number - 1].get("base"))
+                    previous_page.update({key: old_pages[number - 1].get(key, {})
+                                          for key in ("date_cache", "caption_cache")})
                 previous_page["reflow"] = {
                     local for local, index in enumerate(indices)
                     if (number in recalculate_pages or index in changed and (old_locations[index] != number or
@@ -1218,6 +1226,29 @@ def poster_date_overlay(photo, text, font, rotation):
         raise ValueError("Poster date does not fit inside the image at POSTER-FONT-SIZE. "
                          "Reduce the font size or grid.")
     photo.alpha_composite(badge, (photo.width - badge.width, photo.height - badge.height))
+
+
+def poster_load_photo(path, size):
+    """Decode JPEGs near panel size, keeping full-resolution layout geometry.
+
+    Leave at least twice the final resolution for the Lanczos filter. PNGs
+    retain their full decode, including alpha; EXIF orientation is applied to
+    both formats before resizing.
+    """
+    with Image.open(path) as source:
+        swapped = source.getexif().get(274) in (5, 6, 7, 8)
+        width, height = source.size[::-1] if swapped else source.size
+        target_width, target_height = size
+        if width / height > target_width / target_height:
+            target_height = round(height / width * target_width)
+        elif width / height < target_width / target_height:
+            target_width = round(width / height * target_height)
+        target = (max(1, target_width), max(1, target_height))
+        if source.format == "JPEG":
+            decode_size = (target[0] * 2, target[1] * 2)
+            source.draft("RGB", decode_size[::-1] if swapped else decode_size)
+        photo = ImageOps.exif_transpose(source).convert("RGBA")
+        return photo.resize(target, Image.Resampling.LANCZOS)
 
 
 def create_poster(paths, profile, settings, progress=lambda _: None, *,
@@ -1295,12 +1326,20 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
                  if settings.font_size is not None else round(3 * scale))
     text_minimum = text_size if settings.font_size is not None else round(1 * scale)
     date_font = poster_font(text_size)
-    dates = ([poster_date(path, record) for path, record in zip(paths, metadata)]
-             if settings.date_rotation in (0, 90) else [""] * len(paths))
+    old_dates = previous_page.get("date_cache", {}) if previous_page is not None else {}
+    date_cache, dates = {}, []
+    for path, record in zip(paths, metadata):
+        if settings.date_rotation in (0, 90):
+            key = (Path(path).resolve(), file_stamp(path), str(record.get("created", "")))
+            dates.append(old_dates[key] if key in old_dates else poster_date(path, record))
+            date_cache[key] = dates[-1]
+        else:
+            dates.append("")
+    caption_cache = dict(previous_page.get("caption_cache", {})) if previous_page is not None else {}
     comments = [poster_caption(record) for record in metadata]
     captions, caption_height = markdown_render.fit(
         comments, int(cell_width), cell_height * .4, text_size, text_minimum,
-        preserve_whitespace=True)
+        preserve_whitespace=True, cache=caption_cache)
     caption_space = caption_height + (max(1, round(scale)) if caption_height else 0)
     canvas = frozen_base.copy() if frozen_base is not None else poster_background((width, height), settings.background_color, setup_dir, progress)
     if frozen_base is None:
@@ -1309,8 +1348,9 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
     output_canvas = canvas.convert("RGBA")
     if layout_state is not None:
         layout_state["base"] = output_canvas.copy()
+        layout_state.update(date_cache=date_cache, caption_cache=caption_cache)
 
-    def composite_cell(layer, cell):
+    def composite_cell(layer, cell, origin):
         left, top, right, bottom = cell
         clipped = (max(left, bounds[0]), max(top, bounds[1]),
                    min(right, bounds[2]), min(bottom, bounds[3]))
@@ -1329,7 +1369,8 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
                                          outline=panel_color(settings.frames), width=frame_width)
         panel.alpha_composite(border)
         if r - x > 2 * inset and b - y > 2 * inset:
-            interior = layer.crop((x + inset, y + inset, r - inset, b - inset))
+            ox, oy = origin
+            interior = layer.crop((x + inset - ox, y + inset - oy, r - inset - ox, b - inset - oy))
             panel.alpha_composite(interior, (inset, inset))
         output_canvas.alpha_composite(panel, (x, y))
         if layout_state is not None:
@@ -1345,58 +1386,61 @@ def create_poster(paths, profile, settings, progress=lambda _: None, *,
             if layout_state is not None:
                 layout_state["panels"][index] = (panel, position)
             continue
-        canvas = Image.new("RGBA", output_canvas.size)
-        draw = ImageDraw.Draw(canvas)
         progress(f"Poster: {index + 1}/{len(paths)} — {path.name}")
         left, top, right, bottom = cells[index]
         frame_width = max(1, round(.3 * scale))
+        origin = (max(left, bounds[0]), max(top, bounds[1]))
+        panel_size = (max(1, min(right, bounds[2]) - origin[0]),
+                      max(1, min(bottom, bounds[3]) - origin[1]))
+        canvas = Image.new("RGBA", panel_size)
+        draw = ImageDraw.Draw(canvas)
         if right <= bounds[0] or bottom <= bounds[1] or left >= bounds[2] or top >= bounds[3]:
-            composite_cell(canvas, cells[index])
+            composite_cell(canvas, cells[index], origin)
             continue
         inset = frame_width + max(0, round(settings.image_padding * scale))
         left, top, right, bottom = left + inset, top + inset, right - inset, bottom - inset
-        with Image.open(path) as source:
-            photo = ImageOps.exif_transpose(source).convert("RGBA")
-            angle = poster_angle(metadata[index])
-            if angle:
-                available_width, available_height = right - left, bottom - top
-                # Compose in the photo's original orientation, then rotate the
-                # entire photo/caption group clockwise into the panel.
-                local_width, local_height = available_width, available_height
-                if 45 <= angle % 180 <= 135:
-                    local_width, local_height = local_height, local_width
-                documents, text_height = markdown_render.fit(
-                    [comments[index]], local_width, local_height * .4,
-                    text_size, text_minimum, preserve_whitespace=True)
-                text_gap = max(1, round(scale)) if text_height else 0
-                image_height = local_height - text_height - text_gap
-                if image_height < 1:
-                    raise ValueError("No room for images below poster captions.")
-                photo = ImageOps.contain(photo, (local_width, image_height), Image.Resampling.LANCZOS)
-                poster_date_overlay(photo, dates[index], date_font, settings.date_rotation)
-                group = Image.new("RGBA", (local_width, photo.height + text_gap + text_height))
-                group.alpha_composite(photo, ((local_width - photo.width) // 2, 0))
-                markdown_render.draw_poster(ImageDraw.Draw(group), documents[0],
-                                            0, photo.height + text_gap, local_width)
-                group = group.rotate(-angle, resample=Image.Resampling.BICUBIC, expand=True)
-                group = ImageOps.contain(group, (available_width, available_height), Image.Resampling.LANCZOS)
-                canvas.alpha_composite(group, (left + (available_width - group.width) // 2,
-                                               top + (available_height - group.height) // 2))
-                composite_cell(canvas, cells[index])
-                continue
-            image_height = bottom - top - caption_space
+        left, right = left - origin[0], right - origin[0]
+        top, bottom = top - origin[1], bottom - origin[1]
+        angle = poster_angle(metadata[index])
+        if angle:
+            available_width, available_height = right - left, bottom - top
+            # Compose in the photo's original orientation, then rotate the
+            # entire photo/caption group clockwise into the panel.
+            local_width, local_height = available_width, available_height
+            if 45 <= angle % 180 <= 135:
+                local_width, local_height = local_height, local_width
+            documents, text_height = markdown_render.fit(
+                [comments[index]], local_width, local_height * .4,
+                text_size, text_minimum, preserve_whitespace=True, cache=caption_cache)
+            text_gap = max(1, round(scale)) if text_height else 0
+            image_height = local_height - text_height - text_gap
             if image_height < 1:
                 raise ValueError("No room for images below poster captions.")
-            photo = ImageOps.contain(photo, (right - left, image_height), Image.Resampling.LANCZOS)
+            photo = poster_load_photo(path, (local_width, image_height))
             poster_date_overlay(photo, dates[index], date_font, settings.date_rotation)
-            own_caption_height = captions[index].height
-            text_gap = max(1, round(scale)) if own_caption_height else 0
-            group_height = photo.height + text_gap + own_caption_height
-            photo_top = top + (bottom - top - group_height) // 2
-            canvas.alpha_composite(photo, (left + (right - left - photo.width) // 2, photo_top))
-            markdown_render.draw_poster(draw, captions[index],
-                                        left, photo_top + photo.height + text_gap, right - left)
-        composite_cell(canvas, cells[index])
+            group = Image.new("RGBA", (local_width, photo.height + text_gap + text_height))
+            group.alpha_composite(photo, ((local_width - photo.width) // 2, 0))
+            markdown_render.draw_poster(ImageDraw.Draw(group), documents[0],
+                                        0, photo.height + text_gap, local_width)
+            group = group.rotate(-angle, resample=Image.Resampling.BICUBIC, expand=True)
+            group = ImageOps.contain(group, (available_width, available_height), Image.Resampling.LANCZOS)
+            canvas.alpha_composite(group, (left + (available_width - group.width) // 2,
+                                           top + (available_height - group.height) // 2))
+            composite_cell(canvas, cells[index], origin)
+            continue
+        image_height = bottom - top - caption_space
+        if image_height < 1:
+            raise ValueError("No room for images below poster captions.")
+        photo = poster_load_photo(path, (right - left, image_height))
+        poster_date_overlay(photo, dates[index], date_font, settings.date_rotation)
+        own_caption_height = captions[index].height
+        text_gap = max(1, round(scale)) if own_caption_height else 0
+        group_height = photo.height + text_gap + own_caption_height
+        photo_top = top + (bottom - top - group_height) // 2
+        canvas.alpha_composite(photo, (left + (right - left - photo.width) // 2, photo_top))
+        markdown_render.draw_poster(draw, captions[index],
+                                    left, photo_top + photo.height + text_gap, right - left)
+        composite_cell(canvas, cells[index], origin)
     return save_poster_canvas(output_canvas, profile, settings, width, height)
 
 
@@ -1655,21 +1699,33 @@ def read_metadata(path):
     return read_metadata_batch([path])[0]
 
 
-def read_metadata_batch(paths, progress=lambda _: None):
+def file_stamp(path):
+    info = Path(path).stat()
+    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns
+
+
+def read_metadata_batch(paths, progress=lambda _: None, *, cache=None):
     """Read each file once, retaining input order and independent duplicate records."""
     paths = [Path(path).resolve() for path in paths]
     unique = list(dict.fromkeys(paths))
     records = {}
     for index, path in enumerate(unique, 1):
         try:
-            if path.suffix.lower() == ".mp4":
-                raw, tags = video_metadata(path)
-                record = parse_metadata(raw)
+            stamp = file_stamp(path) if cache is not None else None
+            cached = cache.get(path) if cache is not None else None
+            if cached is not None and cached[0] == stamp:
+                record = dict(cached[1])
             else:
-                metadata = open_image_metadata(path)
-                record = image_record(path, metadata)
-                tags = image_capture_tags(metadata)
-            record["created"] = media_created(path, record.get("created"), tags=tags)
+                if path.suffix.lower() == ".mp4":
+                    raw, tags = video_metadata(path)
+                    record = parse_metadata(raw)
+                else:
+                    metadata = open_image_metadata(path)
+                    record = image_record(path, metadata)
+                    tags = image_capture_tags(metadata)
+                record["created"] = media_created(path, record.get("created"), tags=tags)
+                if cache is not None and file_stamp(path) == stamp:
+                    cache[path] = (stamp, dict(record))
             records[path] = record
         except Exception as error:
             raise ValueError(f"{path}: {error}") from error

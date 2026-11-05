@@ -300,11 +300,22 @@ def layout(blocks, width, size):
     return Layout(lines)
 
 
-def fit(texts, width, max_height, preferred, minimum, *, preserve_whitespace=False):
+def fit(texts, width, max_height, preferred, minimum, *, preserve_whitespace=False, cache=None):
     documents = [parse(text, preserve_whitespace=preserve_whitespace) for text in texts]
     for size in range(max(1, preferred), max(1, minimum) - 1, -1):
         try:
-            layouts = [layout(blocks, width, size) for blocks in documents]
+            layouts = []
+            for blocks in documents:
+                key = (blocks, width, size)
+                document = cache.get(key) if cache is not None else None
+                if document is None:
+                    document = layout(blocks, width, size)
+                    if cache is not None:
+                        # Retain a bounded set of caption sizes for live edits.
+                        if len(cache) >= 128:
+                            cache.pop(next(iter(cache)))
+                        cache[key] = document
+                layouts.append(document)
         except ValueError:
             continue
         height = max((item.height for item in layouts), default=0)
