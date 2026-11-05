@@ -98,11 +98,11 @@ class CommentEditor(ttk.Notebook):
             self.pending = None
 
 
-def user_comment_preview(path):
+def user_comment_preview(path, translator=translate):
     # Keep the original Markdown source, including its whitespace and line breaks.
     metadata = core.parse_metadata(core.read_user_comment(path))
-    fields = [str(metadata.get(key) or "") for key in ("box", "category", "comment")]
-    return " | ".join(fields) if any(fields) else ""
+    return "\n".join(f"{translator(label)}: {metadata.get(key, '') if metadata.get(key) is not None else ''}"
+                     for key, label in zip(core.FIELDS, core.LABELS))
 
 
 class ImageCanvas(tk.Canvas):
@@ -770,7 +770,7 @@ class MediaGrid(ttk.Frame):
         self.cell_height = self.thumb_size + 40
         if self.show_user_comment:
             chars_per_line = max(1, int((self.cell_width - 14) / 10))
-            comment_lines = 1
+            comment_lines = len(core.FIELDS)
             for comment in self.comments.values():
                 lines = sum(max(1, (len(line) + chars_per_line - 1) // chars_per_line)
                             for line in (comment or "").split("\n")) or 1
@@ -877,7 +877,7 @@ class MediaGrid(ttk.Frame):
             for index in getattr(self, "visible", []):
                 if index not in self.comments:
                     self.comment_loading = index
-                    self.comment_future = self.comment_worker.submit(user_comment_preview, self.paths[index])
+                    self.comment_future = self.comment_worker.submit(user_comment_preview, self.paths[index], self.t)
                     break
         self.pending = self.after(60, self.poll)
 
