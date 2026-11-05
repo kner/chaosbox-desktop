@@ -1151,49 +1151,53 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
     if layout_state is not None:
         layout_state.update(metadata=[dict(record) for record in metadata], fixed_modes=list(modes), pages=[])
     outputs = []
-    for number, page in enumerate(pages, 1):
-        progress(f"Poster page: {number}/{len(pages)}")
-        indices = [item[0] for item in page]
-        page_title = next((str(metadata[index].get("box", "")).strip()
-                           for index in indices if str(metadata[index].get("box", "")).strip()), "")
-        page_state = {}
-        render_options = {}
-        if layout_state is not None:
-            render_options["layout_state"] = page_state
-        if previous_layout is not None:
-            old_pages = previous_layout["pages"]
-            if number <= len(old_pages):
-                old_title = old_pages[number - 1]["title"]
-                title_changed = any(index in changed and metadata[index].get("box", "") !=
-                                    previous_layout["metadata"][index].get("box", "") for index in indices)
-                if not title_changed or len(changed) != len(paths):
-                    page_title = old_title
-            cached = {item[0]: (old_page, local) for old_page in old_pages
-                      for local, item in enumerate(old_page["placements"])}
-            old_locations = {item[0]: old_number for old_number, old_page in enumerate(old_pages, 1)
-                             for item in old_page["placements"]}
-            previous_page = {key: [cached[index][0][key][cached[index][1]] for index in indices]
-                             for key in ("cells", "placements", "metadata", "panels")}
-            if number <= len(old_pages):
-                previous_page.update(title=old_pages[number - 1]["title"], base=old_pages[number - 1].get("base"))
-            previous_page["reflow"] = {
-                local for local, index in enumerate(indices)
-                if (number in recalculate_pages or index in changed and (old_locations[index] != number or
-                    previous_layout.get("fixed_modes", modes)[index] != modes[index]))}
-            render_options.update(previous_page=previous_page,
-                                  changed_indices={local for local, index in enumerate(indices) if index in changed or number in recalculate_pages})
-        def page_progress(message):
-            progress(f"Page {number}/{len(pages)} · {message}")
-        outputs.append(create_poster([paths[index] for index in indices], profile, settings, page_progress,
-                                     title=page_title,
-                                     metadata=[metadata[index] for index in indices],
-                                     placements=[item[1:] for item in page], setup_dir=setup_dir,
-                                     fixed_modes=[modes[index] for index in indices],
-                                     selection_numbers=[index + 1 for index in indices], **render_options))
-        if layout_state is not None:
-            page_state["placements"] = list(page)
-            page_state["title"] = page_title
-            layout_state["pages"].append(page_state)
+    try:
+        for number, page in enumerate(pages, 1):
+            progress(f"Poster page: {number}/{len(pages)}")
+            indices = [item[0] for item in page]
+            page_title = next((str(metadata[index].get("box", "")).strip()
+                               for index in indices if str(metadata[index].get("box", "")).strip()), "")
+            page_state = {}
+            render_options = {}
+            if layout_state is not None:
+                render_options["layout_state"] = page_state
+            if previous_layout is not None:
+                old_pages = previous_layout["pages"]
+                if number <= len(old_pages):
+                    old_title = old_pages[number - 1]["title"]
+                    title_changed = any(index in changed and metadata[index].get("box", "") !=
+                                        previous_layout["metadata"][index].get("box", "") for index in indices)
+                    if not title_changed or len(changed) != len(paths):
+                        page_title = old_title
+                cached = {item[0]: (old_page, local) for old_page in old_pages
+                          for local, item in enumerate(old_page["placements"])}
+                old_locations = {item[0]: old_number for old_number, old_page in enumerate(old_pages, 1)
+                                 for item in old_page["placements"]}
+                previous_page = {key: [cached[index][0][key][cached[index][1]] for index in indices]
+                                 for key in ("cells", "placements", "metadata", "panels")}
+                if number <= len(old_pages):
+                    previous_page.update(title=old_pages[number - 1]["title"], base=old_pages[number - 1].get("base"))
+                previous_page["reflow"] = {
+                    local for local, index in enumerate(indices)
+                    if (number in recalculate_pages or index in changed and (old_locations[index] != number or
+                        previous_layout.get("fixed_modes", modes)[index] != modes[index]))}
+                render_options.update(previous_page=previous_page,
+                                      changed_indices={local for local, index in enumerate(indices) if index in changed or number in recalculate_pages})
+            def page_progress(message):
+                progress(f"Page {number}/{len(pages)} · {message}")
+            outputs.append(create_poster([paths[index] for index in indices], profile, settings, page_progress,
+                                         title=page_title,
+                                         metadata=[metadata[index] for index in indices],
+                                         placements=[item[1:] for item in page], setup_dir=setup_dir,
+                                         fixed_modes=[modes[index] for index in indices],
+                                         selection_numbers=[index + 1 for index in indices], **render_options))
+            if layout_state is not None:
+                page_state["placements"] = list(page)
+                page_state["title"] = page_title
+                layout_state["pages"].append(page_state)
+    except Cancelled as error:
+        error.outputs = outputs
+        raise
     return outputs
 
 

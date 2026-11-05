@@ -112,7 +112,7 @@ class PosterCancellationTests(unittest.TestCase):
         app.cancel_poster_button.configure.assert_called_with(state='disabled')
         app.status.set.assert_called_with('Poster creation cancelled.')
 
-    def test_cancel_after_render_discards_temporary_result(self):
+    def test_cancel_after_render_shows_completed_result(self):
         app = self.app()
         result = ([Path('preview.jpg')], Mock())
         done = Mock()
@@ -121,8 +121,8 @@ class PosterCancellationTests(unittest.TestCase):
         rendered = execute()
         app.cancel_poster_creation()
         completed(rendered)
-        result[1].cleanup.assert_called_once()
-        done.assert_not_called()
+        result[1].cleanup.assert_not_called()
+        done.assert_called_once_with(result)
         app.error.assert_not_called()
 
     def test_completion_keeps_output_and_errors_remain_visible(self):
@@ -138,3 +138,28 @@ class PosterCancellationTests(unittest.TestCase):
         app.poster_task(lambda progress: None, done)
         app.task.call_args.args[2](error)
         app.error.assert_called_once_with(error)
+
+    def test_cancel_retains_completed_pages_with_saveable_layout(self):
+        from tempfile import TemporaryDirectory
+        from PIL import Image
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            paths = [root / f'{index}.png' for index in range(3)]
+            for path in paths:
+                Image.new('RGB', (40, 40), 'red').save(path)
+            layout = {}
+            def progress(message):
+                if message.startswith('Page 2/3 · Poster:'):
+                    raise core.Cancelled('stop')
+            with self.assertRaises(core.Cancelled) as caught:
+                core.create_posters(paths, SimpleNamespace(images=root / 'JPG'),
+                                    core.PosterSettings(200, 200, 200, 1, 1, True),
+                                    progress, layout_state=layout)
+            outputs = caught.exception.outputs
+            self.assertEqual(len(outputs), 1)
+            self.assertTrue(outputs[0].is_file())
+            kept = App.completed_poster_sources(paths, layout)
+            self.assertEqual(kept, paths[:1])
+            self.assertEqual(len(layout['metadata']), 1)
+            self.assertEqual(len(layout['pages']), 1)
+            self.assertEqual(layout['pages'][0]['placements'][0][0], 0)

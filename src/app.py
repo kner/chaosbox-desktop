@@ -1980,6 +1980,13 @@ class App:
                                               path_overrides=records, setup_dir=preview.setup_dir,
                                               layout_state=layout)
                 return outputs, temporary
+            except core.Cancelled as error:
+                outputs = getattr(error, "outputs", [])
+                if not outputs:
+                    temporary.cleanup()
+                    raise
+                paths[:] = self.completed_poster_sources(paths, layout)
+                return outputs, temporary
             except Exception:
                 temporary.cleanup()
                 raise
@@ -1989,6 +1996,7 @@ class App:
                 temporary.cleanup()
                 return
             preview.replace(outputs, temporary, preview.directory)
+            preview.source_paths = list(paths)
             preview.settings, preview.layout_state = settings, layout
             self.status.set(self.t("Poster preview ready. Save posters to keep the result."))
         self.poster_task(work, done)
@@ -2053,6 +2061,17 @@ class App:
             self.cancel_poster_button.configure(state="disabled")
             self.status.set(self.t("Cancelling poster creation …"))
 
+    @staticmethod
+    def completed_poster_sources(paths, layout):
+        # A partial preview/project must refer only to the completed pages.
+        indices = sorted({item[0] for page in layout["pages"] for item in page["placements"]})
+        remap = {old: new for new, old in enumerate(indices)}
+        for page in layout["pages"]:
+            page["placements"] = [(remap[index], *position) for index, *position in page["placements"]]
+        for key in ("metadata", "fixed_modes"):
+            layout[key] = [layout[key][index] for index in indices]
+        return [paths[index] for index in indices]
+
     def poster_task(self, work, done):
         cancel = self.poster_cancel = threading.Event()
         button = getattr(self, "cancel_poster_button", None)
@@ -2068,11 +2087,9 @@ class App:
                 button.configure(state="disabled")
         def completed(result):
             finish()
+            done(result)
             if cancel.is_set():
-                result[1].cleanup()
-                self.status.set(self.t("Poster creation cancelled."))
-            else:
-                done(result)
+                self.status.set(self.t("Poster creation cancelled. Showing {count} completed page(s).", count=len(result[0])))
         def failed(error):
             finish()
             if isinstance(error, core.Cancelled):
@@ -2130,6 +2147,13 @@ class App:
                 outputs = core.create_posters(paths, preview_profile, settings, progress,
                                               field_overrides=overrides, **edit_options,
                                               setup_dir=setup_dir, layout_state=layout_state)
+                return outputs, temporary
+            except core.Cancelled as error:
+                outputs = getattr(error, "outputs", [])
+                if not outputs:
+                    temporary.cleanup()
+                    raise
+                paths[:] = self.completed_poster_sources(paths, layout_state)
                 return outputs, temporary
             except Exception:
                 temporary.cleanup()

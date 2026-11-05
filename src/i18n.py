@@ -9,6 +9,7 @@ LANGUAGES = {
 
 _TEXT = {
     "en": {
+        "Poster creation cancelled. Showing {count} completed page(s).": "Poster creation cancelled. Showing {count} completed page(s).",
         "Cancel poster": "Cancel poster",
         "Cancelling poster creation …": "Cancelling poster creation …",
         "Poster creation cancelled.": "Poster creation cancelled.",
@@ -41,6 +42,7 @@ _TEXT = {
         "yes": "yes", "no": "no",
     },
     "de": {
+        "Poster creation cancelled. Showing {count} completed page(s).": "Postererstellung abgebrochen. {count} fertige Seite(n) werden angezeigt.",
         "Cancel poster": "Poster abbrechen",
         "Cancelling poster creation …": "Postererstellung wird abgebrochen …",
         "Poster creation cancelled.": "Postererstellung abgebrochen.",
@@ -166,6 +168,7 @@ _TEXT = {
         "Saved locally. Use Upload to synchronize manually.": "Lokal gespeichert. Zum Synchronisieren bitte „Hochladen“ verwenden.",
     },
     "fr": {
+        "Poster creation cancelled. Showing {count} completed page(s).": "Création annulée. Affichage de {count} page(s) terminée(s).",
         "Cancel poster": "Annuler le poster",
         "Cancelling poster creation …": "Annulation du poster …",
         "Poster creation cancelled.": "Création du poster annulée.",
@@ -254,6 +257,7 @@ _TEXT = {
         "Please wait for the current file operation to finish before closing.": "Attendez la fin de l’opération en cours avant de fermer.",
     },
     "it": {
+        "Poster creation cancelled. Showing {count} completed page(s).": "Creazione annullata. Visualizzate {count} pagine completate.",
         "Cancel poster": "Annulla poster",
         "Cancelling poster creation …": "Annullamento del poster …",
         "Poster creation cancelled.": "Creazione del poster annullata.",
