@@ -150,7 +150,7 @@ class Store:
             if op['action'] not in ('ack','retire') or op['path']!='devices/'+op['id']+'.json' or not isinstance(op.get('seen'),list):raise ValueError('Invalid device acknowledgment')
             return
         if op['action'] not in ('put','delete'):raise ValueError('Invalid object action')
-        allowed = ('.jpg', '.jpeg', '.mp4') if op['kind']=='media' else ('.json',)
+        allowed = ('.jpg', '.jpeg', '.png', '.mp4') if op['kind']=='media' else ('.json',)
         if path.suffix.lower() not in allowed: raise ValueError('Unsupported sync file')
         if op['action']=='put':
             if not isinstance(op['record'], dict) or op['record'].get('id')!=op['id'] or op['record'].get('revision')!=op['revision']:
@@ -283,7 +283,7 @@ class Store:
         materialized = self.materialized()
         labels={(op['kind'],op['path']):operation_label(op) for op in operations.values()}
         progress('Scanning local changes …')
-        for kind, root, extensions in [('record', self.data, {'.json'}), ('media', self.images, {'.jpg','.jpeg','.mp4'})]:
+        for kind, root, extensions in [('record', self.data, {'.json'}), ('media', self.images, {'.jpg','.jpeg','.png','.mp4'})]:
             sources=self.sources(root, extensions)
             for index,path in enumerate(sources,1):
                 check()
@@ -323,7 +323,7 @@ class Store:
         snapshot = {}
         sources = []
         for kind, root, extensions in [('record', self.data, {'.json'}),
-                                       ('media', self.images, {'.jpg', '.jpeg', '.mp4'})]:
+                                       ('media', self.images, {'.jpg', '.jpeg', '.png', '.mp4'})]:
             for path in self.sources(root, extensions):
                 check()
                 if path.name in ('records.json', 'cb.json', 'desktop-index.json'):

@@ -99,7 +99,11 @@ def save_project(path, paths, settings, layout, outputs, setup_dir, profile_id):
 
 
 def _settings(values):
-    settings = core.PosterSettings(**values)
+    return core.poster_settings(settings_text(core.PosterSettings(**values)))
+
+
+def settings_text(settings):
+    """Editable setup text for a project’s complete poster settings."""
     names = {"limit": "LIMIT", "cols": "COLS", "rows": "ROWS", "fixed": "FIX"}
     lines = [f"POSTER-SIZE={settings.height}x{settings.width}"]
     for key, value in asdict(settings).items():
@@ -107,7 +111,7 @@ def _settings(values):
             continue
         name = names.get(key, key.replace("_", "-").upper())
         lines.append(f"POSTER-{name}={str(value).lower() if isinstance(value, bool) else value}")
-    return core.poster_settings("[Poster]\n" + "\n".join(lines))
+    return "[Poster]\n" + "\n".join(lines) + "\n"
 
 
 def load_project(path, output_dir):

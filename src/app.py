@@ -297,6 +297,9 @@ class PosterPreview(tk.Toplevel):
         self.edit_all_button = ttk.Button(project_controls, text=self.t("Edit all"),
                                          command=lambda: app.edit_poster_project(self, individual=False))
         self.edit_all_button.pack(side="left")
+        self.edit_setup_button = ttk.Button(project_controls, text=self.t("Edit Poster Setup"),
+                                            command=lambda: app.edit_poster_setup(self), state="disabled")
+        self.edit_setup_button.pack(side="left", padx=6)
         self.viewer = ImageCanvas(self, self.t)
         self.viewer.pack(fill="both", expand=True, padx=10, pady=(10, 0))
         self.protocol("WM_DELETE_WINDOW", self.close)
@@ -1879,6 +1882,15 @@ class App:
             return records, self.preview_result(paths[0])
         def done(result):
             records, (image, warning) = result
+            # Files already managed by a configured box are edits in that box,
+            # even when selected through another box's file picker or a drop.
+            profiles = getattr(getattr(self, "settings", None), "profiles", ())
+            owner = next((profile for profile in profiles
+                          if all(core.within(path, profile.images) for path in paths)), None)
+            if owner is not None and owner.id != self.profile.id:
+                self.profile = self.settings.profile(owner.id)
+                self.save_state()
+            self.search_mode, self.before_search = False, None
             differing = core.differing_metadata_fields(records)
             mode = "replace"
             if differing and not preserve_fields:
@@ -1924,6 +1936,55 @@ class App:
         self.root.lift()
         self.root.focus_set()
 
+    def edit_poster_setup(self, preview):
+        if self.busy or preview.saving or not preview.winfo_exists() or preview.project_path is None:
+            return
+        dialog = tk.Toplevel(preview)
+        dialog.title(self.t("Edit Poster Setup"))
+        dialog.geometry("700x650")
+        dialog.transient(preview)
+        dialog.grab_set()
+        text = tk.Text(dialog, wrap="none", undo=True, font=("Monospace", 11))
+        text.pack(fill="both", expand=True, padx=10, pady=10)
+        text.insert("1.0", poster_project.settings_text(preview.settings))
+        def apply():
+            try:
+                settings = core.poster_settings(text.get("1.0", "end-1c"))
+            except Exception as error:
+                messagebox.showerror(self.t("Setup"), describe(error, self.t), parent=dialog)
+                return
+            dialog.destroy()
+            self.apply_poster_setup(preview, settings)
+        ttk.Button(dialog, text=self.t("Apply"), command=apply).pack(side="right", padx=10, pady=10)
+        ttk.Button(dialog, text=self.t("Cancel"), command=dialog.destroy).pack(side="right", pady=10)
+
+    def apply_poster_setup(self, preview, settings):
+        if self.busy or preview.saving or not preview.winfo_exists() or preview.project_path is None:
+            return
+        paths = list(preview.source_paths)
+        records = dict(zip(paths, preview.layout_state["metadata"]))
+        layout = {}
+        def work():
+            temporary = tempfile.TemporaryDirectory(prefix="chaosbox-poster-setup-")
+            try:
+                profile = SimpleNamespace(images=Path(temporary.name) / "JPG")
+                outputs = core.create_posters(paths, profile, settings, self.log,
+                                              path_overrides=records, setup_dir=preview.setup_dir,
+                                              layout_state=layout)
+                return outputs, temporary
+            except Exception:
+                temporary.cleanup()
+                raise
+        def done(result):
+            outputs, temporary = result
+            if self.poster_preview is not preview or not preview.winfo_exists():
+                temporary.cleanup()
+                return
+            preview.replace(outputs, temporary, preview.directory)
+            preview.settings, preview.layout_state = settings, layout
+            self.status.set(self.t("Poster preview ready. Save posters to keep the result."))
+        self.task(work, done)
+
     def load_poster_project(self):
         if self.busy:
             return
@@ -1963,6 +2024,7 @@ class App:
                 current.source_paths, current.layout_state = project["paths"], project["layout"]
                 current.settings, current.setup_dir, current.profile = project["settings"], project["setup_dir"], profile
                 current.frozen, current.project_path = True, project["project_path"]
+                current.edit_setup_button.configure(state="normal")
                 current.show(project.get("selected_page", 0))
                 current.title(self.t("Poster preview") + " · " + selected.name)
                 self.status.set(self.t("Poster project loaded. Choose Edit individual or Edit all."))
@@ -2043,6 +2105,7 @@ class App:
                     self.poster_preview = current
                 if not refreshing and paths != getattr(current, "source_paths", paths):
                     current.frozen, current.project_path = False, None
+                    current.edit_setup_button.configure(state="disabled")
                     current.title(self.t("Poster preview"))
                 current.layout_state = layout_state
                 current.source_paths = list(paths)

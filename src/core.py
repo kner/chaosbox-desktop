@@ -1883,10 +1883,13 @@ def _save_media(source, profile, metadata, image_width):
             shutil.copyfile(original, temporary)
         else:
             with Image.open(original) as image:
-                if image.format not in ("JPEG", "PNG"):
+                if image.format not in ("JPEG", "MPO", "PNG"):
                     raise ValueError("Select a JPG, PNG or MP4 file.")
                 display_width = image.height if image.getexif().get(274) in (5, 6, 7, 8) else image.width
-                resized = image.format == "PNG" or display_width > image_width
+                # Camera JPGs can contain MPF auxiliary images and open as MPO.
+                # Export the primary frame as JPEG: copying MPF offsets while
+                # rewriting metadata could leave the auxiliary images invalid.
+                resized = image.format in ("PNG", "MPO") or display_width > image_width
                 if resized:
                     converted = ImageOps.exif_transpose(image).convert("RGBA")
                     if converted.width > image_width:
@@ -2220,7 +2223,7 @@ def update_index(target, changed, progress=lambda _: None):
         return build_index(target, progress)
     paths = set(map(Path, changed))
     entries = [entry for entry in entries if entry.source not in paths]
-    media_paths = sorted(path for path in paths if path.exists() and path.suffix.lower() in MEDIA)
+    media_paths = sorted(path for path in paths if path.exists() and path.suffix.lower() in IMPORTS)
     metadata = dict(zip(media_paths, read_metadata_batch(media_paths, progress))) if media_paths else {}
     for path in sorted(paths):
         progress(f"Updating index: {path.name}")

@@ -361,6 +361,26 @@ class DesktopTests(unittest.TestCase):
         self.assertFalse(metadata.get_exif_thumbnail())
         self.assertEqual(core.read_metadata(saved)["created"], "2020-05-06T07:08:09")
 
+    def test_camera_mpo_jpg_saves_primary_frame_with_metadata(self):
+        source = self.root / "camera.jpg"
+        exif = Image.Exif()
+        exif[274] = 6
+        primary = Image.new("RGB", (120, 80), "red")
+        primary.save(source, "MPO", save_all=True,
+                     append_images=[Image.new("RGB", (12, 8), "blue")], exif=exif)
+        before = source.read_bytes()
+        with Image.open(source) as image:
+            self.assertEqual(image.format, "MPO")
+        for limit, expected in ((3000, (80, 120)), (60, (60, 90))):
+            with self.subTest(limit=limit):
+                saved = core.save_media(source, self.profile, self.record, limit)
+                with Image.open(saved) as image:
+                    self.assertEqual(image.format, "JPEG")
+                    self.assertEqual(image.size, expected)
+                    self.assertEqual(image.getexif()[274], 1)
+                self.assertEqual(core.read_metadata(saved)["comment"], self.record["comment"])
+                self.assertEqual(source.read_bytes(), before)
+
     def test_failed_xmp_write_preserves_source_and_cleans_temporary_file(self):
         source = self.picture("JPG/elektronik/source.jpg")
         before = source.read_bytes()

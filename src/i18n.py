@@ -9,6 +9,7 @@ LANGUAGES = {
 
 _TEXT = {
     "en": {
+        "Edit Poster Setup": "Edit Poster Setup", "Apply": "Apply",
         "File": "File", "Modified · newest first": "Modified · newest first",
         'Folder …': 'Folder …', 'Other …': 'Other …', 'Metadata': 'Metadata', 'All': 'All', 'None': 'None', 'Edit all': 'Edit all', 'Individual': 'Individual',
         "Kein Bild oder Video ausgewählt": "No image or video selected", "Bild oder Video auswählen": "Select an image or video",
@@ -37,6 +38,7 @@ _TEXT = {
         "yes": "yes", "no": "no",
     },
     "de": {
+        "Edit Poster Setup": "Poster-Einstellungen bearbeiten", "Apply": "Anwenden",
         "Open poster project …": "Posterprojekt öffnen …", "Open poster project": "Posterprojekt öffnen",
         "Poster project": "Posterprojekt",
         "No poster configurations in {path}.": "Keine Posterkonfigurationen in {path}.",
@@ -158,6 +160,7 @@ _TEXT = {
         "Saved locally. Use Upload to synchronize manually.": "Lokal gespeichert. Zum Synchronisieren bitte „Hochladen“ verwenden.",
     },
     "fr": {
+        "Edit Poster Setup": "Modifier les paramètres du poster", "Apply": "Appliquer",
         'Drop JPG, PNG or MP4 here, or select files.': 'Déposez ici des JPG, PNG ou MP4, ou sélectionnez des fichiers.', 'Drag and drop requires tkdnd. File selection remains available.': 'Le glisser-déposer nécessite tkdnd. La sélection de fichiers reste disponible.', 'Drop one media file to attach to this JSON record.': 'Déposez un fichier multimédia pour ce document JSON.',
         "File": "Fichier", "Modified · newest first": "Modifié · plus récents en premier",
         'Folder …': 'Dossier …', 'Other …': 'Autres …', 'Metadata': 'Métadonnées', 'All': 'Tout', 'None': 'Aucun', 'Edit all': 'Tout modifier', 'Individual': 'Individuel',
@@ -242,6 +245,7 @@ _TEXT = {
         "Please wait for the current file operation to finish before closing.": "Attendez la fin de l’opération en cours avant de fermer.",
     },
     "it": {
+        "Edit Poster Setup": "Modifica impostazioni poster", "Apply": "Applica",
         'Drop JPG, PNG or MP4 here, or select files.': 'Trascina qui JPG, PNG o MP4 oppure seleziona i file.', 'Drag and drop requires tkdnd. File selection remains available.': 'Il trascinamento richiede tkdnd. La selezione file resta disponibile.', 'Drop one media file to attach to this JSON record.': 'Trascina un file multimediale per questo record JSON.',
         "File": "File", "Modified · newest first": "Modificato · più recenti prima",
         'Folder …': 'Cartella …', 'Other …': 'Altri …', 'Metadata': 'Metadati', 'All': 'Tutti', 'None': 'Nessuno', 'Edit all': 'Modifica tutti', 'Individual': 'Singoli',

@@ -140,6 +140,33 @@ class PosterRefreshTests(unittest.TestCase):
         self.app.profile = self.app.poster_preview.profile
         self.app.values = Mock(side_effect=AssertionError('Refresh must use saved metadata'))
 
+    def test_setup_change_rebuilds_using_project_metadata_and_new_settings(self):
+        preview = self.app.poster_preview
+        preview.saving = False
+        preview.project_path = Path('/poster/project.cbposter')
+        records = [{'comment': 'Saved first'}, {'comment': 'Saved second'}]
+        preview.layout_state = {'metadata': records}
+        settings = object()
+        self.app.task = lambda work, done: done(work())
+        temporary = Mock(name='temporary')
+        temporary.name = '/tmp/render'
+        with patch('app.tempfile.TemporaryDirectory', return_value=temporary), \
+             patch('app.core.create_posters', return_value=[Path('/tmp/new.jpg')]) as render:
+            self.app.apply_poster_setup(preview, settings)
+        self.assertIs(render.call_args.args[2], settings)
+        self.assertEqual(render.call_args.kwargs['path_overrides'], dict(zip(preview.source_paths, records)))
+        self.assertNotIn('previous_layout', render.call_args.kwargs)
+        self.assertIs(preview.settings, settings)
+        preview.replace.assert_called_once()
+
+    def test_setup_without_loaded_project_does_nothing(self):
+        preview = self.app.poster_preview
+        preview.saving = False
+        preview.project_path = None
+        self.app.task = Mock()
+        self.app.apply_poster_setup(preview, object())
+        self.app.task.assert_not_called()
+
     def test_individual_and_common_save_replace_same_preview(self):
         from app import App
         for count in (1, 2):

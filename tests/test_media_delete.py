@@ -1,4 +1,8 @@
 import sys
+import tempfile
+
+from PIL import Image
+import core
 from pathlib import Path
 from unittest.mock import Mock, patch
 import unittest
@@ -19,6 +23,35 @@ class MediaDeletionTests(unittest.TestCase):
         app.error = Mock()
         app.task = Mock()
         return app
+
+    def test_png_deletion_preserves_recovery_copy_and_sync_tombstone(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            path = root / 'JPG' / 'rea' / 'Unbenannt.png'
+            path.parent.mkdir(parents=True)
+            Image.new('RGB', (8, 8), 'red').save(path)
+            original = path.read_bytes()
+            core.delete_entry(path)
+            self.assertFalse(path.exists())
+            store = core.sync_store(core.profile_for_path(path))
+            heads = [op for versions in store.heads().values() for op in versions
+                     if op['kind'] == 'media']
+            self.assertEqual(len(heads), 1)
+            self.assertEqual(heads[0]['action'], 'delete')
+            self.assertEqual(heads[0]['path'], 'rea/Unbenannt.png')
+            copies = list((store.root / 'trash').glob('*/Unbenannt.png'))
+            self.assertEqual(len(copies), 1)
+            self.assertEqual(copies[0].read_bytes(), original)
+
+    def test_index_refresh_reads_existing_png_as_media(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'Unbenannt.png'
+            Image.new('RGB', (8, 8), 'red').save(path)
+            with patch('core.load_index', return_value=[]), patch('core.write_index') as write:
+                entries = core.update_index(Mock(), [path])
+            self.assertEqual(len(entries), 1)
+            self.assertTrue(entries[0].media)
+            write.assert_called_once()
 
     def test_cancel(self):
         app, dialog = self.app(), Mock()

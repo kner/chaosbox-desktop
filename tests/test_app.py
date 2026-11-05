@@ -114,6 +114,31 @@ class SharedIndexTests(unittest.TestCase):
 
 
 class BatchSelectionTests(unittest.TestCase):
+    def test_opening_managed_media_selects_owning_box_before_save(self):
+        app = App.__new__(App)
+        labels = list(core.LABELS)
+        current = SimpleNamespace(id="Bilder1", images=Path("/boxes/Bilder1/JPG"), labels=labels)
+        owner = SimpleNamespace(id="Rea", images=Path("/boxes/Rea/JPG"), labels=labels)
+        app.profile = current
+        app.settings = SimpleNamespace(profiles=[current, owner], profile=Mock(return_value=owner))
+        app.save_state = Mock()
+        app.refresh_profile = Mock()
+        app.preview_result = Mock(return_value=(None, ""))
+        app.log = Mock()
+        app.task = lambda work, done: done(work())
+        app.field_widgets = {"device": Mock()}
+        app.fill = app.set_preview_path = Mock()
+        app.preview = app.selected = Mock()
+        app.search_mode = True
+        path = owner.images / "rea/unassigned/backup/photo.jpg"
+        with patch("core.read_metadata_batch", return_value=[core.normalized({})]):
+            app.open_media([path])
+        self.assertIs(app.profile, owner)
+        self.assertFalse(app.search_mode)
+        app.settings.profile.assert_called_once_with("Rea")
+        app.save_state.assert_called_once()
+        self.assertEqual(app.media, [path])
+
     def test_differences_prompt_with_setup_labels_and_cancel_preserves_selection(self):
         originals = [core.normalized({"box": "A", "comment": "first", "device": "same"}),
                      core.normalized({"box": "B", "comment": "second", "device": "same"})]
@@ -121,6 +146,7 @@ class BatchSelectionTests(unittest.TestCase):
             app = App.__new__(App)
             app.root = Mock()
             app.profile = SimpleNamespace(labels=["Meine Box", "Anzahl", "Gerät", "Alias", "Kategorie", "Notiz", "Packung"])
+            app.refresh_profile = Mock()
             app.media = [Path("previous.jpg")]
             app.preview_result = Mock(return_value=(None, ""))
             app.log = Mock()
@@ -142,6 +168,7 @@ class BatchSelectionTests(unittest.TestCase):
 
     def test_equal_metadata_opens_without_warning(self):
         app = App.__new__(App)
+        app.refresh_profile = Mock()
         app.preview_result = Mock(return_value=(None, ""))
         app.log = Mock()
         app.task = lambda work, done: done(work())
