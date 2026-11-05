@@ -1182,7 +1182,9 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
                     previous_layout.get("fixed_modes", modes)[index] != modes[index]))}
             render_options.update(previous_page=previous_page,
                                   changed_indices={local for local, index in enumerate(indices) if index in changed or number in recalculate_pages})
-        outputs.append(create_poster([paths[index] for index in indices], profile, settings, progress,
+        def page_progress(message):
+            progress(f"Page {number}/{len(pages)} · {message}")
+        outputs.append(create_poster([paths[index] for index in indices], profile, settings, page_progress,
                                      title=page_title,
                                      metadata=[metadata[index] for index in indices],
                                      placements=[item[1:] for item in page], setup_dir=setup_dir,
