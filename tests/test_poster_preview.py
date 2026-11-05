@@ -147,7 +147,7 @@ class PosterRefreshTests(unittest.TestCase):
         records = [{'comment': 'Saved first'}, {'comment': 'Saved second'}]
         preview.layout_state = {'metadata': records}
         settings = object()
-        self.app.task = lambda work, done: done(work())
+        self.app.task = lambda work, done, failed=None: done(work())
         temporary = Mock(name='temporary')
         temporary.name = '/tmp/render'
         with patch('app.tempfile.TemporaryDirectory', return_value=temporary), \
@@ -176,7 +176,7 @@ class PosterRefreshTests(unittest.TestCase):
                 originals = list(preview.source_paths[:count])
                 saved = [Path('/saved') / path.name for path in originals]
                 temporary = Mock(name='temporary')
-                self.app.task = lambda work, done: done(work())
+                self.app.task = lambda work, done, failed=None: done(work())
                 with patch('app.tempfile.TemporaryDirectory', return_value=temporary), \
                      patch('app.core.create_posters', return_value=[Path('/tmp/poster.jpg')]) as render, \
                      patch('app.PosterPreview') as window:
@@ -191,7 +191,7 @@ class PosterRefreshTests(unittest.TestCase):
     def test_closed_preview_is_not_reopened_after_render(self):
         temporary = Mock(name='temporary')
         temporary.name = '/tmp/render'
-        def task(work, done):
+        def task(work, done, failed=None):
             result = work()
             self.app.poster_preview = None
             done(result)
@@ -227,7 +227,7 @@ class PosterRefreshTests(unittest.TestCase):
         self.app.media_baseline = {'device': 'A1', 'comment': 'saved'}
         self.app.media_edit_mode = 'replace'
         self.app.values = Mock(return_value={'device': 'B2', 'comment': 'saved'})
-        self.app.task = lambda work, done: done(work())
+        self.app.task = lambda work, done, failed=None: done(work())
         temporary = Mock()
         temporary.name = '/tmp/render'
         with patch('app.tempfile.TemporaryDirectory', return_value=temporary), \
@@ -243,7 +243,7 @@ class PosterRefreshTests(unittest.TestCase):
         self.app.individual_paths = list(self.app.poster_preview.source_paths)
         self.app.poster_preview.layout_state = {"pages": []}
         old_layout = self.app.poster_preview.layout_state
-        self.app.task = lambda work, done: done(work())
+        self.app.task = lambda work, done, failed=None: done(work())
         temporary = Mock()
         temporary.name = '/tmp/render'
         with patch('app.tempfile.TemporaryDirectory', return_value=temporary), \
@@ -262,7 +262,7 @@ class PosterRefreshTests(unittest.TestCase):
         self.app.settings = SimpleNamespace(poster=object(), path=Path('/different/setup.ini'))
         self.app.media_baseline = {'comment': 'Old'}
         self.app.values = Mock(return_value={'comment': 'New'})
-        self.app.task = lambda work, done: done(work())
+        self.app.task = lambda work, done, failed=None: done(work())
         temporary = Mock()
         temporary.name = '/tmp/render'
         with patch('app.tempfile.TemporaryDirectory', return_value=temporary), \
@@ -282,7 +282,7 @@ class PosterRefreshTests(unittest.TestCase):
         self.app.poster_preview.layout_state = {'metadata': records}
         self.app.preview_result = Mock(return_value=(None, ''))
         results = []
-        self.app.task = lambda work, done: results.append(work())
+        self.app.task = lambda work, done, failed=None: results.append(work())
         with patch('app.core.read_metadata_batch', side_effect=AssertionError('Must use project snapshot')):
             self.app.navigate_preview(1)
         self.assertEqual(results[0][0], [records[1]])
@@ -314,7 +314,7 @@ class PosterRefreshTests(unittest.TestCase):
             profile = SimpleNamespace(id='Photos', images=Path(folder) / 'JPG')
             self.app.profile = profile
             self.app.settings = SimpleNamespace(profiles=[profile], profile=Mock())
-            self.app.task = lambda work, done: done(work())
+            self.app.task = lambda work, done, failed=None: done(work())
             project = dict(paths=list(preview.source_paths), layout={'metadata': [{}, {}]},
                            outputs=[Path('/tmp/restored.jpg')], settings=object(), setup_dir=Path('/frozen/setup'),
                            project_path=config, profile_id='Photos', poster_names=[selected.with_suffix('.jpg').name])
@@ -342,7 +342,7 @@ class PosterRefreshTests(unittest.TestCase):
             selected.with_suffix('.cbposter').write_bytes(b'configuration')
             self.app.root = Mock()
             self.app.settings = SimpleNamespace(profiles=[])
-            self.app.task = lambda work, done: done(work())
+            self.app.task = lambda work, done, failed=None: done(work())
             temporary = Mock()
             temporary.name = '/tmp/render'
             with patch('app.poster_project.project_files', return_value=[selected]), \

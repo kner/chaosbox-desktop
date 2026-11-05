@@ -1166,6 +1166,9 @@ class App:
         self.profile_picker.pack(side="left", padx=8)
         self.profile_picker.bind("<<ComboboxSelected>>", self.select_profile)
         self.controls.append(self.profile_picker)
+        self.cancel_poster_button = ttk.Button(header, text=self.t("Cancel poster"),
+                                               command=self.cancel_poster_creation, state="disabled")
+        self.cancel_poster_button.pack(side="left", padx=2)
         self.button(header, self.t("Poster"), self.make_poster, side="left", padx=2)
         self.button(header, self.t("Open poster project …"), self.load_poster_project, side="left", padx=2)
         self.button(header, "TXT", self.snippets_dialog, side="left", padx=2)
@@ -1969,11 +1972,11 @@ class App:
         paths = list(preview.source_paths)
         records = dict(zip(paths, preview.layout_state["metadata"]))
         layout = {}
-        def work():
+        def work(progress):
             temporary = tempfile.TemporaryDirectory(prefix="chaosbox-poster-setup-")
             try:
                 profile = SimpleNamespace(images=Path(temporary.name) / "JPG")
-                outputs = core.create_posters(paths, profile, settings, self.log,
+                outputs = core.create_posters(paths, profile, settings, progress,
                                               path_overrides=records, setup_dir=preview.setup_dir,
                                               layout_state=layout)
                 return outputs, temporary
@@ -1988,7 +1991,7 @@ class App:
             preview.replace(outputs, temporary, preview.directory)
             preview.settings, preview.layout_state = settings, layout
             self.status.set(self.t("Poster preview ready. Save posters to keep the result."))
-        self.task(work, done)
+        self.poster_task(work, done)
 
     def load_poster_project(self):
         if self.busy:
@@ -2043,6 +2046,41 @@ class App:
         if preview is not None and preview.winfo_exists():
             self.make_poster(saved_paths=saved_paths, original_paths=original_paths)
 
+    def cancel_poster_creation(self):
+        cancel = getattr(self, "poster_cancel", None)
+        if cancel is not None:
+            cancel.set()
+            self.cancel_poster_button.configure(state="disabled")
+            self.status.set(self.t("Cancelling poster creation …"))
+
+    def poster_task(self, work, done):
+        cancel = self.poster_cancel = threading.Event()
+        button = getattr(self, "cancel_poster_button", None)
+        if button is not None:
+            button.configure(state="normal")
+        def progress(message):
+            if cancel.is_set():
+                raise core.Cancelled("Poster creation cancelled.")
+            self.log(message)
+        def finish():
+            self.poster_cancel = None
+            if button is not None:
+                button.configure(state="disabled")
+        def completed(result):
+            finish()
+            if cancel.is_set():
+                result[1].cleanup()
+                self.status.set(self.t("Poster creation cancelled."))
+            else:
+                done(result)
+        def failed(error):
+            finish()
+            if isinstance(error, core.Cancelled):
+                self.status.set(self.t("Poster creation cancelled."))
+            else:
+                self.error(error)
+        self.task(lambda: work(progress), completed, failed)
+
     def make_poster(self, *, saved_paths=None, original_paths=None):
         if self.busy or self.search_mode:
             return
@@ -2085,11 +2123,11 @@ class App:
                 if getattr(preview, "frozen", False) is True:
                     profile, settings, setup_dir = preview.profile, preview.settings, preview.setup_dir
         layout_state = {}
-        def work():
+        def work(progress):
             temporary = tempfile.TemporaryDirectory(prefix="chaosbox-poster-")
             try:
                 preview_profile = SimpleNamespace(images=Path(temporary.name) / "JPG")
-                outputs = core.create_posters(paths, preview_profile, settings, self.log,
+                outputs = core.create_posters(paths, preview_profile, settings, progress,
                                               field_overrides=overrides, **edit_options,
                                               setup_dir=setup_dir, layout_state=layout_state)
                 return outputs, temporary
@@ -2119,7 +2157,7 @@ class App:
                 temporary.cleanup()
                 raise
             self.status.set(self.t("Poster preview ready. Save posters to keep the result."))
-        self.task(work, done)
+        self.poster_task(work, done)
 
     def choose_json(self):
         if self.busy or self.search_mode:

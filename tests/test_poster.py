@@ -713,7 +713,7 @@ class PosterTests(unittest.TestCase):
         app.media_baseline = {"box": "Existing", "comment": "Original"}
         app.values = Mock(return_value={"category": "Different category", "box": "Existing", "comment": "Added"})
         app.log = Mock()
-        def run(work, done):
+        def run(work, done, failed=None):
             outputs, temporary = work()
             self.assertNotEqual(create.call_args.args[1].images, self.profile.images)
             temporary.cleanup()

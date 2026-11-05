@@ -81,3 +81,60 @@ class MediaEditingTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'broken.jpg: .*field 3'):
                     core.create_posters(paths, SimpleNamespace(images=Path('/unused/JPG')), core.PosterSettings())
                 render.assert_not_called()
+
+
+class PosterCancellationTests(unittest.TestCase):
+    def app(self):
+        app = App.__new__(App)
+        app.cancel_poster_button = Mock()
+        app.status = Mock()
+        app.log = Mock()
+        app.error = Mock()
+        app.task = Mock()
+        return app
+
+    def test_cancel_stops_at_next_progress_update_and_restores_controls(self):
+        app = self.app()
+        done = Mock()
+        def work(progress):
+            progress('Page 1/3')
+            app.cancel_poster_creation()
+            progress('Poster: 2/5')
+            self.fail('Rendering continued after cancellation')
+        app.poster_task(work, done)
+        execute, completed, failed = app.task.call_args.args
+        with self.assertRaises(core.Cancelled) as caught:
+            execute()
+        failed(caught.exception)
+        done.assert_not_called()
+        app.error.assert_not_called()
+        self.assertIsNone(app.poster_cancel)
+        app.cancel_poster_button.configure.assert_called_with(state='disabled')
+        app.status.set.assert_called_with('Poster creation cancelled.')
+
+    def test_cancel_after_render_discards_temporary_result(self):
+        app = self.app()
+        result = ([Path('preview.jpg')], Mock())
+        done = Mock()
+        app.poster_task(lambda progress: result, done)
+        execute, completed, failed = app.task.call_args.args
+        rendered = execute()
+        app.cancel_poster_creation()
+        completed(rendered)
+        result[1].cleanup.assert_called_once()
+        done.assert_not_called()
+        app.error.assert_not_called()
+
+    def test_completion_keeps_output_and_errors_remain_visible(self):
+        app = self.app()
+        result = ([Path('preview.jpg')], Mock())
+        done = Mock()
+        app.poster_task(lambda progress: result, done)
+        execute, completed, failed = app.task.call_args.args
+        completed(execute())
+        done.assert_called_once_with(result)
+        result[1].cleanup.assert_not_called()
+        error = ValueError('Invalid poster field')
+        app.poster_task(lambda progress: None, done)
+        app.task.call_args.args[2](error)
+        app.error.assert_called_once_with(error)
