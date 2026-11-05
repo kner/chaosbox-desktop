@@ -309,6 +309,13 @@ rebuilding the index; duplicate names are retained without overwriting files.
   unchanged common fields retain each photo's metadata. Source files stay intact.
   Photos fill the configured grid in selection order with 3 mm gutters.
   With POSTER-FIX=false, portrait photos (after EXIF rotation) occupy two vertically adjacent cells.
+  For automatic flexible layouts, KBox looks ahead among the selected landscape
+  photos for capture dates within one calendar month of a portrait and moves
+  suitable photos directly after it. The new selection order is used only if
+  it reduces the page count or fits more photos onto earlier pages. Preview
+  numbering, individual editing and saved projects use that same order; source
+  files are unchanged. Fixed layouts, explicit page/position/layout-mode or zoom
+  overrides, and refreshes of frozen previews keep their existing order.
   A portrait that cannot fit below the current cell moves to the next poster;
   following photos can fill the space left on the current poster. Portraits
   require at least two configured rows. Additional posters are created until

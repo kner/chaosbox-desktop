@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from calendar import monthrange
 from datetime import datetime
 from functools import lru_cache
 import errno
@@ -959,7 +960,7 @@ def poster_pages(portraits, cols, rows, *, fixed=False, zooms=None,
     return pages
 
 
-def poster_photo_pages(paths, metadata, settings, *, ignore_pages=False, fixed_modes=None, force_page=False):
+def poster_photo_geometry(paths, metadata):
     portraits, aspects = [], []
     for path, record in zip(paths, metadata):
         with Image.open(path) as source:
@@ -969,6 +970,12 @@ def poster_photo_pages(paths, metadata, settings, *, ignore_pages=False, fixed_m
             width, height = poster_rotated_size(width, height, poster_angle(record))
             portraits.append(width + 1e-8 < height)
             aspects.append(width / height)
+    return portraits, aspects
+
+
+def poster_photo_pages(paths, metadata, settings, *, ignore_pages=False, fixed_modes=None, force_page=False,
+                       geometry=None):
+    portraits, aspects = geometry if geometry is not None else poster_photo_geometry(paths, metadata)
     zooms = [poster_zoom(record) for record in metadata]
     positions = [poster_position(record) for record in metadata]
     numbers = [1] * len(paths) if force_page else [None] * len(paths) if ignore_pages else [poster_page(record) for record in metadata]
@@ -1020,6 +1027,63 @@ def poster_photo_pages(paths, metadata, settings, *, ignore_pages=False, fixed_m
         accepted = {item[0] for item in page}
         pending = [index for index in pending if index not in accepted]
     return pages
+
+
+def poster_dates_within_month(first, second):
+    """Compare capture dates using a rolling calendar month, including month ends."""
+    first, second = sorted((first, second))
+    year, month = (first.year + 1, 1) if first.month == 12 else (first.year, first.month + 1)
+    if year > 9999:
+        return True
+    limit = first.replace(year=year, month=month, day=min(first.day, monthrange(year, month)[1]))
+    return second <= limit
+
+
+def poster_selection_order(paths, metadata, settings, progress=lambda _: None):
+    """Prefer nearby landscape photos after portraits only when pagination improves.
+
+    Explicit layouts and existing previews retain their order. The candidate is
+    compared with normal packing so an orientation mix can never waste a page.
+    """
+    order = list(range(len(paths)))
+    if (settings.fixed or settings.cols < 2 or settings.rows < 2 or any(
+            poster_page(record) is not None or poster_position(record) is not None
+            or str(record.get("alias", "") or "").strip() or poster_zoom(record) > 1
+            for record in metadata)):
+        return order, poster_photo_pages(paths, metadata, settings)
+    geometry = poster_photo_geometry(paths, metadata)
+    portraits, aspects = geometry
+    original = poster_photo_pages(paths, metadata, settings, geometry=geometry)
+    if not any(portraits) or not any(aspect > 1 + 1e-8 for aspect in aspects):
+        return order, original
+    dates = []
+    for path, record in zip(paths, metadata):
+        try:
+            dates.append(datetime.fromisoformat(str(record.get("created", ""))).date())
+        except ValueError:
+            named = filename_creation_date(path)
+            dates.append(named.date() if named else None)
+    pending, candidate = list(order), []
+    while pending:
+        index = pending.pop(0)
+        candidate.append(index)
+        if not portraits[index] or dates[index] is None:
+            continue
+        progress("Optimizing poster selection order …")
+        following = [other for other in pending if aspects[other] > 1 + 1e-8
+                     and dates[other] is not None and poster_dates_within_month(dates[index], dates[other])]
+        following = following[:settings.cols - 1]
+        candidate.extend(following)
+        moved = set(following)
+        pending = [other for other in pending if other not in moved]
+    if candidate == order:
+        return order, original
+    planned = poster_photo_pages([paths[index] for index in candidate],
+        [metadata[index] for index in candidate], settings,
+        geometry=([portraits[index] for index in candidate], [aspects[index] for index in candidate]))
+    def score(pages):
+        return len(pages), tuple(-len(page) for page in pages)
+    return (candidate, planned) if score(planned) < score(original) else (order, original)
 
 
 def poster_grid_cells(placements, cols, rows, bounds, gap):
@@ -1152,11 +1216,13 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
                 pages[number - 1] = [(indices[local], *placement) for local, *placement in replanned]
             recalculate_pages.update(mode_pages)
     else:
-        pages = poster_photo_pages(paths, metadata, settings)
+        order, pages = poster_selection_order(paths, metadata, settings, progress)
+        paths = [paths[index] for index in order]
+        metadata = [metadata[index] for index in order]
     modes = poster_layout_modes(metadata, settings.fixed, pages)
     if layout_state is not None:
         layout_state.update(metadata=[dict(record) for record in metadata], fixed_modes=list(modes), pages=[],
-                            source_cache=metadata_cache)
+                            source_cache=metadata_cache, source_paths=list(paths))
     outputs = []
     try:
         for number, page in enumerate(pages, 1):

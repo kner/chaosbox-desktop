@@ -1979,6 +1979,7 @@ class App:
                 outputs = core.create_posters(paths, profile, settings, progress,
                                               path_overrides=records, setup_dir=preview.setup_dir,
                                               layout_state=layout)
+                paths[:] = layout.get("source_paths", paths)
                 return outputs, temporary
             except core.Cancelled as error:
                 outputs = getattr(error, "outputs", [])
@@ -2064,13 +2065,16 @@ class App:
     @staticmethod
     def completed_poster_sources(paths, layout):
         # A partial preview/project must refer only to the completed pages.
+        paths = layout.get("source_paths", paths)
         indices = sorted({item[0] for page in layout["pages"] for item in page["placements"]})
         remap = {old: new for new, old in enumerate(indices)}
         for page in layout["pages"]:
             page["placements"] = [(remap[index], *position) for index, *position in page["placements"]]
         for key in ("metadata", "fixed_modes"):
             layout[key] = [layout[key][index] for index in indices]
-        return [paths[index] for index in indices]
+        completed = [paths[index] for index in indices]
+        layout["source_paths"] = completed
+        return completed
 
     def poster_task(self, work, done):
         cancel = self.poster_cancel = threading.Event()
@@ -2147,6 +2151,7 @@ class App:
                 outputs = core.create_posters(paths, preview_profile, settings, progress,
                                               field_overrides=overrides, **edit_options,
                                               setup_dir=setup_dir, layout_state=layout_state)
+                paths[:] = layout_state.get("source_paths", paths)
                 return outputs, temporary
             except core.Cancelled as error:
                 outputs = getattr(error, "outputs", [])
