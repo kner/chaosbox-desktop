@@ -1883,9 +1883,6 @@ class App:
         def work():
             records = ([dict(project_records[path]) for path in dict.fromkeys(paths)] if project_records is not None
                        else core.read_metadata_batch(list(dict.fromkeys(paths)), self.log))
-            poster_settings = getattr(getattr(self, "settings", None), "poster", None)
-            if project_records is None and poster_settings is not None:
-                records = [core.initial_poster_record(record, poster_settings) for record in records]
             return records, self.preview_result(paths[0])
         def done(result):
             records, (image, warning) = result
@@ -1911,6 +1908,7 @@ class App:
             self.media_edit_mode, self.media_differing_fields = mode, differing
             values = records[0] if len(records) == 1 else core.common_metadata(records)
             self.media_baseline = dict(values)
+            self.media_baseline["device"] = core.poster_coordinate_text(values.get("device", ""))
             self.media, self.box_path, self.records, self.record_index = list(dict.fromkeys(paths)), None, [], None
             self.refresh_profile()
             self.field_widgets["device"].configure(values=[])
@@ -2245,7 +2243,7 @@ class App:
             self.error(error)
             return
         if len(self.media) > 1 and not messagebox.askokcancel(
-                self.t("Save"), self.t("Attention! All selected Images get this texts"),
+                self.t("Save"), self.t("Apply the edited fields to all selected images? Other fields keep their individual values."),
                 parent=self.root, icon="warning", default="cancel"):
             return
         selected, profile, media = self.record_index, self.profile, list(self.media)
@@ -2294,6 +2292,7 @@ class App:
                 self.media, self.box_path, self.records, self.record_index = saved_paths, None, [], None
                 self.media_records = records
                 self.media_baseline = dict(records[0])
+                self.media_baseline["device"] = core.poster_coordinate_text(records[0].get("device", ""))
                 self.refresh_profile()
                 self.fill(records[0])
                 self.set_preview_path(path)

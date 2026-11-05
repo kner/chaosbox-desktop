@@ -134,7 +134,7 @@ _TEXT = {
         "Open": "Öffnen", "No records available in this JSON file.": "Diese JSON-Datei enthält keine Datensätze.",
         "{path} — record {current}/{total}": "{path} — Datensatz {current}/{total}",
         "Save JSON": "JSON speichern", "Box name:": "Boxname:",
-        "Attention! All selected Images get this texts": "Achtung! Alle ausgewählten Bilder erhalten diese Texte",
+        "Apply the edited fields to all selected images? Other fields keep their individual values.": "Geänderte Felder auf alle ausgewählten Bilder anwenden? Andere Felder behalten ihre individuellen Werte.",
         "Saved locally, but the search index could not be updated: {error}":
             "Lokal gespeichert, aber der Suchindex konnte nicht aktualisiert werden: {error}",
         "Saved locally. Use Upload to synchronize manually.": "Lokal gespeichert. Zum Synchronisieren bitte „Hochladen“ verwenden.",
@@ -224,7 +224,7 @@ _TEXT = {
         "Open": "Ouvrir", "No records available in this JSON file.": "Aucun enregistrement dans ce fichier JSON.",
         "{path} — record {current}/{total}": "{path} — enregistrement {current}/{total}",
         "Save JSON": "Enregistrer JSON", "Box name:": "Nom de la boîte :",
-        "Attention! All selected Images get this texts": "Attention ! Ces textes seront appliqués à toutes les images sélectionnées",
+        "Apply the edited fields to all selected images? Other fields keep their individual values.": "Appliquer les champs modifiés à toutes les images sélectionnées ? Les autres champs conservent leurs valeurs individuelles.",
         "Saved locally, but the search index could not be updated: {error}":
             "Enregistré localement, mais l’index de recherche n’a pas pu être actualisé : {error}",
         "Saved locally. Use Upload to synchronize manually.": "Enregistré localement. Utilisez « Téléverser » pour synchroniser.",
@@ -296,7 +296,7 @@ _TEXT = {
         "Preview unavailable: {error}": "Anteprima non disponibile: {error}", "{count} poster(s) saved: {path}": "{count} poster salvati: {path}",
         "Posters saved:\n{paths}": "Poster salvati:\n{paths}", "Select JSON record": "Seleziona record JSON", "Open": "Apri",
         "No records available in this JSON file.": "Nessun record disponibile in questo file JSON.", "{path} — record {current}/{total}": "{path} — record {current}/{total}",
-        "Save JSON": "Salva JSON", "Box name:": "Nome box:", "Attention! All selected Images get this texts": "Attenzione! Tutte le immagini selezionate riceveranno questi testi",
+        "Save JSON": "Salva JSON", "Box name:": "Nome box:", "Apply the edited fields to all selected images? Other fields keep their individual values.": "Applicare i campi modificati a tutte le immagini selezionate? Gli altri campi mantengono i valori individuali.",
         "Saved locally, but the search index could not be updated: {error}": "Salvato localmente, ma impossibile aggiornare l’indice di ricerca: {error}",
         "Saved locally. Use Upload to synchronize manually.": "Salvato localmente. Usa «Carica» per sincronizzare.", "Deleted: {path}{warning}": "Eliminato: {path}{warning}",
         "Search index: {path}": "Indice di ricerca: {path}", "Category: literal prefix; other fields: regular expressions. AND combined. Escape cancels.":

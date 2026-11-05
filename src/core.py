@@ -560,8 +560,7 @@ def edited_metadata(original, values, baseline, *, mode="auto", differing_fields
     result = dict(original)
     for field in FIELDS:
         value = values.get(field, "")
-        if str(value) == str(baseline.get(field, "")) and not (
-                mode == "replace" and field in differing_fields):
+        if str(value) == str(baseline.get(field, "")):
             continue
         old = original.get(field, "")
         append = mode == "extend" or (mode == "auto" and baseline.get(field, "") == "")
@@ -665,7 +664,11 @@ def poster_parts(record):
 def poster_coordinate_text(value):
     text = str(value or "").strip()
     if re.search(r"[A-Za-z]+[1-9][0-9]*", text):
-        return "/".join(poster_parts({"device": text})).rstrip("/")
+        try:
+            return "/".join(poster_parts({"device": text})).rstrip("/")
+        except ValueError:
+            # Invalid stored values must remain editable; poster creation validates them.
+            return text
     return text
 
 
@@ -1082,6 +1085,13 @@ def create_posters(paths, profile, settings, progress=lambda _: None, *,
     if previous_layout is not None:
         metadata = [record if index in changed else dict(previous_layout["metadata"][index])
                     for index, record in enumerate(metadata)]
+    # Validate every source before rendering or reserving any poster output.
+    for path, record in zip(paths, metadata):
+        try:
+            poster_transform(record)
+            poster_zoom(record)
+        except ValueError as error:
+            raise ValueError(f"{path}: {error}") from error
     modes = poster_layout_modes(metadata, settings.fixed, previous_layout["pages"] if previous_layout is not None else None)
     recalculate_pages = set()
     if previous_layout is not None:

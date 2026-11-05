@@ -31,8 +31,8 @@ class BatchMetadataTests(unittest.TestCase):
             self.assertEqual([replaced[field] for field in ("box", "anzahl", "comment", "device")],
                              ["new", 3, "added", "extra"])
             cleared = core.edited_metadata(original, baseline, baseline, mode="replace", differing_fields=differing)
-            self.assertEqual([cleared[field] for field in ("box", "anzahl", "comment", "device")],
-                             ["", 0, "", "shared"])
+            self.assertEqual([cleared[field] for field in core.FIELDS],
+                             [original[field] for field in core.FIELDS])
             kept = core.edited_metadata(original, dict(baseline, device=""), baseline, mode="extend")
             self.assertEqual(kept["device"], "shared")
             self.assertEqual(kept["comment"], original["comment"])
@@ -735,7 +735,7 @@ class PosterTests(unittest.TestCase):
                 core.create_posters(self.paths[:2], self.profile, core.PosterSettings(600, 200, 200, 2, 1),
                                     field_overrides=values, field_baseline=baseline, edit_mode=mode,
                                     differing_fields=core.differing_metadata_fields(originals))
-            self.assertEqual(draw.call_args_list[0].args[1], ["A"] if mode == "extend" else [])
+            self.assertEqual(draw.call_args_list[0].args[1], ["A"])
             self.assertEqual(captions.call_args_list[0].args[1].plain_lines, ["first", "new"] if mode == "extend" else ["new"])
             self.assertEqual(captions.call_args_list[1].args[1].plain_lines, ["second", "new"] if mode == "extend" else ["new"])
 
