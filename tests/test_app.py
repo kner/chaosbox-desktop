@@ -309,28 +309,21 @@ class DeleteEntryTests(unittest.TestCase):
 
 
 class UserCommentTests(unittest.TestCase):
-    def test_caption_shows_all_seven_labelled_fields_without_truncation(self):
-        record = dict(box="A11", anzahl=0, device="Motor", alias="M1",
+    def test_caption_shows_all_seven_fields_with_comment_last(self):
+        record = dict(box="A11", anzahl=3, device="Motor", alias="M1",
                       category="Elektronik", package="Tray", comment="Grüße 🎬 " + "ä" * 70 + "\nSecond line")
         with patch("core.read_user_comment", return_value=json.dumps(record, ensure_ascii=False)):
             caption = user_comment_preview(Path("photo.jpg"))
-        self.assertEqual(caption, "Box: A11\nQuantity: 0\nDevice: Motor\nAlias: M1\n"
-                         "Category: ELEKTRONIK\nComment: " + record['comment'] + "\nPackage: Tray")
+        self.assertEqual(caption, "A11|3|Motor|M1|ELEKTRONIK|Tray|" + record['comment'])
 
-    def test_empty_and_legacy_comments_still_show_all_fields(self):
-        for raw in ("", "First\nsecond\tthird", '{"box":"A11","category":"Tools"}'):
-            with self.subTest(raw=raw), patch("core.read_user_comment", return_value=raw):
-                caption = user_comment_preview(Path("photo.jpg"))
-                for label in core.LABELS:
-                    self.assertIn(label + ":", caption)
-                if raw.startswith("First"):
-                    self.assertIn(raw, caption)
+    def test_empty_fields_are_blank_and_preserve_separator_positions(self):
+        with patch("core.read_user_comment", return_value='{"box":"A11","device":"Motor"}'):
+            self.assertEqual(user_comment_preview(Path("photo.jpg")), "A11||Motor||||")
 
-    def test_caption_translates_field_labels(self):
-        with patch("core.read_user_comment", return_value='{"device":"Motor"}'):
-            caption = user_comment_preview(Path("photo.jpg"), lambda label: "translated " + label)
-        self.assertIn("translated Device: Motor", caption)
-        self.assertIn("translated Package:", caption)
+    def test_legacy_comment_is_last_and_keeps_line_breaks(self):
+        raw = "First\nsecond\tthird"
+        with patch("core.read_user_comment", return_value=raw):
+            self.assertEqual(user_comment_preview(Path("photo.jpg")), "||||||" + raw)
 
     def test_failed_comment_load_keeps_selection_and_polling(self):
         grid = MediaGrid.__new__(MediaGrid)

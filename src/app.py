@@ -101,8 +101,9 @@ class CommentEditor(ttk.Notebook):
 def user_comment_preview(path, translator=translate):
     # Keep the original Markdown source, including its whitespace and line breaks.
     metadata = core.parse_metadata(core.read_user_comment(path))
-    return "\n".join(f"{translator(label)}: {metadata.get(key, '') if metadata.get(key) is not None else ''}"
-                     for key, label in zip(core.FIELDS, core.LABELS))
+    fields = ("box", "anzahl", "device", "alias", "category", "package", "comment")
+    return "|".join(str(metadata.get(key) or "")
+                    for key in fields)
 
 
 class ImageCanvas(tk.Canvas):
@@ -770,12 +771,12 @@ class MediaGrid(ttk.Frame):
         self.cell_height = self.thumb_size + 40
         if self.show_user_comment:
             chars_per_line = max(1, int((self.cell_width - 14) / 10))
-            comment_lines = len(core.FIELDS)
+            comment_lines = 1
             for comment in self.comments.values():
                 lines = sum(max(1, (len(line) + chars_per_line - 1) // chars_per_line)
                             for line in (comment or "").split("\n")) or 1
                 comment_lines = max(comment_lines, lines)
-            self.cell_height += comment_lines * 18 + 8
+            self.cell_height = self.thumb_size + 32 + comment_lines * 18 + 2
         rows = (len(self.paths) + self.columns - 1) // self.columns
         canvas.configure(scrollregion=(0, 0, width, rows * self.cell_height),
                          yscrollincrement=max(20, self.cell_height // 3))
@@ -823,7 +824,7 @@ class MediaGrid(ttk.Frame):
                                    anchor="n", text=self.creation_dates[path],
                                    font=("Sans", 9), fill="#475569")
             if self.show_user_comment:
-                canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 38,
+                canvas.create_text(x + self.cell_width / 2, y + self.thumb_size + 30,
                                    anchor="n", text=self.comments.get(index, self.t("Metadaten werden geladen …")),
                                    width=max(12, self.cell_width - 14),
                                    font=("Sans", 9), fill="#475569")
